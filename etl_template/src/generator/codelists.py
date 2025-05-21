@@ -70,9 +70,9 @@ class CodeList:
         for file in files_xlsx:
             df_dmsCodeList = pl.read_excel(
                 source=file.resolve(),
-                sheet_name="DMS.core Code List Elements", # BUG: Klopt dit? Is alles op deze sheetnaam of is deze variabel met systemen?
+                sheet_name="DMS.core Code List Elements", # FIXME: Klopt dit? Is alles op deze sheetnaam of is deze variabel met systemen?
             )
-            df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[2])
+            df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[2]) # FIXME: Kolom nummers vervangen door namen
             df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[6])
             df_dmsCodeList.insert_column(
                 0, pl.lit(folder.name.upper()).alias("SourceSystem")

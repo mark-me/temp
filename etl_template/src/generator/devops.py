@@ -84,6 +84,7 @@ class DevOpsHandler:
                 for f in files:
                     os.chmod((root / f), 0o777)
                     (root / f).unlink()
+            self.dir_repository.rmdir()
             logger.info(f"Delete existing folder: {self.dir_repository}")
 
     def publish_repo(self):
