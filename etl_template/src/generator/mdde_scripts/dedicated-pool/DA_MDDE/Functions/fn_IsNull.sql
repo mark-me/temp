@@ -1,0 +1,11 @@
+CREATE FUNCTION DA_MDDE.fn_IsNull(@input NVARCHAR(4000))
+RETURNS NVARCHAR(4000)
+AS
+BEGIN
+    DECLARE @return NVARCHAR(4000);
+
+    SET @return = ISNULL(@input,'')
+
+    RETURN (@return);
+END;
+GO

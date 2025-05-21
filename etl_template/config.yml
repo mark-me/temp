@@ -1,0 +1,64 @@
+title: "first-dry-run"
+
+folder_intermediate_root: "./etl_templates/intermediate"
+
+power-designer:
+  folder: "./etl_templates/input"
+  files:
+    - "UsecaseV1.98.ldm"
+
+extractor:
+  folder: "RETW"
+
+codelist:
+  folder: "CodeList"
+  input_folder: "./etl_templates/input/codeList/"
+  codeList_json: "codeList.json"
+
+
+generator:
+  folder: "Generator"
+  templates_platform: "dedicated-pool"
+  created_ddls_json: "list_created_ddls.json"
+  folder_mdde_scripts: "./etl_templates/src/generator/mdde_scripts/"
+
+publisher:
+  folder: "GIT_repo"
+  vs_project_folder: "GIT_repo"
+  vs_project_file: "./CentralLayer/3. Central Layer.sqlproj"
+
+
+devops:
+  folder: "GIT_repo"
+  organisation: "migratie-dataketen-douane"
+  project: "Douane%20Datawerkorganisatie"
+  repo: "DWO%20DataCenter"
+  branch: "collaboration"
+  work_item: "23936"
+  work_item_description: "Testen automatische uitrol DDL en ETL"
+
+
+
+# templates_folder: "./etl_templates/src/generator/templates/"
+# templates_platform: "dedicated-pool" # "duckdb"
+# power_designer_ldm: "./etl_templates/input/UsecaseV1.8.ldm"
+# mdde_json: "./etl_templates/output/CL_Usecase_v1.8.json"
+# created_ddls_json: "./etl_templates/output/list_created_ddls.json"
+# output_folder: "./etl_templates/output/"
+
+# #generatorParams
+# vs_project_folder: "../MDDE_Release/"
+# vs_project_file: "../MDDE_Release/CentralLayer/3. Central Layer.sqlproj"
+# codeList_json: "./etl_templates/output/codeList.json"
+# codeList_folder: "./etl_templates/input/codeList/"
+# mdde_scripts_folder: "./etl_templates/src/generator/mdde_scripts/"
+
+# # devopsParams
+# devOps_Organisation: "migratie-dataketen-douane"
+# devOps_Project: "Douane%20Datawerkorganisatie"
+# devOps_Repo: "DWO%20DataCenter"
+# devOps_Branch: "collaboration"
+# devOps_WorkItem: "23936"
+# devOps_WorkItemDesc: "Testen automatische uitrol DDL en ETL"
+
+

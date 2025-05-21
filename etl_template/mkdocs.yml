@@ -1,0 +1,53 @@
+site_name: Genesis documentatie
+
+use_directory_urls: false
+
+theme:
+  name: material
+  favicon: images/favicon.png
+  logo: images/logo.png
+  features:
+    - content.code.copy
+    - content.code.select
+    - navigation.expand
+    - navigation.path
+
+plugins:
+  - offline
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_bases: true
+            show_root_heading: true
+            show_symbol_type_toc: true
+            summary: true
+            filters:
+              - "!^__"
+              - "!^_"
+              - "^__init__"
+  - panzoom:
+      full_screen: true
+
+markdown_extensions:
+  - attr_list
+  - pymdownx.extra:
+        pymdownx.superfences:
+          custom_fences:
+            - name: mermaid
+              class: mermaid
+              format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: index.md
+  - Genesis:
+    - Orkestrator: Orkestrator.md
+    - Configuratie: Configuration.md
+  - Componenten:
+    - Extractor: Extractor.md
+    - Afhankelijkheidscontrole: Dependency_checker.md
+    - Generator: Generator.md
+  - Hulp packages:
+    - Logging: Logtools.md
+    - Documentatie genereren: Documentation_Creation.md
