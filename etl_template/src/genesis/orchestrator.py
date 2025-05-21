@@ -12,12 +12,16 @@ from logtools import get_logger, issue_tracker
 
 logger = get_logger(__name__)
 
+class ExtractionIssuesFound(Exception):
+    """Exception raised when extraction issues are found and processing should stop."""
+    pass
 
 class Orchestrator:
     """Orkestreert de Power Designer extractie en deployment workflow.
 
     Manages the extraction of data, dependency checking, code generation, and repository interactions.
     """
+
     def __init__(self, file_config: str):
         """Initialiseert de Orkestrator.
 
@@ -51,45 +55,43 @@ class Orchestrator:
         )
         return file_RETW
 
-    def get_etl_dag(self, files_RETW: list) -> DagReporting:
-        """Check dependencies between extracted data files.
+    def inspect_etl_dag(self, files_RETW: list):
+        """
+        Inspecteert de ETL-afhankelijkheden en genereert een overzicht van de mappingvolgorde.
 
-        Analyzes the relationships and dependencies between the extracted data.
+        Deze functie analyseert de opgegeven RETW-bestanden, schrijft de mappingvolgorde naar een JSON-bestand en visualiseert de ETL-flow.
 
         Args:
-            files_RETW (list): A list of paths to the extracted RETW files.
+            files_RETW (list): Een lijst met paden naar de geëxtraheerde RETW-bestanden.
 
         Returns:
-            None
+            DagReporting: Een object met informatie over de ETL-afhankelijkheden.
         """
         logger.info("Reporting on dependencies")
         dag = DagReporting()
         dag.add_RETW_files(files_RETW=files_RETW)
-        # Dump dependencies to JSON
-        lst_mapping_order = dag.get_mapping_order()
-        dir_output = self.config.dir_generate
-        Path(os.path.join(dir_output, "mapping_order.json"))
-        with open(f"{dir_output}/mapping_order.json", "w", encoding="utf-8") as file:
-            for item in lst_mapping_order:
-                file.write(json.dumps(item) + "\n")
         # Visualization of the ETL flow for all RETW files combined
-        dag.plot_etl_dag(file_html=f"{dir_output}/ETL_flow.html")
+        dir_report = self.config.dir_generate
+        dag.plot_etl_dag(file_html=f"{dir_report}/ETL_flow.html")
+        dag.plot_file_dependencies(file_html=f"{dir_report}/RETW_dependencies.html")
         return dag
 
     def generate_codeList(self) -> Path:
-        """Generate Codelist from Input files.
+        """
+        Genereert een CodeList-bestand op basis van de input codelist-bestanden.
 
-        Generate JSON from codelist files
-
-        Args:
+        Deze functie leest de codelist-bestanden, verwerkt ze en schrijft het resultaat naar een JSON-bestand.
 
         Returns:
-            None
+            Path: Het pad naar het gegenereerde CodeList-bestand.
         """
         logger.info("Generating Codelist from files")
         dir_output = self.config.dir_codelist
+        # FIXME: Nooit via _data (is private)
         codelistfolder = Path(self.config._data.codelist.input_folder)
-        codelist = Path(os.path.join(dir_output, self.config._data.codelist.codeList_json))
+        codelist = Path(
+            os.path.join(dir_output, self.config._data.codelist.codeList_json)
+        )
         codelistmaker = CodeList(codelistfolder, codelist)
         # Generatate CodeList.json from input codelist files
         codelistmaker.read_CodeLists()
@@ -110,46 +112,18 @@ class Orchestrator:
         logger.info("Start generating deployment code")
         params = self.config
         ddl_generator = DDLGenerator(params=params)
+        publisher = DDLPublisher(params)
         for file_RETW in files_RETW:
-            #TODO: @Mark, generatorParams zou beter zijn als deze ook bijvoorbeeld bepaalde DIR properties bevat. Ik krijg dit niet voor elkaar..
-            publisher = DDLPublisher(params)
+            # TODO: @Mark, generatorParams zou beter zijn als deze ook bijvoorbeeld bepaalde DIR properties bevat. Ik krijg dit niet voor elkaar..
             # 3. Write all DLL, SoureViews and MDDE ETL to the Repo
-            ddl_generator.generate_code(file_RETW=file_RETW, mapping_order=mapping_order)
+            ddl_generator.generate_code(
+                file_RETW=file_RETW, mapping_order=mapping_order
+            )
             # 4. Write a JSON that contains all list with al written objects with there type. Is used by the publisher.
             ddl_generator.write_json_created_ddls()
-            # 5. Write all new created DDL and ETL file to the VS SQL Project file as a reference.
-            publisher.publish()
+        # 5. Write all new created DDL and ETL file to the VS SQL Project file as a reference.
+        publisher.publish()
 
-
-    def clone_repository(self) -> None:
-        """Clone the target repository.
-
-        Clones the repository specified in the configuration to a local directory.
-
-        Returns:
-            str: The path to the cloned repository.
-        """
-        devopsParams = self.config.devops_config
-        devopsFolder = self.config.dir_repository
-
-        devops_handler = DevOpsHandler(devopsParams, devopsFolder)
-        # Clone a clean copy of the DevOps Repo to disk, and create a new brach based on the config params.
-        devops_handler.get_repo()
-
-    def commit_repository(self) -> None:
-        """Commit the repository to DevOps.
-
-        commit the changes in the repository.
-
-        Returns:
-            str: The path to the repository.
-        """
-        devopsParams = self.config.devops_config
-        devopsFolder = self.config.dir_repository
-
-        devops_handler = DevOpsHandler(devopsParams, devopsFolder)
-        # Publish to DevOps Repo.
-        devops_handler.publish_repo()
 
     def start_processing(self, skip_deployment: bool = False) -> None:
         """Start the main processing workflow.
@@ -168,20 +142,34 @@ class Orchestrator:
             file_RETW = self.extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
 
-        dag = self.get_etl_dag(files_RETW=lst_files_RETW)
+        dag = self.inspect_etl_dag(files_RETW=lst_files_RETW)
         mapping_order = dag.get_mapping_order()
 
         self.generate_codeList()
-
-        # self.clone_repository()
-
         self.generate_code(files_RETW=lst_files_RETW, mapping_order=mapping_order)
 
         # Stop process if extraction and dependecies check result in issues
+        self._handle_issues()
+
+        devops_handler = DevOpsHandler(
+            params=self.config.devops_config, dir_repository=self.config.dir_repository
+        )
+        devops_handler.get_repo()
+
+        # TODO: Copy code and codelist to repo and update project file
+
+        devops_handler.publish_repo()
+
+    def _handle_issues(self):
+        """
+        Controleert of er issues zijn gevonden tijdens de verwerking en handelt deze af.
+
+        Schrijft een rapport van de gevonden issues naar een CSV-bestand en stopt de verwerking indien nodig.
+
+        Returns:
+            None
+        """
         if issue_tracker.has_issues():
             file_issues = os.path.join(self.config.dir_extract, "extraction_issues.csv")
             issue_tracker.write_csv(file_csv=file_issues)
-            logger.error(f"Problemen gevonden, rapport is te vinden in {file_issues}")
-            sys.exit("Verwerking gestopt nadat er issues zijn aangetroffen")
-
-        self.commit_repository()
+            raise ExtractionIssuesFound(f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}")

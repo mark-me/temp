@@ -18,12 +18,12 @@ class DevOpsHandler:
     def __init__(self, params: dict, dir_repository: str):
         logger.info("Initializing Class: 'DevOpsHandler'.")
         self.params = params
-        self.dir_repository = Path(dir_repository)
+        self.dir_repository = Path(dir_repository).resolve
 
     def get_repo(self):
         """ """
         logger.info("Initializing Function: 'devopsgetrepo'.")
-        currentFolder = Path("./").resolve()
+        dir_current = Path("./").resolve()
         self._remove_old_repo()  # deletes a directory and all its contents.
         time.sleep(5)
         for i in range(2):
@@ -38,8 +38,8 @@ class DevOpsHandler:
                 ]
                 logger.info(" ".join(lst_command))
                 subprocess.run(lst_command)
-                logger.info(f"chdir to: {self.dir_repository.resolve()}")
-                os.chdir(self.dir_repository.resolve())
+                logger.info(f"chdir to: {self.dir_repository}")
+                os.chdir(self.dir_repository)
                 lst_command = [
                     "git",
                     "branch",
@@ -63,7 +63,7 @@ class DevOpsHandler:
             else:
                 break
         # Relocate to org root folder
-        os.chdir(currentFolder.resolve())
+        os.chdir(dir_current)
 
     def _remove_old_repo(self) -> None:
         """
@@ -75,18 +75,19 @@ class DevOpsHandler:
         Returns:
             None
         """
-        if os.path.isdir(self.dir_repository.resolve()):
+        if self.dir_repository.is_dir():
             # change owner of file .idx, else we get an error
-            for root, dirs, files in os.walk(self.dir_repository.resolve()):
+            for root, dirs, files in self.dir_repository.walk(top_down=False):
                 for d in dirs:
-                    os.chmod(os.path.join(root, d), 0o777)
+                    os.chmod((root / d), 0o777)
+                    (root / d).rmdir()
                 for f in files:
-                    os.chmod(os.path.join(root, f), 0o777)
-            logger.info(f"Delete existing folder: {self.dir_repository.resolve()}")
-            shutil.rmtree(self.dir_repository.resolve())
+                    os.chmod((root / f), 0o777)
+                    (root / f).unlink()
+            logger.info(f"Delete existing folder: {self.dir_repository}")
 
     def publish_repo(self):
-        os.chdir(self.dir_repository.resolve())
+        os.chdir(self.dir_repository)
         lst_command = [
             "git",
             "add",
