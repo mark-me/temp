@@ -75,19 +75,29 @@ class DevOpsHandler:
         Returns:
             None
         """
-        if self.dir_repository.is_dir():
-            # change owner of file .idx, else we get an error
-            for root, dirs, files in self.dir_repository.walk(top_down=False):
-                for d in dirs:
-                    os.chmod((root / d), 0o777)
-                    (root / d).rmdir()
-                for f in files:
-                    os.chmod((root / f), 0o777)
-                    (root / f).unlink()
-            self.dir_repository.rmdir()
-            logger.info(f"Delete existing folder: {self.dir_repository}")
+        if not self.dir_repository.is_dir():
+            return
+        # change owner of file .idx, else we get an error
+        for root, dirs, files in self.dir_repository.walk(top_down=False):
+            for d in dirs:
+                os.chmod((root / d), 0o777)
+                (root / d).rmdir()
+            for f in files:
+                os.chmod((root / f), 0o777)
+                (root / f).unlink()
+        self.dir_repository.rmdir()
+        logger.info(f"Delete existing folder: {self.dir_repository}")
 
-    def publish_repo(self):
+    def publish_repo(self) -> None:
+        """
+        Voert een commit en push uit naar de DevOps repository en opent de branch in de browser.
+
+        Deze functie voegt alle wijzigingen toe, maakt een commit met een werkitem-omschrijving,
+        pusht naar de featurebranch en opent de branch-URL in de browser.
+
+        Returns:
+            None
+        """
         os.chdir(self.dir_repository)
         lst_command = [
             "git",
