@@ -232,9 +232,11 @@ class DDLGenerator:
         attributes = []
         # voor alle attributen in de entity gaan we controleren of de code voorkomt als gemapte identifier. Indien dit het geval is, dan wordt het
         # attribuut verwijderd uit Attributes. Hiermee krijgen we geen dubbelingen in de entiteit.
-        for attribute in entity["Attributes"]:
-            if attribute["Code"] not in mapped_identifiers:
-                attributes.append(attribute)
+        attributes.extend(
+            attribute
+            for attribute in entity["Attributes"]
+            if attribute["Code"] not in mapped_identifiers
+        )
         return entity
 
     def __add_object_to_ddl(self, code_model: str, type_objects: str, file_output: str):
@@ -264,7 +266,7 @@ class DDLGenerator:
                 datasource = mapping["DataSource"]
                 mapping["DataSourceCode"] = (
                     datasource[3:]
-                    if datasource[0:3] == self.source_layer_prefix
+                    if datasource[:3] == self.source_layer_prefix
                     else datasource
                 )
             else:
@@ -310,7 +312,7 @@ class DDLGenerator:
                 datasource = mapping["DataSource"]
                 mapping["DataSourceCode"] = (
                     datasource[3:]
-                    if datasource[0:3] == self.source_layer_prefix
+                    if datasource[:3] == self.source_layer_prefix
                     else datasource
                 )
             else:
@@ -379,7 +381,7 @@ class DDLGenerator:
         mapping.pop("AttributeMapping")
         mapping["AttributeMapping"] = attr_mappings
         # voeg de x_hashkey als kenmerk toe aan de mapping
-        mapping["X_Hashkey"] = x_hashkey + ",'" + mapping["DataSource"] + "'))"
+        mapping["X_Hashkey"] = f"{x_hashkey},'" + mapping["DataSource"] + "'))"
         return mapping
 
     def __write_ddl_MDDE_PostDeploy_Config(self, mapping_order: list):
@@ -416,19 +418,17 @@ class DDLGenerator:
 
         # Add file to master file.
         if not path_output_master.is_file():
-            f = open(path_output_master, "a")
-            f.write("/* Post deploy master file. */\n")
-            f.close()
+            with open(path_output_master, "a") as f:
+                f.write("/* Post deploy master file. */\n")
         if path_output_master.is_file():
             fr = open(path_output_master, "r")
             if f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n" not in fr.read():
                 fr.close()
-                f = open(path_output_master, "a")
-                f.write(
-                    f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{file_output}'\n"
-                )
-                f.write(f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n")
-                f.close()
+                with open(path_output_master, "a") as f:
+                    f.write(
+                        f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{file_output}'\n"
+                    )
+                    f.write(f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n")
 
     def __write_ddl_MDDE_PostDeploy_CodeTable(self):
         """

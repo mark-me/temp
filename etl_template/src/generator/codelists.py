@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-import yaml
 import polars as pl
 
 from log_config import logging
@@ -17,10 +16,17 @@ class CodeList:
     """
 
     def __init__(self, inputfolder: Path, outputfile: Path):
-        """Init Class Create_DDL.\
-        Reads config.yml
-        Orchestrates flow
+        """
+        Initialiseert een CodeList-object met de opgegeven invoermap en uitvoerbestand.
 
+        Deze constructor maakt een lege lijst voor code lists aan en slaat de paden voor invoer en uitvoer op.
+
+        Args:
+            inputfolder (Path): Het pad naar de map met code list bestanden.
+            outputfile (Path): Het pad naar het uitvoerbestand waarin de code lists worden opgeslagen.
+
+        Returns:
+            None
         """
         self.lst_codeList = []
         self.inputfolder = inputfolder
@@ -28,98 +34,72 @@ class CodeList:
 
     def read_CodeLists(self):
         """
-        nnb
+        Leest de code list bestanden voor DMS en AGS en voegt deze toe aan de lijst met code lists.
+
+        Deze functie roept de interne methoden aan om de code lists van beide systemen te verwerken en op te slaan.
+
+        Returns:
+            None: De functie wijzigt de lst_codeList in-place.
         """
         logger.info("read_CodeLists")
-        self.__read_DMS_CodeList()
-        self.__read_AGS_CodeList()
-        pass
+        self.__read_code_list(system="DMS")
+        self.__read_code_list(system="AGS")
 
-    def __read_DMS_CodeList(self):
+    def __read_code_list(self, system: str):
         """
-        nnb
-        """
-        logger.info("Start reading codeList file for DMS.")
-        for folder in self.inputfolder.iterdir():
-            if folder.is_dir() and folder.name.upper() == "DMS":
-                if sum(1 for x in folder.glob("*") if x.is_file()) > 1:
-                    logger.warning(
-                        f"CodeList folder for source {folder.name} has more than 1 file. This folder contains more than one file, this may lead to duplicates"
-                    )
-                for file in folder.iterdir():
-                    if file.is_file() and file.suffix == ".xls":
-                        df_dmsCodeList = pl.read_excel(
-                            source=file.resolve(),
-                            sheet_name="DMS.core Code List Elements",
-                        )
-                        df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[2])
-                        df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[6])
-                        df_dmsCodeList.insert_column(
-                            0, pl.lit(folder.name.upper()).alias("SourceSystem")
-                        )
-                        df_dmsCodeList = df_dmsCodeList.rename(
-                            {
-                                df_dmsCodeList.columns[1]: "ElementName",
-                                df_dmsCodeList.columns[2]: "Code",
-                                df_dmsCodeList.columns[3]: "Label_EN",
-                                df_dmsCodeList.columns[4]: "Description_EN",
-                                df_dmsCodeList.columns[5]: "Label_NL",
-                                df_dmsCodeList.columns[6]: "Description_NL"
-                            }
-                        )
+        Leest de code list bestanden voor het opgegeven systeem en voegt deze toe aan de lijst met code lists.
 
-                        # Replace NONE with Underscores
-                        df_dmsCodeList = df_dmsCodeList.fill_null("")
-                        self.lst_codeList = df_dmsCodeList.to_dicts()
-                        pass
+        Deze functie zoekt naar .xls-bestanden in de systeemmap, verwerkt de inhoud en voegt de resultaten toe aan lst_codeList.
 
-    def __read_AGS_CodeList(self):
-        """
-        nnb
-        """
-        logger.info("Start reading codeList file for AGS.")
-        for folder in self.inputfolder.iterdir():
-            if folder.is_dir() and folder.name.upper() == "AGS":
-                if sum(1 for x in folder.glob("*") if x.is_file()) > 1:
-                    logger.warning(
-                        f"CodeList folder for source {folder.name} has more than 1 file. This folder contains more than one file, this may lead to duplicates"
-                    )
-                for file in folder.iterdir():
-                    if file.is_file() and file.suffix == ".xls":
-                        df_agsCodeList = pl.read_excel(
-                            source=file.resolve(),
-                            sheet_name="DMS.core Code List Elements",
-                        )
-                        df_agsCodeList = df_agsCodeList.drop(df_agsCodeList.columns[2])
-                        df_agsCodeList = df_agsCodeList.drop(df_agsCodeList.columns[6])
-                        df_agsCodeList.insert_column(
-                            0, pl.lit(folder.name.upper()).alias("SourceSystem")
-                        )
-                        df_agsCodeList = df_agsCodeList.rename(
-                            {
-                                df_agsCodeList.columns[1]: "ElementName",
-                                df_agsCodeList.columns[2]: "Code",
-                                df_agsCodeList.columns[3]: "Label_EN",
-                                df_agsCodeList.columns[4]: "Description_EN",
-                                df_agsCodeList.columns[5]: "Label_NL",
-                                df_agsCodeList.columns[6]: "Description_NL"
-                            }
-                        )
+        Args:
+            system (str): De naam van het systeem waarvan de code lists gelezen moeten worden.
 
-                        # Replace NONE with Underscores
-                        df_agsCodeList = df_agsCodeList.fill_null("")
-                        self.lst_codeList.extend(df_agsCodeList.to_dicts())
-                        pass
+        Returns:
+            None: De functie wijzigt de lst_codeList in-place.
+        """
+        logger.info(f"Lezen codeList bestand(en) voor {system}.")
+        folder = self.inputfolder / system
+        if not folder.exists():
+            logger.error(f"Kon de code directory niet vinden voor `{system}`")
+            return
+        files_xlsx = [file for file in folder.iterdir() if file.is_file() and file.suffix == ".xls"]
+        if len(files_xlsx) > 1:
+            logger.warning(
+                f"CodeList directory voor {folder.name} bevat meer dan 1 bestand, dit kan dubbele codes tot gevolg hebben."
+            )
+        for file in files_xlsx:
+            df_dmsCodeList = pl.read_excel(
+                source=file.resolve(),
+                sheet_name="DMS.core Code List Elements", # BUG: Klopt dit? Is alles op deze sheetnaam of is deze variabel met systemen?
+            )
+            df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[2])
+            df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[6])
+            df_dmsCodeList.insert_column(
+                0, pl.lit(folder.name.upper()).alias("SourceSystem")
+            )
+            df_dmsCodeList = df_dmsCodeList.rename(
+                {
+                    df_dmsCodeList.columns[1]: "ElementName",
+                    df_dmsCodeList.columns[2]: "Code",
+                    df_dmsCodeList.columns[3]: "Label_EN",
+                    df_dmsCodeList.columns[4]: "Description_EN",
+                    df_dmsCodeList.columns[5]: "Label_NL",
+                    df_dmsCodeList.columns[6]: "Description_NL"
+                }
+            )
+            # Replace NONE with Underscores
+            df_dmsCodeList = df_dmsCodeList.fill_null("")
+            self.lst_codeList = df_dmsCodeList.to_dicts()
 
     def write_CodeLists(self):
         """
-        Function to create a Json file based on the lst_codeList.
-        This file is needed for the publisher class
+        Schrijft de verzamelde code lists naar een JSON-bestand.
+
+        Deze functie slaat de inhoud van lst_codeList op in het opgegeven uitvoerbestand in JSON-formaat.
+
+        Returns:
+            None
         """
         with open(self.outputfile, mode="w", encoding="utf-8") as file_codeList:
-                    json.dump(self.lst_codeList, file_codeList, indent=4)
-        logger.info(f"Written dict_created_ddls to JSON file: {self.outputfile.resolve()}")
-
-# Run Current Class
-if __name__ == "__main__":
-    print("Done")
+            json.dump(self.lst_codeList, file_codeList, indent=4)
+            logger.info(f"Code lijsten naar JSON bestand '{self.outputfile.resolve()}' geschreven")
