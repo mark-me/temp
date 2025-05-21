@@ -5,7 +5,7 @@ from pathlib import Path
 import webbrowser
 from log_config import logging
 
-from generator import DDLPublisher # TODO: Should probably be part of this?
+from generator import DDLPublisher # FIXME: Should probably be part of this?
 
 logger = logging.getLogger(__name__)
 
