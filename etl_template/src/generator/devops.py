@@ -91,7 +91,10 @@ class DevOpsHandler:
             "git",
             "add",
             "-A",
-            "&&",
+        ]
+        logger.info(" ".join(lst_command))
+        subprocess.run(lst_command)
+        lst_command = [
             "git",
             "commit",
             "-m"
