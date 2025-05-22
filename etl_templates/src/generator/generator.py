@@ -108,45 +108,42 @@ class DDLGenerator:
         """
         # TODO: in __select_identifiers zit nu opbouw van strings die platform specifiek zijn (SSMS). Om de generator ook platform onafhankelijk te maken kijken of we dit wellicht in een template kunnen gieten.
         identifiers = {}
+
+        def get_name_business_key(identifier):
+            return identifier["EntityCode"] if identifier["IsPrimary"] else identifier["Code"]
+
+        def get_identifier_def_primary(name_business_key):
+            return f"[{name_business_key}BKey] nvarchar(200) NOT NULL"
+
+        def get_identifier_def(name_business_key, mapping, attr_map):
+            if "AttributesSource" in attr_map:
+                id_entity = attr_map["AttributesSource"]["IdEntity"]
+                attribute_source = attr_map["AttributesSource"]["Code"]
+                return f"[{name_business_key}BKey] = '{mapping['DataSource']}'+ '-' + CAST({id_entity}.[{attribute_source}] AS NVARCHAR(50))"
+            else:
+                return f"[{name_business_key}BKey] = '{mapping['DataSource']}'+  '-' + {attr_map['Expression']}"
+
         for mapping in mappings:
             if "Identifiers" not in mapping["EntityTarget"]:
                 logger.error(
                     f"Geen identifiers aanwezig voor entitytarget {mapping['EntityTarget']['Name']}"
                 )
                 continue
+            if "AttributeMapping" not in mapping:
+                logger.error(
+                    f"Geen attribute mapping aanwezig voor entity {mapping['EntityTarget']['Name']}"
+                )
+                continue
             for identifier in mapping["EntityTarget"]["Identifiers"]:
-                if "AttributeMapping" not in mapping:
-                    logger.error(
-                        f"Geen attribute mapping aanwezig voor entity {mapping['EntityTarget']['Name']}"
-                    )
-                    continue
                 for attr_map in mapping["AttributeMapping"]:
-                    # selecteer alleen het attribuut uit AttributeTarget die is aangemerkt als identifier
-                    # TODO: Aangepaste filter, omdat deze issue gaf bij de regels 213+214 in de opbouw, doordat de Key niet bestond.
                     if (
                         attr_map["AttributeTarget"]["IdEntity"]
                         == identifier["EntityID"]
                         and attr_map["AttributeTarget"]["Code"] == identifier["Name"]
                     ):
-                        name_business_key = (
-                            identifier["EntityCode"]
-                            if identifier["IsPrimary"]
-                            else identifier["Code"]
-                        )
-                        identifier_def_primary = (
-                            f"[{name_business_key}BKey] nvarchar(200) NOT NULL"
-                        )
-                        if "AttributesSource" in attr_map:
-                            # Als het een primary key is dan nemen we als naamgeving van de BKey de code van de Entity over en zetten hier de postfix BKey achter
-                            # Is de identifier geen primary key, dan nemen we als naamgeving van de BKey de code van de AttributeTarget over en zetten hier de postfix Bkey achter
-                            id_entity = attr_map["AttributesSource"]["IdEntity"]
-                            attribute_source = attr_map["AttributesSource"]["Code"]
-                            identifier_def = f"[{name_business_key}BKey] = '{mapping['DataSource']}'+ '-' + CAST({id_entity}.[{attribute_source}] AS NVARCHAR(50))"
-                        # Als er geen AttributeSource beschikbaar is in AttributeMapping hebben we de maken met een expression. De Bkey wordt hiervoor anders opgebouwd
-                        else:
-                            # Als het een primary key is dan nemen we als naamgeving van de BKey de code van de Entity over en zetten hier de postfix  BKey achter
-                            # Is de identifier geen primary key, dan nemen we als naamgeving van de BKey de code van de AttributeTarget over en zetten hier de postfix BKey achter
-                            identifier_def = f"[{name_business_key}BKey] = '{mapping['DataSource']}'+  '-' + {attr_map['Expression']}"
+                        name_business_key = get_name_business_key(identifier)
+                        identifier_def_primary = get_identifier_def_primary(name_business_key)
+                        identifier_def = get_identifier_def(name_business_key, mapping, attr_map)
 
                         identifiers[identifier["Id"]] = {
                             "IdentifierID": identifier["Id"],
@@ -216,6 +213,9 @@ class DDLGenerator:
         mapped_identifiers = []
         identifier_mapped = []
         for identifier in entity["Identifiers"]:
+            if "Id" not in identifier:
+                logger.error("Geen identifier gevonden!")
+                continue
             identifier_id = identifier["Id"]
             if identifier_id in identifiers:
                 identifier_mapped.append(
@@ -237,9 +237,21 @@ class DDLGenerator:
             for attribute in entity["Attributes"]
             if attribute["Code"] not in mapped_identifiers
         )
+        entity.pop("Attributes")
+        entity["Attributes"] = attributes
         return entity
 
     def __add_object_to_ddl(self, code_model: str, type_objects: str, file_output: str):
+        """
+        Voegt een object toe aan de lijst van aangemaakte DDL's voor het model en het type object.
+
+        Deze methode houdt bij welke folders en bestanden zijn aangemaakt, zodat deze later kunnen worden toegevoegd aan het VS Project.
+
+        Args:
+            code_model (str): De code van het model.
+            type_objects (str): Het type object, bijvoorbeeld 'Tables' of 'Views'.
+            file_output (str): De bestandsnaam van het gegenereerde DDL-bestand.
+        """
         folder_model = code_model
         if folder_model not in self.created_ddls["Folder Include"]:
             self.created_ddls["Folder Include"].append(folder_model)
@@ -343,6 +355,18 @@ class DDLGenerator:
             logger.info(f"Written Source view DDL {Path(path_file_output).resolve()}")
 
     def __build_bkeys_load(self, identifiers: dict, mapping: dict):
+        """
+        Bouwt de business keys (BKeys) en de X_HashKey voor een mapping op basis van de identifiers en attributen.
+
+        Deze methode genereert de benodigde BKey-strings en de hashkey voor de mapping, zodat deze gebruikt kunnen worden in de DDL-templates.
+
+        Args:
+            identifiers (dict): Alle identifiers definities.
+            mapping (dict): De mapping waarvoor de BKeys en hashkey worden opgebouwd.
+
+        Returns:
+            dict: De aangepaste mapping met toegevoegde BKeys en X_HashKey.
+        """
         mapped_identifiers = []
         identifier_mapped = []
         for identifier in mapping["EntityTarget"]["Identifiers"]:
@@ -351,37 +375,31 @@ class DDLGenerator:
                 identifier_mapped.append(
                     identifiers[identifier_id]["IdentifierStringSourceView"]
                 )
-                # voeg de code van de identifier toe aan een controlelijst. De attributen in deze lijst worden verwijderd uit entity[Attributes]
                 mapped_identifiers.append(identifiers[identifier_id]["IdentifierName"])
             else:
                 logger.error(
                     f"identifier voor {mapping['EntityTarget']['Code']} niet gevonden in identifiers"
                 )
-            # Voeg de complete lijst van identifiers toe aan de entity
         mapping["Identifiers"] = identifier_mapped
-        # De identifiers die zijn toegevoegd aan PrimaryKeys willen we niet meer in de mapping toevoegen. Omdat deze velden nog wel meegaan in de x_hashkey bouwen we tegelijkertijd dit attribuut op. Doen we dit niet, dan hebben we een incomplete hashkey in de template
+
         attr_mappings = []
-        # TODO: afhandeling van x_hashkey bevat platform specifieke logica (in dit geval SSMS). Dit platform onafhankelijk maken door het bijvoorbeeld te gieten in een string_template
-        # string van x_hashkey in basis. Hieraan voegen wij de hashattributen toe in de for loop die volgt
         x_hashkey = "[X_HashKey] = HASHBYTES('SHA2_256', CONCAT("
-        for i, attr_mapping in enumerate(mapping["AttributeMapping"]):
-            # eerste ronde van de for-loop, dan seperator leeg, anders komma (,)
-            separator = "" if i == 0 else ","
+
+        def build_hash_attrib(attr_mapping, separator):
             hash_attrib = f"{separator}DA_MDDE.fn_IsNull("
             if "Expression" in attr_mapping:
-                hash_attrib = f"{hash_attrib}{attr_mapping['Expression']})"
+                return f"{hash_attrib}{attr_mapping['Expression']})"
             else:
-                hash_attrib = f"{hash_attrib}{attr_mapping['AttributesSource']['IdEntity']}.[{attr_mapping['AttributesSource']['Code']}])"
+                return f"{hash_attrib}{attr_mapping['AttributesSource']['IdEntity']}.[{attr_mapping['AttributesSource']['Code']}])"
+
+        for i, attr_mapping in enumerate(mapping["AttributeMapping"]):
+            separator = "" if i == 0 else ","
+            hash_attrib = build_hash_attrib(attr_mapping, separator)
             x_hashkey = x_hashkey + hash_attrib
-            i += 1
-            # we nemen alleen de non-identifier velden mee naar de attributemapping die de template ingaat.
-            # TODO: Checken of dit problemen opleverd.
             attr_mappings.append(attr_mapping)
-            # verwijder uit mapping het gedeelte van AttributeMapping. Deze voegen we opnieuw toe met de zojuist aangemaakte attributemappings
-        mapping.pop("AttributeMapping")
+        mapping.pop("AttributeMapping", None)
         mapping["AttributeMapping"] = attr_mappings
-        # voeg de x_hashkey als kenmerk toe aan de mapping
-        mapping["X_Hashkey"] = f"{x_hashkey},'" + mapping["DataSource"] + "'))"
+        mapping["X_Hashkey"] = f"{x_hashkey},'{mapping['DataSource']}'))"
         return mapping
 
     def __write_ddl_MDDE_PostDeploy_Config(self, mapping_order: list):
@@ -420,7 +438,10 @@ class DDLGenerator:
         if not path_output_master.is_file():
             with open(path_output_master, "a") as f:
                 f.write("/* Post deploy master file. */\n")
-        if path_output_master.is_file():
+        else:
+            # Opening a file located at the path specified by the variable
+            # `path_output_master` in read mode. It then checks if a specific string `":r
+            # ..\DA_MDDE\PostDeployment\{file_output}\n"` is present in the contents of the file.
             fr = open(path_output_master, "r")
             if f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n" not in fr.read():
                 fr.close()
@@ -439,53 +460,62 @@ class DDLGenerator:
             templates (dict): Bevat alle beschikbare templates en de locatie waar de templates te vinden zijn
         """
         # Opening JSON file
-        codelist = Path(
+        file_codelist = Path(
             f"{self.params.dir_codelist}/{self.params.codelist_config.codeList_json}"
         )
-        with open(codelist) as json_file:
+        if not file_codelist.exists():
+            logger.error(f"Kon codelist bestand niet vinden: '{file_codelist}'")
+            return
+        with open(file_codelist) as json_file:
             codeList = json.load(json_file)
 
-        if codelist.exists():
-            dir_output = f"{self.params.dir_repository}/CentralLayer/DA_MDDE"
-            dir_output_type = f"{dir_output}/PostDeployment/"
-            file_output = "PostDeploy_MetaData_Config_CodeList.sql"
-            file_output_full = Path(os.path.join(dir_output_type, file_output))
-            file_output_master = "PostDeploy.sql"
-            file_output_master_full = Path(
-                f"{self.params.dir_repository}/CentralLayer/PostDeployment/{file_output_master}"
-            )
+        dir_output = f"{self.params.dir_repository}/CentralLayer/DA_MDDE"
+        dir_output_type = f"{dir_output}/PostDeployment/"
+        file_output = "PostDeploy_MetaData_Config_CodeList.sql"
+        file_output_full = Path(os.path.join(dir_output_type, file_output))
+        file_output_master = "PostDeploy.sql"
+        file_output_master_full = Path(
+            f"{self.params.dir_repository}/CentralLayer/PostDeployment/{file_output_master}"
+        )
 
-            # Add used folders to dict_created_ddls to be later used to add to the VS Project file
-            self.__add_post_deploy_to_ddl(
-                file_output=file_output, file_output_master=file_output_master
-            )
+        self.__add_post_deploy_to_ddl(
+            file_output=file_output, file_output_master=file_output_master
+        )
 
-            content = self.templates["PostDeploy_CodeList"].render(codeList=codeList)
+        content = self.templates["PostDeploy_CodeList"].render(codeList=codeList)
 
-            Path(dir_output_type).mkdir(parents=True, exist_ok=True)
-            with open(file_output_full, mode="w", encoding="utf-8") as file_ddl:
-                file_ddl.write(content)
-            logger.info(
-                f"Written CodeTable Post deploy script: {file_output_full.resolve()}"
-            )
+        Path(dir_output_type).mkdir(parents=True, exist_ok=True)
+        with open(file_output_full, mode="w", encoding="utf-8") as file_ddl:
+            file_ddl.write(content)
+        logger.info(
+            f"Written CodeTable Post deploy script: {file_output_full.resolve()}"
+        )
 
-            # Add file to master file.
-            if not file_output_master_full.is_file():
-                f = open(file_output_master_full, "a+")
+        # Add file to master file.
+        if not file_output_master_full.is_file():
+            with open(file_output_master_full, "a+") as f:
                 f.write("/* Post deploy master file. */\n")
-                f.close()
-            if file_output_master_full.is_file():
-                fr = open(file_output_master_full, "r")
-                if f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n" not in fr.read():
-                    fr.close()
-                    f = open(file_output_master_full, "a")
+        if file_output_master_full.is_file():
+            fr = open(file_output_master_full, "r")
+            if f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n" not in fr.read():
+                fr.close()
+                with open(file_output_master_full, "a") as f:
                     f.write(
                         f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{file_output}\n"
                     )
                     f.write(f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n")
-                    f.close()
 
     def __add_post_deploy_to_ddl(self, file_output, file_output_master):
+        """
+        Voegt post-deploy scripts toe aan de lijst van aangemaakte DDL's voor het post-deploy proces.
+
+        Deze methode houdt bij welke folders en bestanden voor post-deploy zijn aangemaakt,
+        zodat deze later kunnen worden toegevoegd aan het VS Project.
+
+        Args:
+            file_output (str): De bestandsnaam van het post-deploy script.
+            file_output_master (str): De bestandsnaam van het master post-deploy script.
+        """
         if self.schema_post_deploy not in self.created_ddls["Folder Include"]:
             self.created_ddls["Folder Include"].append(self.schema_post_deploy)
         folder_model = f"{self.schema_post_deploy}\\PostDeployment"
