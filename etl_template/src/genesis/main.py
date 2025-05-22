@@ -8,7 +8,7 @@ from genesis import Orchestrator
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="De Genesis workflow orkestrator")
     print(
-        """
+        """\n
      _____                      _
     / ____|                    (_)
    | |  __  ___ _ __   ___  ___ _ ___
