@@ -65,9 +65,9 @@ class DevOpsHandler:
 
     def _remove_old_repo(self) -> None:
         """
-        Verwijdert de opgegeven repositorymap en al zijn inhoud als deze bestaat voor een verse start.
+        Verwijdert de opgegeven repository map en al zijn inhoud als deze bestaat voor een verse start.
 
-        Deze functie zorgt ervoor dat alle bestanden en submappen in de repositorymap verwijderbaar zijn
+        Deze functie zorgt ervoor dat alle bestanden en submappen in de repository map verwijderbaar zijn
         door de rechten aan te passen, en verwijdert vervolgens de volledige map.
 
         Returns:

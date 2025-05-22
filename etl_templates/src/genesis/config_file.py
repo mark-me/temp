@@ -49,7 +49,7 @@ class ConfigFile:
         If the file doesn't exist, it logs a warning.
         """
         if not self._file.exists():
-            msg = f"Couldn't find config file '{self._file}'"
+            msg = f"Couldn't find config file '{self._file.resolve()}'"
             logger.error(msg)
             raise ConfigFileError(msg, 404)
 
@@ -237,7 +237,7 @@ class ConfigFile:
         folder = Path(os.path.join(self.dir_intermediate, self._data.extractor.folder))
         self._create_dir(folder)
         return folder
-    
+
     @property
     def dir_templates(self) -> str:
         """Directory of JINJA templates.
@@ -247,7 +247,7 @@ class ConfigFile:
         root = './etl_templates/src/generator/templates'
         folder = Path(os.path.join(root, self._data.generator.templates_platform))
         self._create_dir(folder)
-        return folder    
+        return folder
 
     @property
     def dir_generate(self) -> str:
@@ -258,7 +258,7 @@ class ConfigFile:
         folder = Path(os.path.join(self.dir_intermediate, self._data.generator.folder))
         self._create_dir(folder)
         return folder
-    
+
     @property
     def dir_repository(self) -> str:
         """Directory for GIT repository.
@@ -272,19 +272,19 @@ class ConfigFile:
     @property
     def devops_config(self) -> DevOpsConfig:
         return self._data.devops
-    
+
     @property
     def codelist_config(self) -> CodelistConfig:
         return self._data.codelist
-    
+
     @property
     def publisher_config(self) -> PublisherConfig:
         return self._data.publisher
-    
+
     @property
     def generator_config(self) -> GeneratorConfig:
-        return self._data.generator 
-    
+        return self._data.generator
+
     @property
     def dir_codelist(self) -> str:
         """Directory for extracted data.
