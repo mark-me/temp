@@ -21,6 +21,7 @@ class DDLEntities:
         """
         self.dir_output = dir_output
         self.template = ddl_template
+        self.files_generated = []
 
     def generate_ddl_entities(self, models: dict, identifiers: dict):
         """
@@ -39,10 +40,10 @@ class DDLEntities:
                 logger.warning(f"Model '{model["Name"]} heeft geen entiteiten'")
                 continue
             for entity in model["Entities"]:
-                self.__process_entity(entity, model, dir_output, identifiers)
+                self.__process_entity(code_model=model["Code"], entity=entity, identifiers=identifiers)
 
 
-    def __process_entity(self, entity: dict, model: dict, dir_output: Path, identifiers: dict):
+    def __process_entity(self, code_model: str, entity: dict, identifiers: dict):
         """
         Verwerkt een enkele entiteit: vult ontbrekende waarden aan, bouwt business keys, rendert de DDL en schrijft deze weg.
 
@@ -52,23 +53,18 @@ class DDLEntities:
             dir_output (Path): De outputdirectory voor de DDL-bestanden.
             identifiers (dict): Bevat alle business keys definities.
         """
-        self.__set_entity_defaults(entity, model)
+        self.__set_entity_defaults(entity=entity, code_model=code_model)
         entity = self.__replace_entity_keys_with_bkeys(
             entity=entity, identifiers=identifiers
         )
         content = self.__render_entity_ddl(entity)
-        path_output_file, file_output = self.__get_entity_ddl_paths(entity, dir_output)
+        path_output_file, file_output = self.__get_entity_ddl_paths(entity)
         self.__save_entity_ddl(content, path_output_file)
-        self.__add_object_to_ddl(
-            code_model=model["Code"],
-            type_objects="Tables",
-            file_output=file_output,
-        )
         logger.info(
             f"Entity DDL weggeschreven naar {Path(path_output_file).resolve()}"
         )
 
-    def __set_entity_defaults(self, entity: dict, model: dict):
+    def __set_entity_defaults(self, code_model: str, entity: dict):
         """
         Stelt standaardwaarden in voor een entiteit indien deze ontbreken.
 
@@ -81,7 +77,7 @@ class DDLEntities:
                 f"Entiteit '{entity['Name']}' heeft geen property number, standaard distributie wordt gebruikt."
             )
             entity["Number"] = 0
-        entity["CodeModel"] = model["Code"]
+        entity["CodeModel"] = code_model
 
     def __render_entity_ddl(self, entity: dict) -> str:
         """
@@ -95,7 +91,7 @@ class DDLEntities:
         """
         return self.template.render(entity=entity)
 
-    def __get_entity_ddl_paths(self, entity: dict, dir_output: Path):
+    def __get_entity_ddl_paths(self, entity: dict):
         """
         Bepaalt het outputpad en de bestandsnaam voor de DDL van een entiteit.
 
@@ -106,9 +102,9 @@ class DDLEntities:
         Returns:
             tuple: (path_output_file, file_output)
         """
-        dir_output.mkdir(parents=True, exist_ok=True)
+        self.dir_output.mkdir(parents=True, exist_ok=True)
         file_output = f"{entity['Code']}.sql"
-        path_output_file = f"{dir_output}/{file_output}"
+        path_output_file = f"{self.dir_output}/{file_output}"
         return path_output_file, file_output
 
     def __save_entity_ddl(self, content: str, path_output_file: str):
