@@ -116,7 +116,7 @@ class Orchestrator:
         for file_RETW in files_RETW:
             # TODO: @Mark, generatorParams zou beter zijn als deze ook bijvoorbeeld bepaalde DIR properties bevat. Ik krijg dit niet voor elkaar..
             # 3. Write all DLL, SoureViews and MDDE ETL to the Repo
-            ddl_generator.generate_code(
+            ddl_generator.generate_ddls(
                 file_RETW=file_RETW, mapping_order=mapping_order
             )
             # 4. Write a JSON that contains all list with al written objects with there type. Is used by the publisher.
