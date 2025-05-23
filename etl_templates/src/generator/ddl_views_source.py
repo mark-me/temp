@@ -13,7 +13,7 @@ class DDLSourceViews(DDLViewBase):
     def __init__(self, dir_output: str, ddl_template: Template):
         super().__init__(dir_output=dir_output, ddl_template=ddl_template)
 
-    def generate_ddl_source_view(self, mappings: dict, identifiers: dict):
+    def generate_ddls(self, mappings: dict, identifiers: dict):
         """
         Creëert alle source views van de verschillende niet-aggregatie entiteiten die in models zijn opgenomen en schrijft deze weg naar een folder in de repository.
         De source views bevatten de ETL om de doeltabel te vullen met data.
@@ -26,7 +26,7 @@ class DDLSourceViews(DDLViewBase):
             if mapping["EntityTarget"]["Stereotype"] == "mdde_AggregateBusinessRule":
                 continue
 
-            self.__set_datasource_code(mapping)
+            self._set_datasource_code(mapping)
             mapping = self.__build_bkeys_load(identifiers=identifiers, mapping=mapping)
             content = self.__render_source_view(mapping)
             dir_output, file_output, path_file_output = self.__get_source_view_paths(

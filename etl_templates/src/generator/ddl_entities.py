@@ -12,7 +12,7 @@ class DDLEntities(DDLGeneratorBase):
     def __init__(self, dir_output: str, ddl_template: Template):
         super().__init__(dir_output=dir_output, ddl_template=ddl_template)
 
-    def generate_ddl_entities(self, models: dict, identifiers: dict):
+    def generate_ddls(self, models: dict, identifiers: dict):
         """
         Creëert alle DDL's van de verschillende entiteiten die in models zijn opgenomen en schrijft deze weg naar een folder in de repository
 

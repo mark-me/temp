@@ -4,14 +4,13 @@ import polars as pl
 from jinja2 import Template
 from log_config import logging
 
-from .ddl_base import DDLGeneratorBase
-
 logger = logging.getLogger(__name__)
 
 
-class CodeList(DDLGeneratorBase):
-    def __init__(self, dir_output: str, ddl_template: Template):
-        super().__init__(dir_output=dir_output, ddl_template=ddl_template)
+class CodeList():
+    def __init__(self, dir_input: str, file_output: str):
+        self.dir_input = dir_input
+        self.file_output = file_output
 
     def read_CodeLists(self):
         """
@@ -61,7 +60,7 @@ class CodeList(DDLGeneratorBase):
             )
             df_dmsCodeList = df_dmsCodeList.drop(
                 df_dmsCodeList.columns[2]
-            )  # FIXME: Kolom nummers vervangen door namen
+            )
             df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[6])
             df_dmsCodeList.insert_column(
                 0, pl.lit(folder.name.upper()).alias("SourceSystem")

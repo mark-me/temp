@@ -6,7 +6,8 @@ from jinja2 import Environment, FileSystemLoader, Template
 from log_config import logging
 
 from .ddl_entities import DDLEntities
-from .ddl_views_base import DDLSourceViews
+from .ddl_views_source import DDLSourceViews
+from .ddl_views_source_aggr import DDLSourceViewsAggr
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +49,17 @@ class DDLGenerator:
         self.dir_templates = params.dir_templates
         self.source_layer_prefix = "SL_"
 
-        self.generator_entities = DDLEntities(
+        self.entities = DDLEntities(
             dir_output=self.dir_generator,
             ddl_template=self._get_template(TemplateType.ENTITY),
         )
-        self.generator_views = DDLSourceViews(
+        self.source_views = DDLSourceViews(
             dir_output=self.dir_generator,
             ddl_template=self._get_template(TemplateType.SOURCE_VIEW),
+        )
+        self.source_views_aggr = DDLSourceViewsAggr(
+            dir_output=self.dir_generator,
+            ddl_template=self._get_template(TemplateType.SOURCE_VIEW_AGGR),
         )
 
     def _read_model_file(self, file_RETW: str) -> dict:
@@ -85,7 +90,7 @@ class DDLGenerator:
         )
         return environment.get_template(type_template.value)
 
-    def generate_ddls(self, file_RETW: str, mapping_order: list):
+    def generate_ddls(self, file_RETW: str):
         """
         Genereert DDL- en ETL-bestanden op basis van een RETW JSON-modelbestand en een opgegeven mappingvolgorde.
 
@@ -102,18 +107,16 @@ class DDLGenerator:
         identifiers = {}
         if "Mappings" in dict_RETW:
             mappings = dict_RETW["Mappings"]
-            identifiers = self._select_identifiers(mappings=mappings)
-        self.generator_entities.generate_ddl_entities(
+            identifiers = self._collect_identifiers(mappings=mappings)
+            self.source_views.generate_ddls(
+                mappings=mappings, identifiers=identifiers
+            )
+            self.source_views_aggr.generate_ddls(mappings=mappings)
+        self.entities.generate_ddls(
             models=dict_RETW["Models"], identifiers=identifiers
         )
-        if "Mappings" in dict_RETW:
-            self.generator_views.generate_ddl_source_view(mappings=mappings, identifiers=identifiers)
-            self.__write_ddl_source_view_aggr(mappings=mappings)
-            self.__write_ddl_source_view(mappings=mappings, identifiers=identifiers)
-        self.__write_ddl_MDDE_PostDeploy_Config(mapping_order=mapping_order)
-        self.__write_ddl_MDDE_PostDeploy_CodeTable()
 
-    def _select_identifiers(self, mappings: dict) -> dict:
+    def _collect_identifiers(self, mappings: dict) -> dict:
         """
         Haalt alle identifiers op uit het model ten behoeve van de aanmaken van BKeys in de entiteiten en DDL's
 

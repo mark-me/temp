@@ -10,7 +10,7 @@ class DDLViewBase(DDLGeneratorBase):
     def __init__(self, dir_output: str, ddl_template: Template):
         super().__init__(dir_output=dir_output, ddl_template=ddl_template)
 
-    def __set_datasource_code(self, mapping: dict) -> dict:
+    def _set_datasource_code(self, mapping: dict) -> dict:
         """
         Bepaalt en stelt de DataSourceCode in voor een mapping op basis van de DataSource.
 
