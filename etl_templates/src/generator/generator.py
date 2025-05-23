@@ -5,8 +5,8 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, Template
 from log_config import logging
 
-from .entities import DDLEntities
-from .views import DDLSourceViews
+from .ddl_entities import DDLEntities
+from .ddl_views_base import DDLSourceViews
 
 logger = logging.getLogger(__name__)
 
@@ -45,14 +45,14 @@ class DDLGenerator:
 
         self.generator_entities = DDLEntities(
             dir_output=self.dir_generator,
-            ddl_template=self.__template(TemplateType.ENTITY),
+            ddl_template=self._get_template(TemplateType.ENTITY),
         )
         self.generator_views = DDLSourceViews(
             dir_output=self.dir_generator,
-            ddl_template=self.__template(TemplateType.SOURCE_VIEW),
+            ddl_template=self._get_template(TemplateType.SOURCE_VIEW),
         )
 
-    def __read_model_file(self, file_RETW: str) -> dict:
+    def _read_model_file(self, file_RETW: str) -> dict:
         """Leest het in  de config opgegeven Json-bestand in en slaat de informatie op in een dictionary
 
         Returns:
@@ -65,7 +65,7 @@ class DDLGenerator:
             dict_model = json.load(json_file)
         return dict_model
 
-    def __template(self, type_template: TemplateType) -> Template:
+    def _get_template(self, type_template: TemplateType) -> Template:
         """
         Haal alle templates op uit de template folder. De locatie van deze folder is opgeslagen in de config.yml
 
@@ -89,11 +89,11 @@ class DDLGenerator:
             templates (dict): Bevat alle beschikbare templates en de locatie waar de templates te vinden zijn
         """
         # self.__copy_mdde_scripts()\
-        dict_RETW = self.__read_model_file(file_RETW=file_RETW)
+        dict_RETW = self._read_model_file(file_RETW=file_RETW)
         identifiers = {}
         if "Mappings" in dict_RETW:
             mappings = dict_RETW["Mappings"]
-            identifiers = self.__select_identifiers(mappings=mappings)
+            identifiers = self._select_identifiers(mappings=mappings)
         self.generator_entities.generate_ddl_entities(
             models=dict_RETW["Models"], identifiers=identifiers
         )
@@ -104,7 +104,7 @@ class DDLGenerator:
         self.__write_ddl_MDDE_PostDeploy_Config(mapping_order=mapping_order)
         self.__write_ddl_MDDE_PostDeploy_CodeTable()
 
-    def __select_identifiers(self, mappings: dict) -> dict:
+    def _select_identifiers(self, mappings: dict) -> dict:
         """
         Haalt alle identifiers op uit het model ten behoeve van de aanmaken van BKeys in de entiteiten en DDL's
 

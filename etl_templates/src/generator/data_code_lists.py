@@ -1,36 +1,17 @@
 import json
-from pathlib import Path
 
 import polars as pl
-
+from jinja2 import Template
 from log_config import logging
+
+from .ddl_base import DDLGeneratorBase
 
 logger = logging.getLogger(__name__)
 
 
-class CodeList:
-    """Class Get_Enumerations is checking if there are emun files for a source system, loads the files and transform then in a  uniform format.
-    Format is:
-    SourceSystem, ElementName, Code, Label_EN, Label_NL, Description_EN, Description_NL
-
-    """
-
-    def __init__(self, dir_input: Path, file_output: Path):
-        """
-        Initialiseert een CodeList-object met de opgegeven invoermap en uitvoerbestand.
-
-        Deze constructor maakt een lege lijst voor code lists aan en slaat de paden voor invoer en uitvoer op.
-
-        Args:
-            inputfolder (Path): Het pad naar de map met code list bestanden.
-            outputfile (Path): Het pad naar het uitvoerbestand waarin de code lists worden opgeslagen.
-
-        Returns:
-            None
-        """
-        self.lst_codeList = []
-        self.dir_input = dir_input
-        self.file_output = file_output
+class CodeList(DDLGeneratorBase):
+    def __init__(self, dir_output: str, ddl_template: Template):
+        super().__init__(dir_output=dir_output, ddl_template=ddl_template)
 
     def read_CodeLists(self):
         """
@@ -60,9 +41,15 @@ class CodeList:
         logger.info(f"Lezen codeList bestand(en) voor {system}.")
         folder = self.dir_input / system
         if not folder.exists():
-            logger.error(f"Kan de code directory niet vinden voor `{system}` in de directory '{self.dir_input}'")
+            logger.error(
+                f"Kan de code directory niet vinden voor `{system}` in de directory '{self.dir_input}'"
+            )
             return
-        files_xlsx = [file for file in folder.iterdir() if file.is_file() and file.suffix == ".xls"]
+        files_xlsx = [
+            file
+            for file in folder.iterdir()
+            if file.is_file() and file.suffix == ".xls"
+        ]
         if len(files_xlsx) > 1:
             logger.warning(
                 f"CodeList directory voor {folder.name} bevat meer dan 1 bestand, dit kan dubbele codes tot gevolg hebben."
@@ -70,9 +57,11 @@ class CodeList:
         for file_xlsx in files_xlsx:
             df_dmsCodeList = pl.read_excel(
                 source=file_xlsx.resolve(),
-                sheet_name="DMS.core Code List Elements", # FIXME: Klopt dit? Is alles op deze sheetnaam of is deze variabel met systemen?
+                sheet_name="DMS.core Code List Elements",  # FIXME: Klopt dit? Is alles op deze sheetnaam of is deze variabel met systemen?
             )
-            df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[2]) # FIXME: Kolom nummers vervangen door namen
+            df_dmsCodeList = df_dmsCodeList.drop(
+                df_dmsCodeList.columns[2]
+            )  # FIXME: Kolom nummers vervangen door namen
             df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[6])
             df_dmsCodeList.insert_column(
                 0, pl.lit(folder.name.upper()).alias("SourceSystem")
@@ -84,7 +73,7 @@ class CodeList:
                     df_dmsCodeList.columns[3]: "Label_EN",
                     df_dmsCodeList.columns[4]: "Description_EN",
                     df_dmsCodeList.columns[5]: "Label_NL",
-                    df_dmsCodeList.columns[6]: "Description_NL"
+                    df_dmsCodeList.columns[6]: "Description_NL",
                 }
             )
             # Replace NONE with Underscores
@@ -102,4 +91,6 @@ class CodeList:
         """
         with open(self.file_output, mode="w", encoding="utf-8") as file_codeList:
             json.dump(self.lst_codeList, file_codeList, indent=4)
-            logger.info(f"Code lijsten naar JSON bestand '{self.file_output.resolve()}' geschreven")
+            logger.info(
+                f"Code lijsten naar JSON bestand '{self.file_output.resolve()}' geschreven"
+            )

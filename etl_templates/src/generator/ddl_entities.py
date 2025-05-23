@@ -3,16 +3,14 @@ from pathlib import Path
 from jinja2 import Template
 from log_config import logging
 
-from .generator_base import DDLGeneratorBase
+from .ddl_base import DDLGeneratorBase
 
 logger = logging.getLogger(__name__)
 
 
 class DDLEntities(DDLGeneratorBase):
-
     def __init__(self, dir_output: str, ddl_template: Template):
         super().__init__(dir_output=dir_output, ddl_template=ddl_template)
-
 
     def generate_ddl_entities(self, models: dict, identifiers: dict):
         """
@@ -77,7 +75,7 @@ class DDLEntities(DDLGeneratorBase):
             str: De gerenderde DDL-string voor de entiteit.
         """
         content = self.template.render(entity=entity)
-        return content #sqlparse.format(content, reindent=True, keyword_case="upper")
+        return content  # sqlparse.format(content, reindent=True, keyword_case="upper")
 
     def __get_entity_ddl_paths(self, entity: dict) -> Path:
         """
@@ -97,17 +95,6 @@ class DDLEntities(DDLGeneratorBase):
         file_output = f"{entity['Code']}.sql"
         path_output_file = Path(f"{dir_output}/{file_output}")
         return path_output_file
-
-    def __save_entity_ddl(self, content: str, path_output_file: str):
-        """
-        Slaat de gerenderde DDL van een entiteit op in het opgegeven pad.
-
-        Args:
-            content (str): De te schrijven DDL-inhoud.
-            path_output_file (str): Het volledige pad waar de DDL wordt opgeslagen.
-        """
-        with open(path_output_file, mode="w", encoding="utf-8") as file_ddl:
-            file_ddl.write(content)
 
     def __replace_entity_keys_with_bkeys(self, entity: dict, identifiers: dict):
         """Vervangt alle key kolommen met business key kolommen.

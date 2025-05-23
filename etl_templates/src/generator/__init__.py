@@ -1,2 +1,2 @@
 from .generator import DDLGenerator
-from .code_lists import CodeList
+from .data_code_lists import CodeList
