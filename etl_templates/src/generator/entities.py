@@ -1,27 +1,18 @@
 from pathlib import Path
 
-import sqlparse
 from jinja2 import Template
-
 from log_config import logging
+
+from .generator_base import DDLGeneratorBase
 
 logger = logging.getLogger(__name__)
 
 
-class DDLEntities:
+class DDLEntities(DDLGeneratorBase):
+
     def __init__(self, dir_output: str, ddl_template: Template):
-        """
-        Initialiseert een DDLEntities instantie voor het genereren van DDL-bestanden voor entiteiten.
+        super().__init__(dir_output=dir_output, ddl_template=ddl_template)
 
-        Deze constructor stelt de outputdirectory en de te gebruiken Jinja2-template in voor het genereren van DDL's.
-
-        Args:
-            dir_output (str): De directory waarin de DDL-bestanden worden opgeslagen.
-            ddl_template (Template): De Jinja2-template die gebruikt wordt voor het renderen van de DDL.
-        """
-        self.dir_output = dir_output
-        self.template = ddl_template
-        self.files_generated = []
 
     def generate_ddl_entities(self, models: dict, identifiers: dict):
         """
@@ -57,7 +48,7 @@ class DDLEntities:
         )
         content = self.__render_entity_ddl(entity)
         path_output_file = self.__get_entity_ddl_paths(entity)
-        self.__save_entity_ddl(content, path_output_file)
+        self.save_generated_object(content, path_output_file)
         logger.info(f"Entity DDL weggeschreven naar {Path(path_output_file).resolve()}")
 
     def __set_entity_defaults(self, code_model: str, entity: dict):
@@ -86,7 +77,7 @@ class DDLEntities:
             str: De gerenderde DDL-string voor de entiteit.
         """
         content = self.template.render(entity=entity)
-        return sqlparse.format(content, reindent=True, keyword_case="upper")
+        return content #sqlparse.format(content, reindent=True, keyword_case="upper")
 
     def __get_entity_ddl_paths(self, entity: dict) -> Path:
         """

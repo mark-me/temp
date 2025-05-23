@@ -13,7 +13,7 @@ extractor:
 codelist:
   folder: "CodeList"
   input_folder: "./etl_templates/input/codeList/"
-  codeList_json: "codeList.json"
+  file_output: "codeList.json"
 
 
 generator:

@@ -15,7 +15,7 @@ class CodeList:
 
     """
 
-    def __init__(self, inputfolder: Path, outputfile: Path):
+    def __init__(self, dir_input: Path, file_output: Path):
         """
         Initialiseert een CodeList-object met de opgegeven invoermap en uitvoerbestand.
 
@@ -29,8 +29,8 @@ class CodeList:
             None
         """
         self.lst_codeList = []
-        self.inputfolder = inputfolder
-        self.outputfile = outputfile
+        self.dir_input = dir_input
+        self.file_output = file_output
 
     def read_CodeLists(self):
         """
@@ -58,18 +58,18 @@ class CodeList:
             None: De functie wijzigt de lst_codeList in-place.
         """
         logger.info(f"Lezen codeList bestand(en) voor {system}.")
-        folder = self.inputfolder / system
+        folder = self.dir_input / system
         if not folder.exists():
-            logger.error(f"Kon de code directory niet vinden voor `{system}`")
+            logger.error(f"Kan de code directory niet vinden voor `{system}` in de directory '{self.dir_input}'")
             return
         files_xlsx = [file for file in folder.iterdir() if file.is_file() and file.suffix == ".xls"]
         if len(files_xlsx) > 1:
             logger.warning(
                 f"CodeList directory voor {folder.name} bevat meer dan 1 bestand, dit kan dubbele codes tot gevolg hebben."
             )
-        for file in files_xlsx:
+        for file_xlsx in files_xlsx:
             df_dmsCodeList = pl.read_excel(
-                source=file.resolve(),
+                source=file_xlsx.resolve(),
                 sheet_name="DMS.core Code List Elements", # FIXME: Klopt dit? Is alles op deze sheetnaam of is deze variabel met systemen?
             )
             df_dmsCodeList = df_dmsCodeList.drop(df_dmsCodeList.columns[2]) # FIXME: Kolom nummers vervangen door namen
@@ -100,6 +100,6 @@ class CodeList:
         Returns:
             None
         """
-        with open(self.outputfile, mode="w", encoding="utf-8") as file_codeList:
+        with open(self.file_output, mode="w", encoding="utf-8") as file_codeList:
             json.dump(self.lst_codeList, file_codeList, indent=4)
-            logger.info(f"Code lijsten naar JSON bestand '{self.outputfile.resolve()}' geschreven")
+            logger.info(f"Code lijsten naar JSON bestand '{self.file_output.resolve()}' geschreven")

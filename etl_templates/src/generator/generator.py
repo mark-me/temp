@@ -2,7 +2,6 @@ import json
 from enum import Enum
 from pathlib import Path
 
-import sqlparse
 from jinja2 import Environment, FileSystemLoader, Template
 from log_config import logging
 
@@ -44,13 +43,12 @@ class DDLGenerator:
         self.dir_templates = params.dir_templates
         self.source_layer_prefix = "SL_"
 
-        self.templates = self.__template(dir_templates=params.dir_templates)
         self.generator_entities = DDLEntities(
-            dir_output=self.dir_generate,
+            dir_output=self.dir_generator,
             ddl_template=self.__template(TemplateType.ENTITY),
         )
         self.generator_views = DDLSourceViews(
-            dir_output=self.dir_generate,
+            dir_output=self.dir_generator,
             ddl_template=self.__template(TemplateType.SOURCE_VIEW),
         )
 
@@ -100,6 +98,7 @@ class DDLGenerator:
             models=dict_RETW["Models"], identifiers=identifiers
         )
         if "Mappings" in dict_RETW:
+            self.generator_views.generate_ddl_source_view(mappings=mappings, identifiers=identifiers)
             self.__write_ddl_source_view_aggr(mappings=mappings)
             self.__write_ddl_source_view(mappings=mappings, identifiers=identifiers)
         self.__write_ddl_MDDE_PostDeploy_Config(mapping_order=mapping_order)

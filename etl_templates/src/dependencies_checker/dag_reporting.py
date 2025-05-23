@@ -175,7 +175,7 @@ class DagReporting(DagGenerator):
         net.toggle_physics(True)
         for edge in net.edges:
             edge["shadow"] = True
-        net.show(file_html, notebook=False)
+        net.generate_html(file_html, notebook=False)
 
     def _dag_node_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
         """Enrich the DAG with the level in the hierarchy where vertices should be plotted.

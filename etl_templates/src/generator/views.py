@@ -4,23 +4,14 @@ import sqlparse
 from jinja2 import Template
 
 from log_config import logging
+from .generator_base import DDLGeneratorBase
 
 logger = logging.getLogger(__name__)
 
 
-class DDLViewBase:
+class DDLViewBase(DDLGeneratorBase):
     def __init__(self, dir_output: str, ddl_template: Template):
-        """
-        Initialiseert een DDLViews instantie voor het genereren van DDL-bestanden voor views.
-
-        Deze constructor stelt de outputdirectory en de te gebruiken Jinja2-template in voor het genereren van DDL's.
-
-        Args:
-            dir_output (str): De directory waarin de DDL-bestanden worden opgeslagen.
-            ddl_template (Template): De Jinja2-template die gebruikt wordt voor het renderen van de DDL.
-        """
-        self.dir_output = dir_output
-        self.template = ddl_template
+        super().__init__(dir_output=dir_output, ddl_template=ddl_template)
 
     def __set_datasource_code(self, mapping: dict) -> dict:
         """
@@ -44,23 +35,6 @@ class DDLViewBase:
         else:
             logger.warning(f"Geen datasource opgegeven voor mapping {mapping['Name']}")
         return mapping
-
-    def __save_view(
-        self, content: str, path_file_output: str
-    ):
-        """
-        Slaat de gegenereerde source view DDL op in het opgegeven pad en registreert het bestand in de DDL-lijst.
-
-        Deze methode schrijft de geformatteerde SQL naar een bestand en voegt het bestand toe aan de lijst van aangemaakte DDL's.
-
-        Args:
-            content (str): De te schrijven SQL-inhoud.
-            dir_output (Path): De outputdirectory voor de source view.
-            file_output (str): De bestandsnaam van de source view.
-            path_file_output (str): Het volledige pad waar de source view wordt opgeslagen.
-        """
-        with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:
-            file_ddl.write(content)
 
 
 class DDLSourceViews(DDLViewBase):
@@ -86,7 +60,7 @@ class DDLSourceViews(DDLViewBase):
             dir_output, file_output, path_file_output = self.__get_source_view_paths(
                 mapping
             )
-            self.__save_view(content=content, path_file_output=path_file_output)
+            self.save_generated_object(content=content, path_file_output=path_file_output)
             logger.info(f"Written Source view DDL {Path(path_file_output).resolve()}")
 
     def __render_source_view(self, mapping: dict) -> str:
@@ -221,7 +195,7 @@ class DDLSourceViewsAggr(DDLViewBase):
             dir_output, file_output, path_file_output = (
                 self.__get_source_view_aggr_paths(mapping=mapping)
             )
-            self.__save_view(content=content, path_file_output=path_file_output)
+            self.save_generated_object(content=content, path_file_output=path_file_output)
             logger.info(
                 f"Written Source view aggregation DDL {Path(path_file_output).resolve()}"
             )

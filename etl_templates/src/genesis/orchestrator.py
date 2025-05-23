@@ -1,9 +1,7 @@
-import json
 import os
-import sys
 from pathlib import Path
 
-from config_file import ConfigFile
+from .config_file import ConfigFile
 from dependencies_checker import DagReporting
 from deployment import DDLPublisher, DevOpsHandler
 from generator import CodeList, DDLGenerator
@@ -71,10 +69,9 @@ class Orchestrator:
         dag = DagReporting()
         dag.add_RETW_files(files_RETW=files_RETW)
         # Visualization of the ETL flow for all RETW files combined
-        dir_report = self.config.dir_extract
+        dir_report = self.config.dir_intermediate
         dag.plot_etl_dag(file_html=f"{dir_report}/ETL_flow.html")
-        test = f"{dir_report}/RETW_dependencies.html"
-        dag.plot_file_dependencies(file_html=test)
+        # dag.plot_file_dependencies(f"{dir_report}/RETW_dependencies.html"=test) FIXME: Results in error
         return dag
 
     def generate_codeList(self) -> Path:
@@ -89,15 +86,13 @@ class Orchestrator:
         logger.info("Generating Codelist from files")
         dir_output = self.config.dir_codelist
         # FIXME: Nooit via _data (is private)
-        codelistfolder = Path(self.config._data.codelist.input_folder)
-        codelist = Path(
-            os.path.join(dir_output, self.config._data.codelist.codeList_json)
-        )
-        codelistmaker = CodeList(codelistfolder, codelist)
+        dir_input = self.config.dir_codelist_input
+        file_output = dir_output / self.config.file_codelist_output
+        generator_codelist = CodeList(dir_input=dir_input, file_output=file_output)
         # Generatate CodeList.json from input codelist files
-        codelistmaker.read_CodeLists()
-        codelistmaker.write_CodeLists()
-        return codelist
+        generator_codelist.read_CodeLists()
+        generator_codelist.write_CodeLists()
+        return file_output
 
     def generate_code(self, files_RETW: list, mapping_order: list) -> None:
         """Generate deployment code based on extracted data.
