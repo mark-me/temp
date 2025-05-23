@@ -27,7 +27,12 @@ class TemplateType(Enum):
 
 
 class DDLGenerator:
-    """Class DDLGenerator genereert DDL en ETL vanuit de door RETW gemaakte Json."""
+    """
+    Class DDLGenerator genereert DDL en ETL vanuit de door RETW gemaakte Json.
+
+    Deze klasse leest parameters uit een configuratiebestand, orkestreert het inlezen van een JSON-modelbestand,
+    en genereert DDL- en ETL-bestanden op basis van de ingelezen data en templates.
+    """
 
     def __init__(self, params: dict):
         """Initialiseren van de Class DDLGenerator. Hiervoor wordt de config.yml uitgelezen om parameters
@@ -80,13 +85,17 @@ class DDLGenerator:
         )
         return environment.get_template(type_template.value)
 
-    def generate_ddls(self, file_RETW: dict, mapping_order: list):
+    def generate_ddls(self, file_RETW: str, mapping_order: list):
         """
-        Overkoepelende functie waarin alle functions worden gestart om de diverse objecttypes op te bouwen
+        Genereert DDL- en ETL-bestanden op basis van een RETW JSON-modelbestand en een opgegeven mappingvolgorde.
+
+        Deze methode leest het opgegeven JSON-modelbestand in, selecteert identifiers, en genereert DDL- en ETL-bestanden
+        voor entiteiten en views. De gegenereerde bestanden worden aangemaakt op basis van de mappingvolgorde en de
+        beschikbare templates.
 
         Args:
-            model (dict): De JSON (RETW Output) geconverteerd naar een dictionary
-            templates (dict): Bevat alle beschikbare templates en de locatie waar de templates te vinden zijn
+            file_RETW (str): Het pad naar het RETW JSON-modelbestand.
+            mapping_order (list): De volgorde waarin mappings verwerkt moeten worden.
         """
         # self.__copy_mdde_scripts()\
         dict_RETW = self._read_model_file(file_RETW=file_RETW)
