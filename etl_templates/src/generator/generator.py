@@ -25,8 +25,6 @@ class TemplateType(Enum):
     PROCEDURE = "create_procedure.sql"
     SOURCE_VIEW = "create_source_view.sql"
     SOURCE_VIEW_AGGR = "create_source_view_agg.sql"
-    POST_DEPLOY_CONFIG = "Create MDDE_PostDeployScript_Config.sql"
-    POST_DEPLOY_CODELIST = "Create MDDE_PostDeployScript_CodeList.sql"
 
 
 class DDLGenerator:
@@ -45,7 +43,7 @@ class DDLGenerator:
         self.dir_generator = self.params.dir_generate
         self.dir_templates = params.dir_templates
         self.source_layer_prefix = "SL_"
-        self.schema_post_deploy = "DA_MDDE"
+
         self.templates = self.__template(dir_templates=params.dir_templates)
         self.generator_entities = DDLEntities(
             dir_output=self.dir_generate,

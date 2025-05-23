@@ -7,8 +7,8 @@ from log_config import logging
 
 logger = logging.getLogger(__name__)
 
-class DDLEntities:
 
+class DDLEntities:
     def __init__(self, dir_output: str, ddl_template: Template):
         """
         Initialiseert een DDLEntities instantie voor het genereren van DDL-bestanden voor entiteiten.
@@ -33,15 +33,13 @@ class DDLEntities:
         for model in models:
             if not model["IsDocumentModel"]:
                 continue
-            dir_output = Path(
-                f"{self.dir_output}/CentralLayer/{model['Code']}/Tables/"
-            )
             if "Entities" not in model:
-                logger.warning(f"Model '{model["Name"]} heeft geen entiteiten'")
+                logger.warning(f"Model '{model['Name']} heeft geen entiteiten'")
                 continue
             for entity in model["Entities"]:
-                self.__process_entity(code_model=model["Code"], entity=entity, identifiers=identifiers)
-
+                self.__process_entity(
+                    code_model=model["Code"], entity=entity, identifiers=identifiers
+                )
 
     def __process_entity(self, code_model: str, entity: dict, identifiers: dict):
         """
@@ -58,11 +56,9 @@ class DDLEntities:
             entity=entity, identifiers=identifiers
         )
         content = self.__render_entity_ddl(entity)
-        path_output_file, file_output = self.__get_entity_ddl_paths(entity)
+        path_output_file = self.__get_entity_ddl_paths(entity)
         self.__save_entity_ddl(content, path_output_file)
-        logger.info(
-            f"Entity DDL weggeschreven naar {Path(path_output_file).resolve()}"
-        )
+        logger.info(f"Entity DDL weggeschreven naar {Path(path_output_file).resolve()}")
 
     def __set_entity_defaults(self, code_model: str, entity: dict):
         """
@@ -89,9 +85,10 @@ class DDLEntities:
         Returns:
             str: De gerenderde DDL-string voor de entiteit.
         """
-        return self.template.render(entity=entity)
+        content = self.template.render(entity=entity)
+        return sqlparse.format(content, reindent=True, keyword_case="upper")
 
-    def __get_entity_ddl_paths(self, entity: dict):
+    def __get_entity_ddl_paths(self, entity: dict) -> Path:
         """
         Bepaalt het outputpad en de bestandsnaam voor de DDL van een entiteit.
 
@@ -102,10 +99,13 @@ class DDLEntities:
         Returns:
             tuple: (path_output_file, file_output)
         """
-        self.dir_output.mkdir(parents=True, exist_ok=True)
+        dir_output = Path(
+            f"{self.dir_output}/CentralLayer/{entity['CodeModel']}/Tables/"
+        )
+        dir_output.mkdir(parents=True, exist_ok=True)
         file_output = f"{entity['Code']}.sql"
-        path_output_file = f"{self.dir_output}/{file_output}"
-        return path_output_file, file_output
+        path_output_file = Path(f"{dir_output}/{file_output}")
+        return path_output_file
 
     def __save_entity_ddl(self, content: str, path_output_file: str):
         """

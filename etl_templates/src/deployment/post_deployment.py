@@ -1,17 +1,38 @@
 import json
 import os
+from enum import Enum
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, Template
 from log_config import logging
 
 logger = logging.getLogger(__name__)
 
-class PostDeployment:
-    def __init__(self):
-        pass
+class TemplateType(Enum):
+    POST_DEPLOY_CONFIG = "Create MDDE_PostDeployScript_Config.sql"
+    POST_DEPLOY_CODELIST = "Create MDDE_PostDeployScript_CodeList.sql"
 
-    def __write_ddl_MDDE_PostDeploy_Config(self, mapping_order: list):
+class PostDeployment:
+    def __init__(self, dir_output: str, schema_post_deploy: str):
+        self.schema = schema_post_deploy #"DA_MDDE"
+        self.dir_output = dir_output
+
+    def __template(self, type_template: TemplateType) -> Template:
+        """
+        Haal alle templates op uit de template folder. De locatie van deze folder is opgeslagen in de config.yml
+
+        Return:
+            dict_templates (dict): Bevat alle beschikbare templates en de locatie waar de templates te vinden zijn
+        """
+        # Loading templates
+        environment = Environment(
+            loader=FileSystemLoader(self.dir_templates),
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
+        return environment.get_template(type_template.value)
+
+    def generate_ddl_Config(self, mapping_order: list):
         """
         Creëert het post deploy script voor alle mappings opgenomen in de modellen. Voor elke mapping wordt een insert statement aangemaakt
         waarmee een record aangemaakt wordt in de tabel [DA_MDDE].[Config].
@@ -20,11 +41,11 @@ class PostDeployment:
         Args:
             mapping_order (list) bevat alle mappingen en de volgorde van laden.
         """
-        dir_output = f"{self.dir_generator}/CentralLayer/{self.schema_post_deploy}/PostDeployment/"
+        dir_output = f"{self.dir_output}/CentralLayer/{self.schema}/PostDeployment/"
         file_output = "PostDeploy_MetaData_Config_MappingOrder.sql"
         file_output_master = "PostDeploy.sql"
         path_output_master = Path(
-            f"{self.dir_generator}/CentralLayer/PostDeployment/{file_output_master}"
+            f"{self.dir_output}/CentralLayer/PostDeployment/{file_output_master}"
         )
 
         # Add used folders to self.dict_created_ddls to be later used to add to the VS Project file
@@ -60,7 +81,7 @@ class PostDeployment:
                     )
                     f.write(f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n")
 
-    def __write_ddl_MDDE_PostDeploy_CodeTable(self):
+    def generate_ddl_CodeTable(self):
         """
         Creëert het post deploy script voor de CodeTable. Voor elk record in de CodeList wordt een select
         statement gemaakt waarmee de data geladen kan worden in [DA_MDDE].[CodeList]

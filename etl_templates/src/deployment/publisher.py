@@ -1,6 +1,5 @@
 import xmltodict
 import codecs
-import yaml
 import json
 from pathlib import Path
 import shutil

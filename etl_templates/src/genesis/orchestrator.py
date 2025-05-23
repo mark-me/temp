@@ -4,11 +4,11 @@ import sys
 from pathlib import Path
 
 from config_file import ConfigFile
-
 from dependencies_checker import DagReporting
-from generator import CodeList, DevOpsHandler, DDLGenerator, DDLPublisher
-from pd_extractor import PDDocument
+from deployment import DDLPublisher, DevOpsHandler
+from generator import CodeList, DDLGenerator
 from logtools import get_logger, issue_tracker
+from pd_extractor import PDDocument
 
 logger = get_logger(__name__)
 
@@ -71,9 +71,10 @@ class Orchestrator:
         dag = DagReporting()
         dag.add_RETW_files(files_RETW=files_RETW)
         # Visualization of the ETL flow for all RETW files combined
-        dir_report = self.config.dir_generate
+        dir_report = self.config.dir_extract
         dag.plot_etl_dag(file_html=f"{dir_report}/ETL_flow.html")
-        dag.plot_file_dependencies(file_html=f"{dir_report}/RETW_dependencies.html")
+        test = f"{dir_report}/RETW_dependencies.html"
+        dag.plot_file_dependencies(file_html=test)
         return dag
 
     def generate_codeList(self) -> Path:
