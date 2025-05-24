@@ -6,11 +6,9 @@ from pathlib import Path
 
 from logtools import get_logger
 
-from .publisher import DDLPublisher  # FIXME: Should probably be part of this?
-
 logger = get_logger(__name__)
 
-class DevOpsHandler:
+class RepositoryHandler:
     """Nog te doen"""
 
     def __init__(self, params: dict, dir_repository: str):

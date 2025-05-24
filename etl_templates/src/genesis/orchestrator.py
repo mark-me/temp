@@ -3,7 +3,7 @@ from pathlib import Path
 
 from .config_file import ConfigFile
 from dependencies_checker import DagReporting
-from repository_db import DDLPublisher, DevOpsHandler
+from repository_manager import DDLPublisher, RepositoryHandler
 from generator import CodeList, DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
@@ -147,7 +147,7 @@ class Orchestrator:
         # Stop process if extraction and dependecies check result in issues
         self._handle_issues()
 
-        devops_handler = DevOpsHandler(
+        devops_handler = RepositoryHandler(
             params=self.config.devops_config, dir_repository=self.config.dir_repository
         )
         devops_handler.get_repo()
