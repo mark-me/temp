@@ -3,7 +3,7 @@ from pathlib import Path
 
 from .config_file import ConfigFile
 from dependencies_checker import DagReporting
-from deployment import DDLPublisher, DevOpsHandler
+from repository_db import DDLPublisher, DevOpsHandler
 from generator import CodeList, DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
