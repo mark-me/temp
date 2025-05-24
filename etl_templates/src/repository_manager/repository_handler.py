@@ -9,15 +9,30 @@ from logtools import get_logger
 logger = get_logger(__name__)
 
 class RepositoryHandler:
-    """Nog te doen"""
+    """Handelt repository acties af zoals clonen, feature branches aanmaken, comitten en pushen naar de remote"""
 
     def __init__(self, params: dict, dir_repository: str):
-        logger.info("Initializing Class: 'DevOpsHandler'.")
+        """
+        Initialiseert de RepositoryHandler met repository parameters en een doel-directory.
+
+        Args:
+            params (dict): Dictionary die de repository parameters bevat zoals URL, branch, etc.
+            dir_repository (str): Pad naar de locale repository directory.
+        """
         self.params = params
         self.dir_repository = Path(dir_repository).resolve
 
-    def get_repo(self):
-        """ """
+    def clone(self):
+        """
+        Clonet de repository, maakt een featurebranch aan en schakelt hiernaar over.
+
+        Deze functie verwijdert eerst een bestaande repository, clonet vervolgens de opgegeven repository,
+        maakt een nieuwe featurebranch aan en schakelt hiernaar over. Indien nodig wordt de gebruiker gevraagd
+        om in te loggen op DevOps.
+
+        Returns:
+            None
+        """
         logger.info("Initializing Function: 'devopsgetrepo'.")
         dir_current = Path("./").resolve()
         self._remove_old_repo()  # deletes a directory and all its contents.
@@ -84,7 +99,7 @@ class RepositoryHandler:
         self.dir_repository.rmdir()
         logger.info(f"Delete existing folder: {self.dir_repository}")
 
-    def publish_repo(self) -> None:
+    def push(self) -> None:
         """
         Voert een commit en push uit naar de DevOps repository en opent de branch in de browser.
 

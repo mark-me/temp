@@ -150,11 +150,11 @@ class Orchestrator:
         devops_handler = RepositoryHandler(
             params=self.config.devops_config, dir_repository=self.config.dir_repository
         )
-        devops_handler.get_repo()
+        devops_handler.clone()
 
         # TODO: Copy code and codelist to repo and update project file
 
-        devops_handler.publish_repo()
+        devops_handler.push()
 
     def _handle_issues(self):
         """
