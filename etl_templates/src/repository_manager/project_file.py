@@ -9,7 +9,7 @@ from logtools import get_logger
 logger = get_logger(__name__)
 
 
-class DDLPublisher:
+class ProjectFile:
     """Publish SQL files in VS Studio project and add them to the SQLProject file"""
 
     def __init__(self, params: dict):

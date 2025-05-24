@@ -3,7 +3,7 @@ from pathlib import Path
 
 from .config_file import ConfigFile
 from dependencies_checker import DagReporting
-from repository_manager import DDLPublisher, RepositoryHandler
+from repository_manager import ProjectFile, RepositoryHandler
 from generator import CodeList, DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
@@ -108,7 +108,7 @@ class Orchestrator:
         logger.info("Start generating deployment code")
         params = self.config
         ddl_generator = DDLGenerator(params=params)
-        publisher = DDLPublisher(params)
+        publisher = ProjectFile(params)
         for file_RETW in files_RETW:
             # TODO: @Mark, generatorParams zou beter zijn als deze ook bijvoorbeeld bepaalde DIR properties bevat. Ik krijg dit niet voor elkaar..
             # 3. Write all DLL, SoureViews and MDDE ETL to the Repo

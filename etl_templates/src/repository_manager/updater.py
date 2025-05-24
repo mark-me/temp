@@ -4,7 +4,7 @@ from pathlib import Path
 
 from logtools import get_logger
 
-from .publisher import DDLPublisher  # FIXME: Should probably be part of this?
+from .project_file import ProjectFile  # FIXME: Should probably be part of this?
 
 logger = get_logger(__name__)
 
