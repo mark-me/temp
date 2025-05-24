@@ -2,11 +2,11 @@ from pathlib import Path
 
 import sqlparse
 from jinja2 import Template
-from log_config import logging
+from logtools import get_logger
 
 from .ddl_views_base import DDLViewBase
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 

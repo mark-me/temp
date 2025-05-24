@@ -1,14 +1,14 @@
 import os
 import subprocess
 import time
-from pathlib import Path
 import webbrowser
-from log_config import logging
+from pathlib import Path
 
-from .publisher import DDLPublisher # FIXME: Should probably be part of this?
+from logtools import get_logger
 
-logger = logging.getLogger(__name__)
+from .publisher import DDLPublisher  # FIXME: Should probably be part of this?
 
+logger = get_logger(__name__)
 
 class DevOpsHandler:
     """Nog te doen"""

@@ -1,9 +1,9 @@
 from jinja2 import Template
+from logtools import get_logger
 
-from log_config import logging
 from .ddl_base import DDLGeneratorBase
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class DDLViewBase(DDLGeneratorBase):

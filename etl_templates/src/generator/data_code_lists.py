@@ -1,10 +1,9 @@
 import json
 
 import polars as pl
-from jinja2 import Template
-from log_config import logging
+from logtools import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class CodeList():

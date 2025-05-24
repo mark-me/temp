@@ -1,12 +1,12 @@
-import xmltodict
 import codecs
 import json
-from pathlib import Path
 import shutil
+from pathlib import Path
 
-from log_config import logging
+import xmltodict
+from logtools import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class DDLPublisher:

@@ -3,13 +3,13 @@ from enum import Enum
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, Template
-from log_config import logging
+from logtools import get_logger
 
 from .ddl_entities import DDLEntities
 from .ddl_views_source import DDLSourceViews
 from .ddl_views_source_aggr import DDLSourceViewsAggr
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class TemplateType(Enum):
