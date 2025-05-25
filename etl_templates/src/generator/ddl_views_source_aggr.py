@@ -26,7 +26,7 @@ class DDLSourceViewsAggr(DDLViewBase):
             if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
                 continue
 
-            self.__set_datasource_code(mapping)
+            self._set_datasource_code(mapping)
             content = self.__render_source_view_aggr(mapping=mapping)
             dir_output, file_output, path_file_output = (
                 self.__get_source_view_aggr_paths(mapping=mapping)
@@ -38,7 +38,7 @@ class DDLSourceViewsAggr(DDLViewBase):
 
     def __get_source_view_aggr_paths(self, mapping: dict):
         dir_output = Path(
-            f"{self.dir_generator}/CentralLayer/{mapping['EntityTarget']['CodeModel']}/Views/"
+            f"{self.dir_output}/CentralLayer/{mapping['EntityTarget']['CodeModel']}/Views/"
         )
         dir_output.mkdir(parents=True, exist_ok=True)
         file_output = f"vw_src_{mapping['Name']}.sql"
@@ -46,5 +46,5 @@ class DDLSourceViewsAggr(DDLViewBase):
         return dir_output, file_output, path_file_output
 
     def __render_source_view_aggr(self, mapping: dict) -> str:
-        content = self.templates["SourceViewsaggr"].render(mapping=mapping)
+        content = self.template.render(mapping=mapping)
         return sqlparse.format(content, reindent=True, keyword_case="upper")

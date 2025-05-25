@@ -49,7 +49,7 @@ class DDLSourceViews(DDLViewBase):
         Returns:
             str: De geformatteerde SQL-string voor de source view.
         """
-        content = self.templates["SourceViews"].render(mapping=mapping)
+        content = self.template.render(mapping=mapping)
         return sqlparse.format(content, reindent=True, keyword_case="upper")
 
     def __get_source_view_paths(self, mapping: dict) -> tuple:
@@ -65,7 +65,7 @@ class DDLSourceViews(DDLViewBase):
             tuple: (dir_output, file_output, path_file_output)
         """
         dir_output = Path(
-            f"{self.dir_generator}/CentralLayer/{mapping['EntityTarget']['CodeModel']}/Views/"
+            f"{self.dir_output}/CentralLayer/{mapping['EntityTarget']['CodeModel']}/Views/"
         )
         dir_output.mkdir(parents=True, exist_ok=True)
         file_output = f"vw_src_{mapping['Name']}.sql"

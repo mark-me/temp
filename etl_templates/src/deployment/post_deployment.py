@@ -70,8 +70,8 @@ class PostDeployment:
                 f.write("/* Post deploy master file. */\n")
         else:
             # Opening a file located at the path specified by the variable
-            # `path_output_master` in read mode. It then checks if a specific string `":r
-            # ..\DA_MDDE\PostDeployment\{file_output}\n"` is present in the contents of the file.
+            # `path_output_master` in read mode. It then checks if a specific string
+            # `":r..\DA_MDDE\PostDeployment\{file_output}\n"` is present in the contents of the file.
             fr = open(path_output_master, "r")
             if f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n" not in fr.read():
                 fr.close()

@@ -1,2 +1,2 @@
 from .repository_handler import RepositoryHandler
-from .updater import RepoUpdater
+from .repository_updater import RepositoryUpdater

@@ -9,7 +9,7 @@ from .project_file import ProjectFile  # FIXME: Should probably be part of this?
 logger = get_logger(__name__)
 
 
-class RepoUpdater:
+class RepositoryUpdater:
     """Adds generated scripts, post deployment and data to repository"""
 
     def __init__(self):

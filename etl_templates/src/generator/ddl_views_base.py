@@ -9,6 +9,7 @@ logger = get_logger(__name__)
 class DDLViewBase(DDLGeneratorBase):
     def __init__(self, dir_output: str, ddl_template: Template):
         super().__init__(dir_output=dir_output, ddl_template=ddl_template)
+        self.source_layer_prefix = "SL_"
 
     def _set_datasource_code(self, mapping: dict) -> dict:
         """
@@ -25,8 +26,8 @@ class DDLViewBase(DDLGeneratorBase):
         if "DataSource" in mapping:
             datasource = mapping["DataSource"]
             mapping["DataSourceCode"] = (
-                datasource[3:]
-                if datasource[:3] == self.source_layer_prefix
+                datasource[len(self.source_layer_prefix):]
+                if datasource[:len(self.source_layer_prefix)] == self.source_layer_prefix
                 else datasource
             )
         else:
