@@ -6,6 +6,8 @@ from pathlib import Path
 
 from logtools import get_logger
 
+from .repository_updater import RepositoryUpdater
+
 logger = get_logger(__name__)
 
 class RepositoryHandler:
@@ -98,6 +100,10 @@ class RepositoryHandler:
                 (root / f).unlink()
         self.dir_repository.rmdir()
         logger.info(f"Delete existing folder: {self.dir_repository}")
+
+    def update_with(self, path_source: Path):
+        updater = RepositoryUpdater()
+        updater.add_directory(path_source=path_source)
 
     def push(self) -> None:
         """

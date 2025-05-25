@@ -3,7 +3,8 @@ from pathlib import Path
 
 from .config_file import ConfigFile
 from dependencies_checker import DagReporting
-from repository_manager import RepositoryHandler, RepositoryUpdater
+from repository_manager import RepositoryHandler
+from deployment import PostDeployment
 from generator import CodeList, DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
@@ -13,8 +14,6 @@ logger = get_logger(__name__)
 
 class ExtractionIssuesFound(Exception):
     """Exception raised when extraction issues are found and processing should stop."""
-
-    pass
 
 
 class Orchestrator:
@@ -35,7 +34,7 @@ class Orchestrator:
         self.config = ConfigFile(file_config=self.file_config)
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
 
-    def start_processing(self, skip_deployment: bool = False) -> None:
+    def start_processing(self, skip_devops: bool = False) -> None:
         """Start the main processing workflow.
 
         Orchestrates the extraction, dependency checking, and deployment code generation.
@@ -61,14 +60,19 @@ class Orchestrator:
         # Stop process if extraction and dependecies check result in issues
         self._handle_issues()
 
-        devops_handler = RepositoryHandler(
-            params=self.config.devops_config, dir_repository=self.config.dir_repository
+        post_deployment = PostDeployment(
+            dir_output=self.config.dir_generate, schema_post_deploy="MDDE"
         )
-        devops_handler.clone()
+        post_deployment.generate_ddl_Config(mapping_order=mapping_order)
 
-        # TODO: Copy code and codelist to repo and update project file
-
-        devops_handler.push()
+        if not skip_devops:
+            devops_handler = RepositoryHandler(
+                params=self.config.devops_config,
+                dir_repository=self.config.dir_repository,
+            )
+            devops_handler.clone()
+            # TODO: Copy code and codelist to repo and update project file
+            devops_handler.push()
 
     def extract(self, file_pd_ldm: Path) -> str:
         """Extract data from a PowerDesigner LDM file.
@@ -146,15 +150,8 @@ class Orchestrator:
         logger.info("Start generating deployment code")
         params = self.config
         ddl_generator = DDLGenerator(params=params)
-        #publisher = ProjectFile(params)
         for file_RETW in files_RETW:
-            # TODO: @Mark, generatorParams zou beter zijn als deze ook bijvoorbeeld bepaalde DIR properties bevat. Ik krijg dit niet voor elkaar..
-            # 3. Write all DLL, SoureViews and MDDE ETL to the Repo
             ddl_generator.generate_ddls(file_RETW=file_RETW)
-            # 4. Write a JSON that contains all list with al written objects with there type. Is used by the publisher.
-            ddl_generator.write_json_created_ddls()
-        # 5. Write all new created DDL and ETL file to the VS SQL Project file as a reference.
-        publisher.publish()
 
     def _handle_issues(self):
         """

@@ -15,6 +15,9 @@ class RepositoryUpdater:
     def __init__(self):
         pass
 
+    def add_directory(self, path_source: Path):
+        pass
+
     def __copy_file(self, file_source: str, file_destination: str):
         dest_folder = Path(file_destination).parent
         dest_folder.mkdir(parents=True, exist_ok=True)

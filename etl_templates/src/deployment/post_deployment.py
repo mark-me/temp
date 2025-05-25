@@ -9,24 +9,26 @@ from logtools import get_logger
 logger = get_logger(__name__)
 
 class TemplateType(Enum):
-    POST_DEPLOY_CONFIG = "Create MDDE_PostDeployScript_Config.sql"
-    POST_DEPLOY_CODELIST = "Create MDDE_PostDeployScript_CodeList.sql"
+    POST_DEPLOY_CONFIG = "PostDeployScript_Config.sql"
+    POST_DEPLOY_CODELIST = "PostDeployScript_CodeList.sql"
 
 class PostDeployment:
     def __init__(self, dir_output: str, schema_post_deploy: str):
         self.schema = schema_post_deploy #"DA_MDDE"
         self.dir_output = dir_output
 
-    def __template(self, type_template: TemplateType) -> Template:
+
+    def _get_template(self, type_template: TemplateType) -> Template:
         """
         Haal alle templates op uit de template folder. De locatie van deze folder is opgeslagen in de config.yml
 
         Return:
             dict_templates (dict): Bevat alle beschikbare templates en de locatie waar de templates te vinden zijn
         """
+        dir_templates = Path(__file__)
         # Loading templates
         environment = Environment(
-            loader=FileSystemLoader(self.dir_templates),
+            loader=FileSystemLoader(dir_templates),
             trim_blocks=True,
             lstrip_blocks=True,
         )
@@ -41,27 +43,21 @@ class PostDeployment:
         Args:
             mapping_order (list) bevat alle mappingen en de volgorde van laden.
         """
-        dir_output = f"{self.dir_output}/CentralLayer/{self.schema}/PostDeployment/"
+        template = self._get_template(TemplateType.POST_DEPLOY_CONFIG)
+        content = template.render(config=mapping_order)
+
+        dir_output = Path(f"{self.dir_output}/CentralLayer/{self.schema}/PostDeployment/")
+        dir_output.mkdir(parents=True, exist_ok=True)
         file_output = "PostDeploy_MetaData_Config_MappingOrder.sql"
-        file_output_master = "PostDeploy.sql"
-        path_output_master = Path(
-            f"{self.dir_output}/CentralLayer/PostDeployment/{file_output_master}"
-        )
-
-        # Add used folders to self.dict_created_ddls to be later used to add to the VS Project file
-        self.__add_post_deploy_to_ddl(
-            file_output=file_output, file_output_master=file_output_master
-        )
-
-        # Fill Path with the destination directory. Path is used for file system operations
-        directory = Path(dir_output)
-        # Make directory if not exist.
-        directory.mkdir(parents=True, exist_ok=True)
-        content = self.templates["PostDeploy_Config"].render(config=mapping_order)
         with open(f"{dir_output}{file_output}", mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)
         logger.info(
             f"Written MDDE PostDeploy_Config file {Path(dir_output + file_output).resolve()}"
+        )
+
+        file_output_master = "PostDeploy.sql"
+        path_output_master = Path(
+            f"{self.dir_output}/CentralLayer/PostDeployment/{file_output_master}"
         )
 
         # Add file to master file.
