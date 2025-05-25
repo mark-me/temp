@@ -143,7 +143,7 @@ class RepositoryHandler:
     def _find_files_new(self) -> list:
         # Find files which are not in the repository
         project_file = ProjectFile()
-        pass
+
 
     def _copy_file(self, file_source: str, file_destination: str):
         dest_folder = Path(file_destination).parent
