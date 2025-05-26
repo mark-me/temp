@@ -132,14 +132,6 @@ class Orchestrator:
         )
         deploy_mdde.generate_load_code_list()
         deploy_mdde.generate_load_config()
-        # FIXME: Nooit via _data (is private)
-        dir_input = self.config.dir_codelist_input
-        file_output = dir_output / self.config.file_codelist_output
-        generator_codelist = CodeList(dir_input=dir_input, file_output=file_output)
-        # Generatate CodeList.json from input codelist files
-        generator_codelist.read_CodeLists()
-        generator_codelist.write_CodeLists()
-        return file_output
 
     def generate_code(self, files_RETW: list, mapping_order: list) -> None:
         """Generate deployment code based on extracted data.
