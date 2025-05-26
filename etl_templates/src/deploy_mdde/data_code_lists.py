@@ -11,7 +11,7 @@ class CodeList():
         self.dir_input = dir_input
         self.file_output = file_output
 
-    def read_CodeLists(self):
+    def read_CodeLists(self) -> list:
         """
         Leest de code list bestanden voor DMS en AGS en voegt deze toe aan de lijst met code lists.
 
@@ -23,6 +23,7 @@ class CodeList():
         logger.info("read_CodeLists")
         self.__read_code_list(system="DMS")
         self.__read_code_list(system="AGS")
+        return self.lst_codeList
 
     def __read_code_list(self, system: str):
         """
@@ -77,18 +78,3 @@ class CodeList():
             # Replace NONE with Underscores
             df_dmsCodeList = df_dmsCodeList.fill_null("")
             self.lst_codeList = df_dmsCodeList.to_dicts()
-
-    def write_CodeLists(self):
-        """
-        Schrijft de verzamelde code lists naar een JSON-bestand.
-
-        Deze functie slaat de inhoud van lst_codeList op in het opgegeven uitvoerbestand in JSON-formaat.
-
-        Returns:
-            None
-        """
-        with open(self.file_output, mode="w", encoding="utf-8") as file_codeList:
-            json.dump(self.lst_codeList, file_codeList, indent=4)
-            logger.info(
-                f"Code lijsten naar JSON bestand '{self.file_output.resolve()}' geschreven"
-            )

@@ -33,6 +33,12 @@ Date(yyyy-mm-dd)    Author              Comments
 BEGIN TRY
 	DECLARE @sql NVARCHAR(MAX) = ''
 	DECLARE @LogMessage NVARCHAR(max);
+	BEGIN
+		SET @LogMessage = CONCAT (@par_runid,'¡','Begin laden van mapping: ', @par_MappingName)
+
+		EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+	END
+
 
 	IF @par_DisableCheckColumnsAndDatatypes = 0
 	BEGIN
@@ -115,8 +121,15 @@ BEGIN TRY
 END TRY
 
 BEGIN CATCH
+	DECLARE @ErrorMessage NVARCHAR(4000),
+            @ErrorSeverity INT,
+            @ErrorState INT;
+
+    SELECT @ErrorMessage = ERROR_MESSAGE(),
+           @ErrorSeverity = ERROR_SEVERITY(),
+           @ErrorState = ERROR_STATE();
+
 	SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+    RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
 END CATCH
 GO
-
-

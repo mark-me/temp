@@ -13,7 +13,7 @@ class TemplateType(Enum):
     POST_DEPLOY_CODELIST = "PostDeployScript_CodeList.sql"
 
 
-class PostDeployment:
+class Deployment:
     def __init__(self, dir_output: str, schema_post_deploy: str):
         self.schema = schema_post_deploy  # "DA_MDDE"
         self.dir_output = dir_output
@@ -82,7 +82,7 @@ class PostDeployment:
                     )
                     f.write(f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n")
 
-    def generate_ddl_CodeTable(self):
+    def generate_load_CodeList(self):
         """
         Creëert het post deploy script voor de CodeTable. Voor elk record in de CodeList wordt een select
         statement gemaakt waarmee de data geladen kan worden in [DA_MDDE].[CodeList]

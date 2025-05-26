@@ -1,11 +1,4 @@
-﻿CREATE PROC [DA_MDDE].[sp_LoadEntityData_FullLoad] 
-	 @par_runid [NVARCHAR] (500)
-	,@par_LayerName [NVARCHAR] (500)
-	,@par_SourceName [NVARCHAR] (500)
-	,@par_DestinationName [NVARCHAR] (500)
-	,@par_MappingName [NVARCHAR] (500)
-	,@par_Debug [Bit]
-AS
+﻿CREATE PROC [DA_MDDE].[sp_LoadEntityData_FullLoad] @par_runid [NVARCHAR](500),@par_LayerName [NVARCHAR](500),@par_SourceName [NVARCHAR](500),@par_DestinationName [NVARCHAR](500),@par_MappingName [NVARCHAR](500),@par_Debug [Bit] AS
 /***************************************************************************************************
 Script Name         sp_LoadEntityData_FullLoad.sql
 Create Date:        2025-02-17
@@ -27,11 +20,17 @@ Date(yyyy-mm-dd)    Author              Comments
 2025-02-17	        Jeroen Poll         Initial Script V1.0   First version Full Load Only
 2025-04-04			Jeroen Poll			Added real column names and not select *
 2025-04-18			Avinash Kalicharan	Add debug to the procedure
-
+2025-05-20			Jeroen Poll			Add Config Execution proc
 ***************************************************************************************************/
 BEGIN TRY
 	DECLARE @sql NVARCHAR(MAX) = ''
 	DECLARE @LogMessage NVARCHAR(MAX);
+	DECLARE @ExecutionId UNIQUEIDENTIFIER = newid()
+
+	/* Insert execution to config execution table */
+	EXEC  [DA_MDDE].[sp_InsertConfigExecution] @ExecutionId , @par_runid, @par_LayerName, @par_MappingName, @par_DestinationName
+	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadType', 0;
+
 	IF (@par_Debug = 1)
 		BEGIN 
 			EXEC [DA_MDDE].[sp_Logger] 'INFO', 'Debug is set to True'
@@ -67,10 +66,10 @@ BEGIN TRY
 			SELECT CONCAT(
 					'INSERT INTO [',@par_LayerName,'].[',@par_DestinationName,']', CHAR(13),  CHAR(10)
 				, '(', CHAR(13),  CHAR(10)
-				, STRING_AGG(CHAR(9)+ dest.[name]   ,', '+ CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
+				, STRING_AGG(CHAR(9)+ '[' + dest.[name] + ']'   ,', '+ CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
 				, ')', CHAR(13),  CHAR(10)
 				, 'SELECT ', CHAR(13),  CHAR(10)
-				, STRING_AGG(CONCAT(CHAR(9), dest.[name], ' = ', 'source.', source.[name]) , ', ' + CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
+				, STRING_AGG(CONCAT(CHAR(9), '[' + dest.[name] + ']' , ' = ', 'source.', '[' + source.[name] + ']') , ', ' + CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
 				, CONCAT('FROM [',@par_LayerName,'].[',@par_SourceName,'] as source', CHAR(13),  CHAR(10))
 				, 'WHERE 1=1', CHAR(13),  CHAR(10)
 				, CASE WHEN LOWER(left(@par_DestinationName, 4)) = 'aggr' 
@@ -113,6 +112,9 @@ BEGIN TRY
 			END
 
 		SET @LogMessage = CONCAT ('Rowcount to be inserted into ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' is: ', @rowcount_New)
+		EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'RowCountInsert', @rowcount_New;
+		EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'RowCountUpdate', 0;
+		EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'RowCountDelete', 0;
 
 		EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
 
@@ -129,9 +131,24 @@ BEGIN TRY
 				EXEC sp_executesql @sql
 			END
 	END
+	DECLARE @Endtime datetime2 = GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time'
+	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'EndLoadDateTime', @Endtime
+	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadOutcome', 'Success'
 END TRY
 
 BEGIN CATCH
+	DECLARE @ErrorMessage NVARCHAR(4000),
+            @ErrorSeverity INT,
+            @ErrorState INT;
+
+    SELECT @ErrorMessage = ERROR_MESSAGE(),
+           @ErrorSeverity = ERROR_SEVERITY(),
+           @ErrorState = ERROR_STATE();
+
 	SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadOutcome', 'Error'
+    RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
 END CATCH
 GO
+
+

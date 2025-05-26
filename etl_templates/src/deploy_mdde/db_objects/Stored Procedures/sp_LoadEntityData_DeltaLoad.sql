@@ -1,7 +1,6 @@
-﻿CREATE PROC [DA_MDDE].[sp_LoadEntityData_IncrementalLoad] @par_runid [NVARCHAR](500),@par_LayerName [NVARCHAR](500),@par_SourceName [NVARCHAR](500),@par_DestinationName [NVARCHAR](500),@par_MappingName [NVARCHAR](500),@par_Debug [Bit] AS
-
+﻿CREATE PROC [DA_MDDE].[sp_LoadEntityData_DeltaLoad] @par_runid [NVARCHAR](500),@par_LayerName [NVARCHAR](500),@par_SourceName [NVARCHAR](500),@par_DestinationName [NVARCHAR](500),@par_MappingName [NVARCHAR](500) AS
 /***************************************************************************************************
-Script Name         sp_LoadEntityData_IncrementalLoad.sql
+Script Name         sp_LoadEntityData_FullLoad.sql
 Create Date:        2025-02-17
 Author:             Jeroen Poll
 Description:        PROC
@@ -18,21 +17,12 @@ Date(yyyy-mm-dd)    Author              Comments
 ------------------- ------------------- ------------------------------------------------------------
 2025-02-17	        Jeroen Poll         Initial Script V1.0   First version Delta Load
 2025-04-04			Jeroen Poll			Add column names.
-2025-04-22			Avinash Kalicharan	Change SP name to 'Incremental'
-2025-04-22			Avinash Kalicharan 	Add debug to the procedure
 
 ***************************************************************************************************/
 BEGIN TRY
 	DECLARE @sql NVARCHAR(MAX) = ''
 	DECLARE @LogMessage NVARCHAR(MAX);
-		IF (@par_Debug = 1)
-			BEGIN 
-				EXEC [DA_MDDE].[sp_Logger] 'INFO', 'Debug is set to True'
-			END
-		ELSE
-			BEGIN
-				EXEC sp_executesql @sql
-			END
+
 	BEGIN -- Loading new records for source view
 		DECLARE @sqlNewRow NVARCHAR(50) = CHAR(13) + CHAR(10)
 		DECLARE @sqlRowcount NVARCHAR(MAX) = ''
@@ -76,15 +66,9 @@ BEGIN TRY
 				dest.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_DestinationName)))
 				AND dest.is_identity = 0
 			) a;
-		IF (@par_Debug = 1)
-			BEGIN 
-				EXEC [DA_MDDE].[sp_Logger] 'INFO', @sqlRowcount
-			END
-		ELSE
-			BEGIN
-				SET @rowcount_New = null
-				EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_New OUT
-			END
+
+			SET @rowcount_New = null
+			EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_New OUT
 
 			SET @LogMessage = CONCAT ('Rowcount to be inserted into ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' is: ', @rowcount_New)
 
@@ -94,14 +78,7 @@ BEGIN TRY
 
 			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
 
-			IF (@par_Debug = 1)
-				BEGIN 
-					EXEC [DA_MDDE].[sp_Logger] 'INFO', @sql
-				END
-			ELSE
-				BEGIN
-					EXEC sp_executesql @sql
-				END
+			EXEC sp_executesql @sql
 		END
 
 		-- Update rows where BKey exist and X_HashKey not the same.
@@ -121,15 +98,9 @@ BEGIN TRY
 			SET @sqlRowcount = @sqlRowcount +  CONCAT('INNER JOIN ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' AS target',  @sqlNewRow)
 			SET @sqlRowcount = @sqlRowcount +  CONCAT('ON source.', @par_DestinationName, 'BKey' , ' = ', 'target.', @par_DestinationName, 'BKey', ' AND source.[X_HashKey] <> target.[X_HashKey] AND target.[X_IsCurrent] = 1', @sqlNewRow)
 			--PRINT(@sqlRowcount)
-			IF (@par_Debug = 1)
-				BEGIN 
-					EXEC [DA_MDDE].[sp_Logger] 'INFO', @sql
-				END
-			ELSE
-				BEGIN
-					SET @rowcount_Update = null
-					EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_Update OUT
-				END
+
+			SET @rowcount_Update = null
+			EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_Update OUT
 
 			SET @LogMessage = CONCAT ('Rowcount to be updated in  ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' is: ', @rowcount_Update)
 
@@ -139,14 +110,7 @@ BEGIN TRY
 
 			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
 
-			IF (@par_Debug = 1)
-				BEGIN 
-					EXEC [DA_MDDE].[sp_Logger] 'INFO', @sql
-				END
-			ELSE
-				BEGIN
-					EXEC sp_executesql @sql
-				END
+			EXEC sp_executesql @sql
 		END
 
 		-- Insert updated rows. (BKey exist in target table and X_HashKey not the same )
@@ -186,15 +150,9 @@ BEGIN TRY
 				AND dest.is_identity = 0
 			) a;
 			
-			IF (@par_Debug = 1)
-				BEGIN 
-					EXEC [DA_MDDE].[sp_Logger] 'INFO', @sql
-				END
-			ELSE
-				BEGIN
-					SET @rowcount_Update_Insert = null
-					EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_Update_Insert OUT
-				END
+			SET @rowcount_Update_Insert = null
+			EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_Update_Insert OUT
+
 			SET @LogMessage = CONCAT ('Rowcount to be inserted (for updated rows) into ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' is: ', @rowcount_Update_Insert)
 
 			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
@@ -203,14 +161,7 @@ BEGIN TRY
 
 			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
 
-			IF (@par_Debug = 1)
-				BEGIN 
-					EXEC [DA_MDDE].[sp_Logger] 'INFO', @sql
-				END
-			ELSE
-				BEGIN
-					EXEC sp_executesql @sql
-				END
+			EXEC sp_executesql @sql
 		END
 	END
 END TRY

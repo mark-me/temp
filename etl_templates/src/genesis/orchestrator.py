@@ -4,7 +4,7 @@ from pathlib import Path
 from config_file import ConfigFile
 from dependencies_checker import DagReporting
 from repository_manager import RepositoryHandler
-from deployment import PostDeployment
+from deploy_mdde import Deployment
 from generator import CodeList, DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
@@ -60,7 +60,7 @@ class Orchestrator:
         # Stop process if extraction and dependecies check result in issues
         # self._handle_issues()
 
-        post_deployment = PostDeployment(
+        post_deployment = Deployment(
             dir_output=self.config.dir_generate, schema_post_deploy="MDDE"
         )
         post_deployment.generate_ddl_Config(mapping_order=mapping_order)
