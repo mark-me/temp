@@ -115,7 +115,7 @@ class DeploymentMDDE:
             path_file_output (Path): Het pad naar het toe te voegen post-deploy scriptbestand.
         """
         path_output_master = (
-            self.params.dir_repository
+            self.path_output
             / "CentralLayer/PostDeployment"
             / "PostDeploy.sql"
         )
