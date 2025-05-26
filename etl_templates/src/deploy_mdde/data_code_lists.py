@@ -4,11 +4,12 @@ from logtools import get_logger
 logger = get_logger(__name__)
 
 
-class CodeList():
+class CodeListReader():
     def __init__(self, dir_input: str):
         self.dir_input = dir_input
+        self.lst_codes = []
 
-    def read_CodeLists(self) -> list:
+    def read(self) -> list:
         """
         Leest de code list bestanden voor DMS en AGS en voegt deze toe aan de lijst met code lists.
 
@@ -18,11 +19,13 @@ class CodeList():
             None: De functie wijzigt de lst_codeList in-place.
         """
         logger.info("read_CodeLists")
-        self.__read_code_list(system="DMS")
-        self.__read_code_list(system="AGS")
-        return self.lst_codeList
+        lst_dms = self._read_system_list(system="DMS")
+        self.lst_codes.extend(lst_dms)
+        lst_ags = self._read_system_list(system="AGS")
+        self.lst_codes.extend(lst_ags)
+        return self.lst_codes
 
-    def __read_code_list(self, system: str):
+    def _read_system_list(self, system: str) -> list:
         """
         Leest de code list bestanden voor het opgegeven systeem en voegt deze toe aan de lijst met code lists.
 
@@ -34,6 +37,7 @@ class CodeList():
         Returns:
             None: De functie wijzigt de lst_codeList in-place.
         """
+        lst_codes = []
         logger.info(f"Lezen codeList bestand(en) voor {system}.")
         folder = self.dir_input / system
         if not folder.exists():
@@ -74,4 +78,5 @@ class CodeList():
             )
             # Replace NONE with Underscores
             df_dmsCodeList = df_dmsCodeList.fill_null("")
-            self.lst_codeList = df_dmsCodeList.to_dicts()
+            lst_codes.extend(df_dmsCodeList.to_dicts())
+        return lst_codes

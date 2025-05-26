@@ -59,39 +59,6 @@ class ConfigFile:
         self.deploy_mdde = DeploymentMDDE(data.deployment_mdde, path_intermediate=self.path_intermediate)
         self.devops = DevOps(data.devops, path_output_root=data.folder_intermediate_root)
 
-    # def _read_file(self) -> ConfigData:
-    #     """
-    #     Leest het configuratiebestand en retourneert de ontlede configuratie data.
-    #     Controleert op verplichte velden en converteert de YAML-inhoud naar een ConfigData object.
-
-    #     Returns:
-    #         ConfigData: De ontlede configuratie data.
-
-    #     Raises:
-    #         ConfigFileError: Als het bestand niet bestaat, leeg of ongeldig is, of verplichte sleutels ontbreken.
-    #     """
-    #     if not self._file.exists():
-    #         msg = f"Couldn't find config file '{self._file.resolve()}'"
-    #         logger.error(msg)
-    #         raise ConfigFileError(msg, 404)
-
-    #     with open(self._file) as f:
-    #         config_raw = yaml.safe_load(f)
-
-    #     config_raw = self.replace_hyphens_with_underscores(config_raw)
-
-    #     if not isinstance(config_raw, dict):
-    #         raise ConfigFileError("Configuratiebestand is leeg of ongeldig.", 400)
-
-    #     # Verplichte toplevel velden
-    #     for key in ["title", "folder_intermediate_root"]:
-    #         if key not in config_raw:
-    #             raise ConfigFileError(
-    #                 f"Verplichte configuratiesleutel ontbreekt: {key}", 402
-    #             )
-
-    #     return self._fill_defaults(ConfigData, config_raw)
-
     def _read_file(self) -> ConfigData:
         try:
             with open(self._file, 'r') as file:
@@ -337,7 +304,7 @@ class Extractor:
         Returns:
             Path: Het pad naar de extractie-outputfolder.
         """
-        folder = self.path_intermediate / self._data.folder
+        folder = self.path_intermediate / self._data.folder_output
         create_dir(folder)
         return folder
 
@@ -356,7 +323,7 @@ class Generator:
         Returns:
             Path: Het pad naar de extractie-outputfolder.
         """
-        folder = self.path_intermediate / self._data.folder
+        folder = self.path_intermediate / self._data.folder_output
         create_dir(folder)
         return folder
 

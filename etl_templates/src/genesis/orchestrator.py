@@ -61,7 +61,7 @@ class Orchestrator:
         # self._handle_issues()
 
         post_deployment = DeploymentMDDE(
-            dir_output=self.config.dir_generate, schema_post_deploy="MDDE"
+            dir_output=self.config.dir_generate, schema="MDDE"
         )
         post_deployment.generate_load_config(mapping_order=mapping_order)
 
@@ -125,7 +125,13 @@ class Orchestrator:
             Path: Het pad naar het gegenereerde CodeList-bestand.
         """
         logger.info("Generating MDDE scripts")
-        dir_output = self.config.deploy_mdde.path_output
+        deploy_mdde = DeploymentMDDE(
+            path_data=self.config.deploy_mdde.path_data_input,
+            schema=self.config.deploy_mdde.schema,
+            path_output=self.config.deploy_mdde.path_output,
+        )
+        deploy_mdde.generate_load_CodeList()
+        deploy_mdde.generate_load_config
         # FIXME: Nooit via _data (is private)
         dir_input = self.config.dir_codelist_input
         file_output = dir_output / self.config.file_codelist_output

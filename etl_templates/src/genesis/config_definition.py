@@ -60,8 +60,8 @@ class DeploymentMDDEConfig:
     """
 
     folder_data: str = "etl_templates/input/codeList"
-    folder_output: str = "DA_MDDE"
     schema: str = "MDDE"
+    folder_output: str = "DA_MDDE"
 
 
 @dataclass
@@ -102,6 +102,7 @@ class DevOpsConfig:
     work_item_description: str
     vs_project_file: str
     folder: str = "GIT_repo"
+
 
 @dataclass
 class ConfigData:

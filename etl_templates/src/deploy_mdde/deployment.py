@@ -5,7 +5,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, Template
 from logtools import get_logger
 
-from .data_code_lists import CodeList
+from .data_code_lists import CodeListReader
 
 logger = get_logger(__name__)
 
@@ -16,8 +16,8 @@ class TemplateType(Enum):
 
 
 class DeploymentMDDE:
-    def __init__(self, path_output: Path, schema_post_deploy: str, path_data: Path):
-        self.schema = schema_post_deploy
+    def __init__(self, path_data: Path, schema: str, path_output: Path):
+        self.schema = schema
         self.path_output = path_output
         self.path_data = path_data
 
@@ -93,12 +93,10 @@ class DeploymentMDDE:
         Args:
             templates (dict): Bevat alle beschikbare templates en de locatie waar de templates te vinden zijn
         """
-        pass
-        #read_code_list = CodeList(dir_input=)
-        #data_codeList = CodeList
-
-        content = self.templates["PostDeploy_CodeList"].render(codeList=codeList)
-
+        code_list_reader = CodeListReader(dir_input=self.path_data)
+        code_list = code_list_reader.read()
+        template = self._get_template(TemplateType.POST_DEPLOY_CODELIST)
+        content = template.render(codeList=code_list)
 
         dir_output = self.params.dir_repository / "CentralLayer" / self.schema
         dir_output_type = dir_output / "PostDeployment"
