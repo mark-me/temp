@@ -8,16 +8,16 @@ power-designer:
     - "UsecaseV1.98.ldm"
 
 extractor:
-  folder: "RETW"
+  folder-output: "RETW"
 
 generator:
-  folder: "Generator"
-  templates_platform: "dedicated-pool"
+  folder-output: "Generator"
+  templates-platform: "dedicated-pool"
 
-deployment:
-  folder: "DA_MDDE"
+deployment-mdde:
+  folder-output: "DA_MDDE"
   schema: "MDDE"
-  folder_data: "./etl_templates/input/codeList/"
+  folder-data: "./etl_templates/input/codeList/"
 
 devops:
   folder: "GIT_repo"
@@ -25,6 +25,6 @@ devops:
   project: "Douane%20Datawerkorganisatie"
   repo: "DWO%20DataCenter"
   branch: "collaboration"
-  work_item: "23936"
-  work_item_description: "Testen automatische uitrol DDL en ETL"
-  vs_project_file: "./CentralLayer/3. Central Layer.sqlproj"
+  work-item: "23936"
+  work-item-description: "Testen automatische uitrol DDL en ETL"
+  vs-project-file: "./CentralLayer/3. Central Layer.sqlproj"

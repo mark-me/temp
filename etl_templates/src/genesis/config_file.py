@@ -5,14 +5,15 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from dacite import Config, MissingValueError, WrongTypeError, from_dict
 from logtools import get_logger
 
 from config_definition import (
     ConfigData,
     ConfigFileError,
-    ExtractorConfig,
     DeploymentMDDEConfig,
     DevOpsConfig,
+    ExtractorConfig,
     GeneratorConfig,
     PowerDesignerConfig,
 )
@@ -55,40 +56,93 @@ class ConfigFile:
         self.power_designer = PowerDesigner(data.power_designer)
         self.extractor = Extractor(data.extractor, path_intermediate=self.path_intermediate)
         self.generator = Generator(data.generator, path_intermediate=self.path_intermediate)
+        self.deploy_mdde = DeploymentMDDE(data.deployment_mdde, path_intermediate=self.path_intermediate)
         self.devops = DevOps(data.devops, path_output_root=data.folder_intermediate_root)
 
+    # def _read_file(self) -> ConfigData:
+    #     """
+    #     Leest het configuratiebestand en retourneert de ontlede configuratie data.
+    #     Controleert op verplichte velden en converteert de YAML-inhoud naar een ConfigData object.
+
+    #     Returns:
+    #         ConfigData: De ontlede configuratie data.
+
+    #     Raises:
+    #         ConfigFileError: Als het bestand niet bestaat, leeg of ongeldig is, of verplichte sleutels ontbreken.
+    #     """
+    #     if not self._file.exists():
+    #         msg = f"Couldn't find config file '{self._file.resolve()}'"
+    #         logger.error(msg)
+    #         raise ConfigFileError(msg, 404)
+
+    #     with open(self._file) as f:
+    #         config_raw = yaml.safe_load(f)
+
+    #     config_raw = self.replace_hyphens_with_underscores(config_raw)
+
+    #     if not isinstance(config_raw, dict):
+    #         raise ConfigFileError("Configuratiebestand is leeg of ongeldig.", 400)
+
+    #     # Verplichte toplevel velden
+    #     for key in ["title", "folder_intermediate_root"]:
+    #         if key not in config_raw:
+    #             raise ConfigFileError(
+    #                 f"Verplichte configuratiesleutel ontbreekt: {key}", 402
+    #             )
+
+    #     return self._fill_defaults(ConfigData, config_raw)
+
     def _read_file(self) -> ConfigData:
+        try:
+            with open(self._file, 'r') as file:
+                config_dict = yaml.safe_load(file)
+
+            # Transform keys with hyphens to underscores
+            config_dict = self._replace_hyphens_with_underscores(config_dict)
+
+            # Attempt to map the dictionary to the ConfigData dataclass
+            config = from_dict(
+                data_class=ConfigData,
+                data=config_dict,
+                config=Config(strict=True)  # Will raise error if extra/missing fields
+            )
+            return config
+        except FileNotFoundError as e:
+            raise ConfigFileError("Configuratiebestand niet gevonden.", 100) from e
+
+        except yaml.YAMLError as e:
+            raise ConfigFileError(f"Fout bij het parsen van YAML: {e}", 101) from e
+
+        except MissingValueError as e:
+            raise ConfigFileError(f"Verplichte waarde ontbreekt: {e}", 102) from e
+
+        except WrongTypeError as e:
+            raise ConfigFileError(f"Verkeerd type voor configuratieparameter: {e}", 103)  from e
+
+        except Exception as e:
+            raise ConfigFileError(f"Onverwachte fout bij het laden van de configuratie: {e}", 199)  from e
+
+    def _replace_hyphens_with_underscores(self, config_raw: Any) -> dict:
         """
-        Leest het configuratiebestand en retourneert de ontlede configuratie data.
-        Controleert op verplichte velden en converteert de YAML-inhoud naar een ConfigData object.
+        Vervangt koppeltekens door underscores in alle sleutels van een geneste dictionary of lijst.
+        Doorloopt recursief de structuur en past de sleutels van dictionaries aan.
+
+        Args:
+            config_raw (dict): De dictionary waarin koppeltekens in sleutels worden vervangen.
 
         Returns:
-            ConfigData: De ontlede configuratie data.
-
-        Raises:
-            ConfigFileError: Als het bestand niet bestaat, leeg of ongeldig is, of verplichte sleutels ontbreken.
+            dict: De aangepaste dictionary met underscores in plaats van koppeltekens in de sleutels.
         """
-        if not self._file.exists():
-            msg = f"Couldn't find config file '{self._file.resolve()}'"
-            logger.error(msg)
-            raise ConfigFileError(msg, 404)
 
-        with open(self._file) as f:
-            config_raw = yaml.safe_load(f)
-
-        if not isinstance(config_raw, dict):
-            raise ConfigFileError("Configuratiebestand is leeg of ongeldig.", 400)
-
-        # Verplichte toplevel velden
-        for key in ["title", "folder_intermediate_root"]:
-            if key not in config_raw:
-                raise ConfigFileError(
-                    f"Verplichte configuratiesleutel ontbreekt: {key}", 402
-                )
-
-        config_raw["power_designer"] = config_raw.pop("power-designer")
-
-        return self._fill_defaults(ConfigData, config_raw)
+        if isinstance(config_raw, dict):
+            return {
+                k.replace('-', '_'): self._replace_hyphens_with_underscores(v)
+                for k, v in config_raw.items()
+            }
+        elif isinstance(config_raw, list):
+            return [self._replace_hyphens_with_underscores(item) for item in config_raw]
+        else:
+            return config_raw
 
     def _fill_defaults(self, cls, data: dict):
         """
@@ -325,7 +379,7 @@ class DeploymentMDDE:
         Returns:
             Path: Het pad naar de extractie-outputfolder.
         """
-        folder = self.path_intermediate / self._data.folder
+        folder = self.path_intermediate / self._data.folder_output
         create_dir(folder)
         return folder
 

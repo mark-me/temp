@@ -49,7 +49,7 @@ class ExtractorConfig:
     Specifies the folder for extractor output.
     """
 
-    folder: str = "RETW"
+    folder_output: str = "RETW"
 
 
 @dataclass
@@ -61,6 +61,7 @@ class DeploymentMDDEConfig:
 
     folder_data: str = "etl_templates/input/codeList"
     folder_output: str = "DA_MDDE"
+    schema: str = "MDDE"
 
 
 @dataclass
@@ -71,9 +72,7 @@ class GeneratorConfig:
     """
 
     templates_platform: str
-    created_ddls_json: str
-    folder_mdde_scripts: str
-    folder: str = "Generator"
+    folder_output: str = "Generator"
 
     @property
     def dir_templates(self) -> Path:
@@ -117,4 +116,4 @@ class ConfigData:
     extractor: ExtractorConfig = field(default_factory=ExtractorConfig)
     generator: GeneratorConfig = field(default_factory=GeneratorConfig)
     devops: DevOpsConfig = field(default_factory=DevOpsConfig)
-    codelist: DeploymentMDDEConfig = field(default_factory=DeploymentMDDEConfig)
+    deployment_mdde: DeploymentMDDEConfig = field(default_factory=DeploymentMDDEConfig)

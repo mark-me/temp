@@ -125,7 +125,7 @@ class Orchestrator:
             Path: Het pad naar het gegenereerde CodeList-bestand.
         """
         logger.info("Generating MDDE scripts")
-        dir_output = self.config.dir_codelist
+        dir_output = self.config.deploy_mdde.path_output
         # FIXME: Nooit via _data (is private)
         dir_input = self.config.dir_codelist_input
         file_output = dir_output / self.config.file_codelist_output
