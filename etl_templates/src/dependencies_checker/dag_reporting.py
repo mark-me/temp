@@ -422,7 +422,7 @@ class DagReporting(DagGenerator):
         Returns:
             ig.Graph: The colored ETL DAG.
         """
-        # Build model colouring dictionary
+        # Build model coloring dictionary
         colors_model = {
             model: self.colors_discrete[i]
             for i, model in enumerate(list(set(dag.vs["CodeModel"])))
