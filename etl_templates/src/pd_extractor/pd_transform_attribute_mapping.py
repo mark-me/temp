@@ -21,10 +21,10 @@ class TransformAttributeMapping(ObjectTransformer):
         Returns:
             list: Mapping met geschoonde en verrijkte attribuut mapping
         """
-        lst_attribute_mapping = dict_entity_target 
+        lst_attribute_mapping = dict_entity_target
         dict_attributes = dict_attributes
         mapping = lst_attribute_mapping
-        
+
         if "c:StructuralFeatureMaps" in mapping:
             lst_attr_maps = {}
             attr_map = {}
@@ -32,7 +32,6 @@ class TransformAttributeMapping(ObjectTransformer):
                 "o:DefaultStructuralFeatureMapping"
             ]
             if isinstance(lst_attr_maps, dict):
-                logger.warning("List object is actually dictionary; file:pd_transform_attribute_mapping; object:lst_attr_maps")
                 lst_attr_maps = [lst_attr_maps].copy()
             lst_attr_maps = self.clean_keys(lst_attr_maps)
             for j in range(len(lst_attr_maps)):
@@ -73,7 +72,7 @@ class TransformAttributeMapping(ObjectTransformer):
                             if dict_attributes[id_attr]["StereotypeEntity"] == "mdde_ScalarBusinessRule":
                                 if has_entity_alias:
                                     attr_map["EntityAlias"] = id_entity_alias
-                                
+
                         else:
                             logger.warning(f"{id_attr} is niet gevonden binnen bron attributen")
                         attr_map.pop("c:SourceFeatures")
@@ -88,4 +87,4 @@ class TransformAttributeMapping(ObjectTransformer):
         else:
             logger.error(f"attributemapping voor {mapping['Name']} niet gevonden")
         return lst_attribute_mapping
-    
+

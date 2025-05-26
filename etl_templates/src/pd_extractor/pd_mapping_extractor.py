@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 
 class MappingExtractor:
     """Extraheert ETL specificaties (mappings) vanuit een Power Designer LDM waarin mappings zijn geïmplementeerd met behulp van de
-    CrossBreeze MDDE extensie. 
+    CrossBreeze MDDE extensie.
     Transformeert de data in een meer leesbaar format door overbodige informatie te verwijderen en relevante model informatie
     toe te voegen.
     """
@@ -42,7 +42,7 @@ class MappingExtractor:
         if "c:Packages" in self.content:
             lst_mappings = self.content["c:Packages"]["o:Package"]["c:Mappings"][
                 "o:DefaultObjectMapping"
-            ]  
+            ]
         else:
             lst_mappings = self.content["c:Mappings"]["o:DefaultObjectMapping"]
 
@@ -67,7 +67,7 @@ class MappingExtractor:
             logger.debug(f"Mapping starting for '{mappings['a:Name']}")
             # Select all Target entities with their identifier
             lst_entity_target = self.transform_target_entity.target_entities(
-                lst_mappings=mappings,
+                mapping=mappings,
                 dict_objects=dict_objects,
             )
             # Get all attribute mappings (source/target)
@@ -85,7 +85,7 @@ class MappingExtractor:
                 )
             )
             lst_mappings_def.append(lst_source_composition)
-            
+
         lst_mappings = []
         lst_mappings = lst_mappings_def
         return lst_mappings

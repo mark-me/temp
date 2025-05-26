@@ -11,40 +11,35 @@ class TransformTargetEntity(ObjectTransformer):
     def __init__(self):
         super().__init__()
 
-    def target_entities(self, lst_mappings: list, dict_objects: dict) -> list:
+    def target_entities(self, mapping: dict, dict_objects: dict) -> dict:
         """Omvormen van mapping data en verrijkt dit met doelentiteit en attribuut data
 
         Args:
-            lst_mappings (list): Het deel van het Power Designer document die de lijst van mappings bevat
+            mapping (dict): Een mapping uit een Power Designer document
             dict_objects (dict): Alle objecten(entities/filters/scalars/aggregaten) in het document (internal en external)
 
         Returns:
-            list: een lijst van alle doel entiteiten
+            list: een mapping met geschoonde doelentiteit data.
         """
-        lst_entity_target = self.clean_keys(lst_mappings)
-        if (isinstance(lst_entity_target,dict)):
-            logger.info("List object is actually dictionary; file:pd_transform_target_entity; object:lst_entity_target")
-            lst_mappings = [lst_entity_target]
-            mapping = lst_entity_target
+        mapping = self.clean_keys(mapping)
+        logger.debug(
+            f"Starting target_entity for '{mapping['Name']}'"
+        )
+        # Target entity rerouting and enriching
+        if "o:Entity" in mapping["c:Classifier"]:
+            id_entity_target = mapping["c:Classifier"]["o:Entity"]["@Ref"]
+            mapping["EntityTarget"] = dict_objects[id_entity_target]
             logger.debug(
-                f"Starting target_entity for '{mapping['Name']}'"
+                f"Mapping target entity: '{mapping['EntityTarget']['Name']}'"
             )
-            # Target entity rerouting and enriching
-            if "o:Entity" in mapping["c:Classifier"]:
-                id_entity_target = mapping["c:Classifier"]["o:Entity"]["@Ref"]
-                mapping["EntityTarget"] = dict_objects[id_entity_target]
-                logger.debug(
-                    f"Mapping target entity: '{mapping['EntityTarget']['Name']}'"
-                )
-                mapping = self.__remove_source_entities(
-                    mapping = mapping, dict_objects=dict_objects
-                )
-            else:
-                logger.warning(f"Mapping without entity found: '{mapping['Name']}'")
-            mapping.pop("c:Classifier")
-            mapping.pop("SourceObjects_REMOVE")
-            lst_entity_target = mapping#["EntityTarget"]
-        return lst_entity_target
+            mapping = self.__remove_source_entities(
+                mapping = mapping, dict_objects=dict_objects
+            )
+        else:
+            logger.warning(f"Mapping without entity found: '{mapping['Name']}'")
+        mapping.pop("c:Classifier")
+        mapping.pop("SourceObjects_REMOVE")
+        return mapping
 
     def __remove_source_entities(self, mapping: dict, dict_objects: dict) -> dict:
         """Verwijderd de bron entiteiten die onderdeel uitmaken van een mapping

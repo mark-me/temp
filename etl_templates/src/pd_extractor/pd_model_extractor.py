@@ -42,7 +42,7 @@ class ModelExtractor:
         return lst_models
 
     def __model_internal(self, lst_aggregates: list) -> dict:
-        """Haalt alle vastgelegde data van het model op vanuit het geladen Power Designer document 
+        """Haalt alle vastgelegde data van het model op vanuit het geladen Power Designer document
 
         Args:
             lst_aggregates (list): Aggregaten die onderdeel zijn van het doelmodel en gebruikt worden in de ETL
@@ -55,7 +55,6 @@ class ModelExtractor:
         # Model add entity data
         self.lst_entity = self.__entities_internal()
         if isinstance(self.lst_entity, dict):
-            logger.warning("List object is actually dictionary; file:pd_model_extractor; object:lst_entity")
             self.lst_entity = [self.lst_entity]
         model["Entities"] = self.lst_entity
         model["Relationships"] = self.__relationships(lst_entity=self.lst_entity, lst_aggregates=lst_aggregates)
@@ -81,7 +80,7 @@ class ModelExtractor:
         return lst_entity
 
     def __models_external(self) -> list:
-        """Haalt alle data van modellen op die worden onderhouden buiten het geladen Power Designer document en die gebruikt 
+        """Haalt alle data van modellen op die worden onderhouden buiten het geladen Power Designer document en die gebruikt
         worden voor horizontale lineage
 
         Returns:
@@ -136,7 +135,7 @@ class ModelExtractor:
 
     def __datasources(self) -> dict:
         """Extraheert datasources die worden gebruikt in het model
-        
+
         Returns:
             dict: alle informatie over datasources gebruikt in het model
         """
@@ -151,7 +150,7 @@ class ModelExtractor:
             logger.error("Er is geen data source gevonden tijdens het extraheren van het model")
             dict_datasources = dict_datasources
         return dict_datasources
-            
+
 
     def __relationships(self, lst_entity: list, lst_aggregates: list) -> list:
         """Extraheert relaties tussen entiteiten

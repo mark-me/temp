@@ -23,7 +23,6 @@ class TransformStereotype(ObjectTransformer):
         """
         dict_domains = {}
         if isinstance(lst_domains, dict):
-            logger.warning("List object is actually dictionary, file:pd_transform_stereotype, object:lst_domains")
             lst_domains = [lst_domains]
         lst_domains = self.convert_timestamps(lst_domains)
         lst_domains = self.clean_keys(lst_domains)
@@ -58,16 +57,16 @@ class TransformStereotype(ObjectTransformer):
                 elif objects["Stereotype"] ==  'mdde_ScalarBusinessRule':
                     sqlexpression_split = sqlexpression.split("=",1)
                 else:
-                    logger.error(f"SqlExpression_split cannot be determined for SqlExpression '{sqlexpression}' ")    
-                if sqlexpression_split is not None:    
+                    logger.error(f"SqlExpression_split cannot be determined for SqlExpression '{sqlexpression}' ")
+                if sqlexpression_split is not None:
                     objects["SqlVariable"] = sqlexpression_split[0].strip()
-                    objects["SqlExpression"] = sqlexpression_split[1].strip()    
+                    objects["SqlExpression"] = sqlexpression_split[1].strip()
                     # For Scalars we want to further split the SqlExpression into seperate variables
                     if objects["Stereotype"] ==  'mdde_ScalarBusinessRule':
                         sqlexpression = sqlexpression_split[1].strip()
                         lst_expression_variables = self.__extract_expression_variables(objects = objects, sqlexpression = sqlexpression)
                         if lst_expression_variables is not None:
-                            objects["SqlExpressionVariables"] = lst_expression_variables               
+                            objects["SqlExpressionVariables"] = lst_expression_variables
             logger.debug(f"Finished creating object definition for {objects['Name']}")
             lst_objects[i] = objects
         return lst_objects
@@ -86,7 +85,6 @@ class TransformStereotype(ObjectTransformer):
         logger.debug(f"Start collecting variables for object:  {object['Name']}")
         lst_variables = object["c:Attributes"]["o:EntityAttribute"]
         if isinstance(lst_variables, dict):
-            logger.warning("List object is actually dictionary, file:pd_transform_stereotype, object:lst_variables")
             lst_variables = [lst_variables]
         lst_variables = self.clean_keys(lst_variables)
         for i in range(len(lst_variables)):
@@ -133,7 +131,6 @@ class TransformStereotype(ObjectTransformer):
         if "c:Identifiers" in object:
             identifiers = object["c:Identifiers"]["o:Identifier"]
             if isinstance(identifiers, dict):
-                logger.info("List object is actually dictionary for object identifiers")
                 identifiers = [identifiers]
             identifiers = self.clean_keys(identifiers)
             # Clean and transform identifier data
@@ -182,16 +179,15 @@ class TransformStereotype(ObjectTransformer):
         expressionvariable = None
         # Start loop to split the SqlExpression further
         while j < k:
-            idx_start = sqlexpression.find("@",1) 
+            idx_start = sqlexpression.find("@",1)
             # Look for the first non word character after idx_start to not find the @ from the variable
             find_non_alpha = re.search("[\W]",sqlexpression[idx_start+1:])
-            # Idx_end is the start_position plus the position of the first alphanumeric character 
+            # Idx_end is the start_position plus the position of the first alphanumeric character
             idx_end = idx_start + find_non_alpha.start()
             expressionvariable = sqlexpression[idx_start:idx_end+1]
             # TODO: the list syntax was needed due to missing listitems once you pass it to dict_scalars
             lst_expression_variables = (*lst_expression_variables,expressionvariable)
-            # remove the variable from the sqlexpression string 
+            # remove the variable from the sqlexpression string
             sqlexpression = sqlexpression[idx_end+1:]
             j += 1
         return lst_expression_variables
-        

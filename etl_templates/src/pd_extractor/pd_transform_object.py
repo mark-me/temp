@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 class ObjectTransformer:
     """Collectie van functions die structuren en data van Power Designer objecten kan transformeren
 
-    Het transformeren van structuren wordt gedaan om het 'querien' van data voor de ETL en DDL te versimpelen 
+    Het transformeren van structuren wordt gedaan om het 'querien' van data voor de ETL en DDL te versimpelen
     """
 
     def __init__(self):
@@ -25,7 +25,6 @@ class ObjectTransformer:
             _type_: List of dict met hernoemde sleutels (afhankelijk van welk type werd doorgegeven als parameter)
         """
         if isinstance(content, dict):
-            logger.info("List object is actually dictionary; file:pd_transform_object; object:content")
             lst_object = [content]
         else:
             lst_object = content
@@ -85,8 +84,8 @@ class ObjectTransformer:
         """Extraheert de opgegeven tekst uit een tekst string. Deze tekst kan voorafgegaan worden door een specifieke tekst en wordt afgesloten door een \n of het zit aan het einde van de string
 
         Args:
-            extended_attrs_text (str): De tekst dat de waarde bevat waarop gezocht wordt 
-            preceded_by (str): De tekst die de te vinden tekst voorafgaat 
+            extended_attrs_text (str): De tekst dat de waarde bevat waarop gezocht wordt
+            preceded_by (str): De tekst die de te vinden tekst voorafgaat
 
         Returns:
             str: De waarde die geassocieerd wordt met de voorafgaande tekst
