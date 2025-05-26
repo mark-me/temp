@@ -17,7 +17,7 @@ class TemplateType(Enum):
 
 class DeploymentMDDE:
     def __init__(self, path_output: Path, schema_post_deploy: str, path_data: Path):
-        self.schema = schema_post_deploy  # "DA_MDDE"
+        self.schema = schema_post_deploy
         self.path_output = path_output
         self.path_data = path_data
 
