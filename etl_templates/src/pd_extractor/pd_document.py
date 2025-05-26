@@ -5,14 +5,16 @@ from pathlib import Path
 
 import xmltodict
 
-from log_config import logging
+from logtools import get_logger
 from .pd_model_extractor import ModelExtractor
 from .pd_stereotype_extractor import StereotypeExtractor
 from .pd_mapping_extractor import MappingExtractor
 from .pd_transform_object import ObjectTransformer
 
 
-logger = logging.getLogger(__name__)
+
+
+logger = get_logger(__name__)
 
 
 class PDDocument:
