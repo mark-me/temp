@@ -131,7 +131,7 @@ class Orchestrator:
             path_output=self.config.deploy_mdde.path_output,
         )
         deploy_mdde.generate_load_code_list()
-        deploy_mdde.generate_load_config
+        deploy_mdde.generate_load_config()
         # FIXME: Nooit via _data (is private)
         dir_input = self.config.dir_codelist_input
         file_output = dir_output / self.config.file_codelist_output
