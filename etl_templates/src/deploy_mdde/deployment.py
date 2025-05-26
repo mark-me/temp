@@ -124,11 +124,11 @@ class DeploymentMDDE:
             with open(path_output_master, "a+") as f:
                 f.write("/* Post deploy master file. */\n")
         else:
-            fr = open(path_output_master, "r")
-            if f":r ..\\DA_MDDE\\PostDeployment\\{path_file_output}\n" not in fr.read():
-                fr.close()
-                with open(path_output_master, "a") as f:
-                    f.write(
-                        f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{path_file_output}\n"
-                    )
-                    f.write(f":r ..\\DA_MDDE\\PostDeployment\\{path_file_output}\n")
+            with open(path_output_master, "r") as fr:
+                if f":r ..\\DA_MDDE\\PostDeployment\\{path_file_output}\n" not in fr.read():
+                    fr.close()
+                    with open(path_output_master, "a") as f:
+                        f.write(
+                            f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{path_file_output}\n"
+                        )
+                        f.write(f":r ..\\DA_MDDE\\PostDeployment\\{path_file_output}\n")
