@@ -1,9 +1,10 @@
 import re
 
-from log_config import logging
+from logtools import get_logger
+
 from .pd_transform_object import ObjectTransformer
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class TransformSourceComposition(ObjectTransformer):
     def __init__(self):
@@ -31,7 +32,7 @@ class TransformSourceComposition(ObjectTransformer):
 
         composition = mapping["c:ExtendedCompositions"]["o:ExtendedComposition"]
         if isinstance(composition, dict):
-            logger.warning("List object is actually dictionary; file: pd_transform_source_composition; object:composition")
+            logger.info("List object is actually dictionary for object:composition")
             composition = [composition]
 
         composition = self.clean_keys(composition)
@@ -59,7 +60,7 @@ class TransformSourceComposition(ObjectTransformer):
         else:
             logger.warning("Mapping without content")
         if isinstance(lst_composition_items, dict):
-            logger.warning("List object is actually dictionary; file:pd_transform_source_composition; object:lst_composition_items")
+            logger.info("List object is actually dictionary for object:lst_composition_items")
             lst_composition_items = [lst_composition_items]
 
         # Transforming individual composition items
@@ -224,7 +225,7 @@ class TransformSourceComposition(ObjectTransformer):
             "c:ExtendedComposition.Content"
         ]["o:ExtendedSubObject"]
         if isinstance(lst_conditions, dict):
-            logger.warning("List object is actually dictionary; file:pd_transform_source_composition; object:lst_conditions")
+            logger.info("List object is actually dictionary for object:lst_conditions")
             lst_conditions = [lst_conditions]
         lst_conditions = self.clean_keys(lst_conditions)
 
@@ -257,7 +258,7 @@ class TransformSourceComposition(ObjectTransformer):
                 logger.warning("There are no c:ExtendedCollections,check in model for invalid mapping ")             
             lst_components = condition["c:ExtendedCollections"]["o:ExtendedCollection"]
             if isinstance(lst_components, dict):
-                logger.warning("List object is actually dictionary; file:pd_transform_source_composition; object:lst_components")
+                logger.info("List object is actually dictionary for object:lst_components")
                 lst_components = [lst_components]
             condition["JoinConditionComponents"] = self.__join_condition_components(
                 lst_components=lst_components, dict_attributes=dict_attributes, alias_child=composition["Id"]

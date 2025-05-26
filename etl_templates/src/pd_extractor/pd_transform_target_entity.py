@@ -1,7 +1,9 @@
-from log_config import logging
+
+from logtools import get_logger
+
 from .pd_transform_object import ObjectTransformer
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class TransformTargetEntity(ObjectTransformer):
     """Vormt mapping data om en verrijkt dit met entiteit en attribuut data
@@ -21,7 +23,7 @@ class TransformTargetEntity(ObjectTransformer):
         """
         lst_entity_target = self.clean_keys(lst_mappings)
         if (isinstance(lst_entity_target,dict)):
-            logging.info("List object is actually dictionary; file:pd_transform_target_entity; object:lst_entity_target")
+            logger.info("List object is actually dictionary; file:pd_transform_target_entity; object:lst_entity_target")
             lst_mappings = [lst_entity_target]
             mapping = lst_entity_target
             logger.debug(

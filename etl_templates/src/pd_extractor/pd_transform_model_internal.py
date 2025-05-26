@@ -1,8 +1,8 @@
-from log_config import logging
+from logtools import get_logger
+
 from .pd_transform_object import ObjectTransformer
 
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class TransformModelInternal(ObjectTransformer):

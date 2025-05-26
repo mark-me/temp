@@ -5,10 +5,10 @@ from pathlib import Path
 
 import igraph as ig
 import networkx as nx
+from logtools import get_logger
 from pyvis.network import Network
 
 from .dag_generator import DagGenerator, EntityRef, NoFlowError, VertexType
-from logtools import get_logger
 
 logger = get_logger(__name__)
 

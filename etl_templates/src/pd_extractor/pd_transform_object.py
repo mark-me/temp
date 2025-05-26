@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import Union
 
-from log_config import logging
+from logtools import get_logger
 
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ObjectTransformer:

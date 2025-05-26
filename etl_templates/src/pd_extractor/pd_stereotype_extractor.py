@@ -1,7 +1,7 @@
-from log_config import logging
+from logtools import get_logger
 from .pd_transform_stereotype import TransformStereotype
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class StereotypeExtractor:
     """Extraheert Power Designer document objecten die filters, aggregaten en scalars representeren

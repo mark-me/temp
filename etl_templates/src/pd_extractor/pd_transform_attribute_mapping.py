@@ -1,7 +1,9 @@
-import logging
+
+from logtools import get_logger
+
 from .pd_transform_object import ObjectTransformer
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class TransformAttributeMapping(ObjectTransformer):
     """Collectie van functies om attribuut mappings conform het afgestemde JSON format op te bouwen om ETL generatie te faciliteren
@@ -30,7 +32,7 @@ class TransformAttributeMapping(ObjectTransformer):
                 "o:DefaultStructuralFeatureMapping"
             ]
             if isinstance(lst_attr_maps, dict):
-                logging.warning("List object is actually dictionary; file:pd_transform_attribute_mapping; object:lst_attr_maps")
+                logger.warning("List object is actually dictionary; file:pd_transform_attribute_mapping; object:lst_attr_maps")
                 lst_attr_maps = [lst_attr_maps].copy()
             lst_attr_maps = self.clean_keys(lst_attr_maps)
             for j in range(len(lst_attr_maps)):

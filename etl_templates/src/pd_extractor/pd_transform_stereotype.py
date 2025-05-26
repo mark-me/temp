@@ -1,9 +1,10 @@
 import re
 
-from log_config import logging
+from logtools import get_logger
+
 from .pd_transform_object import ObjectTransformer
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class TransformStereotype(ObjectTransformer):
     """Verrijken, schonen en transformeren van stereotype objecten (filters, scalars en aggregaten)
@@ -22,7 +23,7 @@ class TransformStereotype(ObjectTransformer):
         """
         dict_domains = {}
         if isinstance(lst_domains, dict):
-            logging.warning("List object is actually dictionary; file:pd_transform_stereotype; object:lst_domains")
+            logger.warning("List object is actually dictionary, file:pd_transform_stereotype, object:lst_domains")
             lst_domains = [lst_domains]
         lst_domains = self.convert_timestamps(lst_domains)
         lst_domains = self.clean_keys(lst_domains)
@@ -85,7 +86,7 @@ class TransformStereotype(ObjectTransformer):
         logger.debug(f"Start collecting variables for object:  {object['Name']}")
         lst_variables = object["c:Attributes"]["o:EntityAttribute"]
         if isinstance(lst_variables, dict):
-            logging.warning("List object is actually dictionary; file:pd_transform_stereotype; object:lst_variables")
+            logger.warning("List object is actually dictionary, file:pd_transform_stereotype, object:lst_variables")
             lst_variables = [lst_variables]
         lst_variables = self.clean_keys(lst_variables)
         for i in range(len(lst_variables)):
@@ -132,7 +133,7 @@ class TransformStereotype(ObjectTransformer):
         if "c:Identifiers" in object:
             identifiers = object["c:Identifiers"]["o:Identifier"]
             if isinstance(identifiers, dict):
-                logging.warning("List object is actually dictionary; file:pd_transform_stereotype; object:identifiers")
+                logger.info("List object is actually dictionary for object identifiers")
                 identifiers = [identifiers]
             identifiers = self.clean_keys(identifiers)
             # Clean and transform identifier data

@@ -1,9 +1,11 @@
-from log_config import logging
+
+from logtools import get_logger
+
 from .pd_transform_attribute_mapping import TransformAttributeMapping
 from .pd_transform_source_composition import TransformSourceComposition
 from .pd_transform_target_entity import TransformTargetEntity
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class MappingExtractor:

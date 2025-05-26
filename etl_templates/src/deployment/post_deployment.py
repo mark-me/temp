@@ -1,5 +1,4 @@
 import json
-import os
 from enum import Enum
 from pathlib import Path
 
@@ -8,15 +7,16 @@ from logtools import get_logger
 
 logger = get_logger(__name__)
 
+
 class TemplateType(Enum):
     POST_DEPLOY_CONFIG = "PostDeployScript_Config.sql"
     POST_DEPLOY_CODELIST = "PostDeployScript_CodeList.sql"
 
+
 class PostDeployment:
     def __init__(self, dir_output: str, schema_post_deploy: str):
-        self.schema = schema_post_deploy #"DA_MDDE"
+        self.schema = schema_post_deploy  # "DA_MDDE"
         self.dir_output = dir_output
-
 
     def _get_template(self, type_template: TemplateType) -> Template:
         """
@@ -25,7 +25,13 @@ class PostDeployment:
         Return:
             dict_templates (dict): Bevat alle beschikbare templates en de locatie waar de templates te vinden zijn
         """
-        dir_templates = Path(__file__)
+        dir_templates = Path(__file__).parent / "templates"
+        if not dir_templates.is_dir():
+            logger.error(
+                f"Directory for post deployment templates not found '{dir_templates}'"
+            )
+            raise FileNotFoundError
+
         # Loading templates
         environment = Environment(
             loader=FileSystemLoader(dir_templates),
@@ -46,18 +52,17 @@ class PostDeployment:
         template = self._get_template(TemplateType.POST_DEPLOY_CONFIG)
         content = template.render(config=mapping_order)
 
-        dir_output = Path(f"{self.dir_output}/CentralLayer/{self.schema}/PostDeployment/")
+        dir_output = self.dir_output / "CentralLayer" / self.schema / "PostDeployment"
+
         dir_output.mkdir(parents=True, exist_ok=True)
-        file_output = "PostDeploy_MetaData_Config_MappingOrder.sql"
-        with open(f"{dir_output}{file_output}", mode="w", encoding="utf-8") as file_ddl:
+        file_output = dir_output / "PostDeploy_MetaData_Config_MappingOrder.sql"
+        with open(str(file_output), mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)
-        logger.info(
-            f"Written MDDE PostDeploy_Config file {Path(dir_output + file_output).resolve()}"
-        )
+        logger.info(f"Written MDDE PostDeploy_Config file {file_output.resolve()}")
 
         file_output_master = "PostDeploy.sql"
-        path_output_master = Path(
-            f"{self.dir_output}/CentralLayer/PostDeployment/{file_output_master}"
+        path_output_master = (
+            self.dir_output / "CentralLayer/PostDeployment" / file_output_master
         )
 
         # Add file to master file.
@@ -86,22 +91,22 @@ class PostDeployment:
             templates (dict): Bevat alle beschikbare templates en de locatie waar de templates te vinden zijn
         """
         # Opening JSON file
-        file_codelist = Path(
-            f"{self.params.dir_codelist}/{self.params.codelist_config.codeList_json}"
+        file_codelist = (
+            self.params.dir_codelist / self.params.codelist_config.codeList_json
         )
         if not file_codelist.exists():
             logger.error(f"Kon codelist bestand niet vinden: '{file_codelist}'")
-            return
+            raise FileNotFoundError
         with open(file_codelist) as json_file:
             codeList = json.load(json_file)
 
-        dir_output = f"{self.params.dir_repository}/CentralLayer/DA_MDDE"
-        dir_output_type = f"{dir_output}/PostDeployment/"
-        file_output = "PostDeploy_MetaData_Config_CodeList.sql"
-        file_output_full = Path(os.path.join(dir_output_type, file_output))
-        file_output_master = "PostDeploy.sql"
-        file_output_master_full = Path(
-            f"{self.params.dir_repository}/CentralLayer/PostDeployment/{file_output_master}"
+        dir_output = self.params.dir_repository / "CentralLayer" / self.schema
+        dir_output_type = dir_output / "PostDeployment"
+        file_output = dir_output_type / "PostDeploy_MetaData_Config_CodeList.sql"
+        file_output_master = (
+            self.params.dir_repository
+            / "CentralLayer/PostDeployment"
+            / "PostDeploy.sql"
         )
 
         self.__add_post_deploy_to_ddl(
@@ -110,22 +115,20 @@ class PostDeployment:
 
         content = self.templates["PostDeploy_CodeList"].render(codeList=codeList)
 
-        Path(dir_output_type).mkdir(parents=True, exist_ok=True)
-        with open(file_output_full, mode="w", encoding="utf-8") as file_ddl:
+        dir_output_type.mkdir(parents=True, exist_ok=True)
+        with open(file_output, mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)
-        logger.info(
-            f"Written CodeTable Post deploy script: {file_output_full.resolve()}"
-        )
+        logger.info(f"Written CodeTable Post deploy script: {file_output.resolve()}")
 
         # Add file to master file.
-        if not file_output_master_full.is_file():
-            with open(file_output_master_full, "a+") as f:
+        if not file_output_master.is_file():
+            with open(file_output_master, "a+") as f:
                 f.write("/* Post deploy master file. */\n")
-        if file_output_master_full.is_file():
-            fr = open(file_output_master_full, "r")
+        if file_output_master.is_file():
+            fr = open(file_output_master, "r")
             if f":r ..\\DA_MDDE\\PostDeployment\\{file_output}\n" not in fr.read():
                 fr.close()
-                with open(file_output_master_full, "a") as f:
+                with open(file_output_master, "a") as f:
                     f.write(
                         f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{file_output}\n"
                     )

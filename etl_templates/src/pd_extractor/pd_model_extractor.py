@@ -1,8 +1,9 @@
-from log_config import logging
+from logtools import get_logger
+
 from .pd_transform_model_internal import TransformModelInternal
 from .pd_transform_models_external import TransformModelsExternal
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ModelExtractor:
@@ -54,7 +55,7 @@ class ModelExtractor:
         # Model add entity data
         self.lst_entity = self.__entities_internal()
         if isinstance(self.lst_entity, dict):
-            logging.warning("List object is actually dictionary; file:pd_model_extractor; object:lst_entity")
+            logger.warning("List object is actually dictionary; file:pd_model_extractor; object:lst_entity")
             self.lst_entity = [self.lst_entity]
         model["Entities"] = self.lst_entity
         model["Relationships"] = self.__relationships(lst_entity=self.lst_entity, lst_aggregates=lst_aggregates)

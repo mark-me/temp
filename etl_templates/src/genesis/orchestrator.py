@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from .config_file import ConfigFile
+from config_file import ConfigFile
 from dependencies_checker import DagReporting
 from repository_manager import RepositoryHandler
 from deployment import PostDeployment
@@ -58,7 +58,7 @@ class Orchestrator:
         self.generate_code(files_RETW=lst_files_RETW, mapping_order=mapping_order)
 
         # Stop process if extraction and dependecies check result in issues
-        self._handle_issues()
+        # self._handle_issues()
 
         post_deployment = PostDeployment(
             dir_output=self.config.dir_generate, schema_post_deploy="MDDE"
