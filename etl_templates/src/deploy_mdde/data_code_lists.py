@@ -1,5 +1,3 @@
-import json
-
 import polars as pl
 from logtools import get_logger
 
@@ -7,9 +5,8 @@ logger = get_logger(__name__)
 
 
 class CodeList():
-    def __init__(self, dir_input: str, file_output: str):
+    def __init__(self, dir_input: str):
         self.dir_input = dir_input
-        self.file_output = file_output
 
     def read_CodeLists(self) -> list:
         """

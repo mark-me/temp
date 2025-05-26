@@ -26,15 +26,14 @@ class ExtractorConfig:
 
 
 @dataclass
-class CodelistConfig:
-    """Configuration settings for the Codelist.
+class DeploymentMDDEConfig:
+    """Configuration settings MDDE deployment settings
 
-    Specifies the output folder, input folder, and JSON file for created Codelists .
+    Specifies the output folder, input folder for creating Codelists .
     """
 
-    input_folder: str
-    file_output: str
-    folder: str = "CodeList"
+    folder_data: str = "etl_templates/input/codeList"
+    folder_output: str = "DA_MDDE"
 
 
 @dataclass
@@ -62,20 +61,6 @@ class GeneratorConfig:
 
     folder: str = "Generator"
 
-@dataclass
-class PublisherConfig:
-    """Configuration settings for the Publisher.
-
-    Specifies various paths and settings related to publishing, including Visual Studio project details, code lists, and MDDE scripts.
-    """
-
-    vs_project_folder: str
-    vs_project_file: str
-    codeList_json: str
-    codeList_folder: str
-
-    folder: str = "GIT_repo"
-
 
 @dataclass
 class DevOpsConfig:
@@ -90,6 +75,7 @@ class DevOpsConfig:
     branch: str
     work_item: str
     work_item_description: str
+    vs_project_file: str
 
     @property
     def featurebranch(self) -> str:
@@ -127,6 +113,5 @@ class ConfigData:
     power_designer: PowerDesignerConfig = field(default_factory=PowerDesignerConfig)
     extractor: ExtractorConfig = field(default_factory=ExtractorConfig)
     generator: GeneratorConfig = field(default_factory=GeneratorConfig)
-    publisher: PublisherConfig = field(default_factory=PublisherConfig)
     devops: DevOpsConfig = field(default_factory=DevOpsConfig)
-    codelist: CodelistConfig = field(default_factory=CodelistConfig)
+    codelist: DeploymentMDDEConfig = field(default_factory=DeploymentMDDEConfig)

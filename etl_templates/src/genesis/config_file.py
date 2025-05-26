@@ -8,7 +8,7 @@ import yaml
 
 from logtools import get_logger
 
-from config_definition import ConfigData, DevOpsConfig, CodelistConfig, PublisherConfig, GeneratorConfig
+from config_definition import ConfigData, DevOpsConfig, DeploymentMDDEConfig, GeneratorConfig
 
 logger = get_logger(__name__)
 
@@ -31,7 +31,7 @@ class ConfigFileError(Exception):
 
     def __str__(self):
         """
-        Retourneert de stringrepresentatie van de ConfigFileError.
+        Retourneert de string-representatie van de ConfigFileError.
         Geeft de foutmelding samen met de foutcode terug.
 
         Returns:
@@ -60,11 +60,11 @@ class ConfigFile:
 
     def _read_file(self) -> ConfigData:
         """
-        Leest het configuratiebestand en retourneert de geparste configuratie data.
+        Leest het configuratiebestand en retourneert de ontlede configuratie data.
         Controleert op verplichte velden en converteert de YAML-inhoud naar een ConfigData object.
 
         Returns:
-            ConfigData: De geparste configuratie data.
+            ConfigData: De ontlede configuratie data.
 
         Raises:
             ConfigFileError: Als het bestand niet bestaat, leeg of ongeldig is, of verplichte sleutels ontbreken.
@@ -128,7 +128,7 @@ class ConfigFile:
     def _create_dir(self, dir_path: Path) -> None:
         """
         Maakt de opgegeven directory aan als deze nog niet bestaat.
-        Controleert of het pad een bestand is en converteert het naar een directorypad indien nodig.
+        Controleert of het pad een bestand is en converteert het naar een director-ypad indien nodig.
 
         Args:
             dir_path (Path): Het pad naar de directory die aangemaakt moet worden.
@@ -140,7 +140,7 @@ class ConfigFile:
     def _determine_version(self) -> str:
         """
         Bepaalt de volgende versienaam voor de outputfolder op basis van bestaande versies.
-        Zoekt naar bestaande versiemappen en verhoogt het patchnummer, of start bij de standaardversie als er geen zijn.
+        Zoekt naar bestaande versiemappen en verhoogt het patch-nummer, of start bij de standaardversie als er geen zijn.
 
         Returns:
             str: De volgende versienaam in het formaat 'vXX.XX.XX'.
@@ -177,7 +177,7 @@ class ConfigFile:
         Args:
             config_dataclass (Any): De dataclass die omgezet wordt naar YAML.
             field_comments (dict): Dictionary met veldnamen als sleutel en commentaar als waarde.
-            indent (int, optional): Het inspringniveau voor de YAML-output. Standaard 0.
+            indent (int, optional): Het inspring-niveau voor de YAML-output. Standaard 0.
 
         Returns:
             str: De YAML-string met commentaarregels.
@@ -219,7 +219,7 @@ class ConfigFile:
         """
         field_comments = {
             "title": "De naam van de huidige uitvoering (bijv. 'dry-run')",
-            "folder_intermediate_root": "Basismap waar tussenresultaten worden opgeslagen",
+            "folder_intermediate_root": "Basis-map waar tussenresultaten worden opgeslagen",
             "power_designer": "Instellingen voor PowerDesigner LDM-bestanden",
             "folder": "Submap binnen de root waar PowerDesigner bestanden staan",
             "files": "Lijst van PowerDesigner .ldm-bestanden",
@@ -304,7 +304,7 @@ class ConfigFile:
         Returns:
             Path: Het pad naar de templates-folder.
         """
-        root = './etl_templates/src/generator/templates'
+        root = "./etl_templates/src/generator/templates"
         folder = Path(os.path.join(root, self._data.generator.templates_platform))
         self._create_dir(folder)
         return folder
@@ -331,7 +331,9 @@ class ConfigFile:
         Returns:
             Path: Het pad naar de repository-folder.
         """
-        folder = Path(os.path.join(self._data.folder_intermediate_root, self._data.devops.folder))
+        folder = Path(
+            os.path.join(self._data.folder_intermediate_root, self._data.devops.folder)
+        )
         self._create_dir(folder)
         return folder
 
@@ -347,7 +349,7 @@ class ConfigFile:
         return self._data.devops
 
     @property
-    def codelist_config(self) -> CodelistConfig:
+    def deployment_config(self) -> DeploymentMDDEConfig:
         """
         Geeft de codelijstconfiguratie uit het geladen configuratiebestand.
         Retourneert het CodelistConfig object met alle codelijst gerelateerde instellingen.
@@ -356,17 +358,6 @@ class ConfigFile:
             CodelistConfig: De codelijstconfiguratie.
         """
         return self._data.codelist
-
-    @property
-    def publisher_config(self) -> PublisherConfig:
-        """
-        Geeft de publisher configuratie uit het geladen configuratiebestand.
-        Retourneert het PublisherConfig object met alle publisher gerelateerde instellingen.
-
-        Returns:
-            PublisherConfig: De publisher configuratie.
-        """
-        return self._data.publisher
 
     @property
     def generator_config(self) -> GeneratorConfig:
@@ -403,9 +394,15 @@ class ConfigFile:
         """
         folder = Path(self._data.codelist.input_folder)
         if not folder.exists():
-            ConfigFileError(message=f"Code list input directory '{folder}' doesn't exist", error_code=404)
+            ConfigFileError(
+                message=f"Code list input directory '{folder}' doesn't exist",
+                error_code=404,
+            )
         if not folder.is_dir():
-            ConfigFileError(message=f"Code list input directory '{folder}' is not a folder", error_code=404)
+            ConfigFileError(
+                message=f"Code list input directory '{folder}' is not a folder",
+                error_code=404,
+            )
         return folder
 
     @property

@@ -5,6 +5,8 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, Template
 from logtools import get_logger
 
+from .data_code_lists import CodeList
+
 logger = get_logger(__name__)
 
 
@@ -14,9 +16,10 @@ class TemplateType(Enum):
 
 
 class Deployment:
-    def __init__(self, dir_output: str, schema_post_deploy: str):
+    def __init__(self, path_output: Path, schema_post_deploy: str, path_data: Path):
         self.schema = schema_post_deploy  # "DA_MDDE"
-        self.dir_output = dir_output
+        self.path_output = path_output
+        self.path_data = path_data
 
     def _get_template(self, type_template: TemplateType) -> Template:
         """
@@ -40,7 +43,7 @@ class Deployment:
         )
         return environment.get_template(type_template.value)
 
-    def generate_ddl_Config(self, mapping_order: list):
+    def generate_load_config(self, mapping_order: list):
         """
         Creëert het post deploy script voor alle mappings opgenomen in de modellen. Voor elke mapping wordt een insert statement aangemaakt
         waarmee een record aangemaakt wordt in de tabel [DA_MDDE].[Config].
@@ -90,15 +93,12 @@ class Deployment:
         Args:
             templates (dict): Bevat alle beschikbare templates en de locatie waar de templates te vinden zijn
         """
-        # Opening JSON file
-        file_codelist = (
-            self.params.dir_codelist / self.params.codelist_config.codeList_json
-        )
-        if not file_codelist.exists():
-            logger.error(f"Kon codelist bestand niet vinden: '{file_codelist}'")
-            raise FileNotFoundError
-        with open(file_codelist) as json_file:
-            codeList = json.load(json_file)
+
+        read_code_list = CodeList(dir_input=)
+        data_codeList = CodeList
+
+        content = self.templates["PostDeploy_CodeList"].render(codeList=codeList)
+
 
         dir_output = self.params.dir_repository / "CentralLayer" / self.schema
         dir_output_type = dir_output / "PostDeployment"
@@ -108,13 +108,6 @@ class Deployment:
             / "CentralLayer/PostDeployment"
             / "PostDeploy.sql"
         )
-
-        self.__add_post_deploy_to_ddl(
-            file_output=file_output, file_output_master=file_output_master
-        )
-
-        content = self.templates["PostDeploy_CodeList"].render(codeList=codeList)
-
         dir_output_type.mkdir(parents=True, exist_ok=True)
         with open(file_output, mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)

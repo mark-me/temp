@@ -54,8 +54,8 @@ class Orchestrator:
         dag = self.inspect_etl_dag(files_RETW=lst_files_RETW)
         mapping_order = dag.get_mapping_order()
 
-        self.generate_codeList()
         self.generate_code(files_RETW=lst_files_RETW, mapping_order=mapping_order)
+        self.generate_mdde_deployment()
 
         # Stop process if extraction and dependecies check result in issues
         # self._handle_issues()
@@ -63,7 +63,7 @@ class Orchestrator:
         post_deployment = Deployment(
             dir_output=self.config.dir_generate, schema_post_deploy="MDDE"
         )
-        post_deployment.generate_ddl_Config(mapping_order=mapping_order)
+        post_deployment.generate_load_config(mapping_order=mapping_order)
 
         if not skip_devops:
             devops_handler = RepositoryHandler(
@@ -116,7 +116,7 @@ class Orchestrator:
         # dag.plot_file_dependencies(f"{dir_report}/RETW_dependencies.html"=test) FIXME: Results in error
         return dag
 
-    def generate_codeList(self) -> Path:
+    def generate_mdde_deployment(self) -> Path:
         """
         Genereert een CodeList-bestand op basis van de input codelist-bestanden.
 
@@ -125,7 +125,7 @@ class Orchestrator:
         Returns:
             Path: Het pad naar het gegenereerde CodeList-bestand.
         """
-        logger.info("Generating Codelist from files")
+        logger.info("Generating MDDE scripts")
         dir_output = self.config.dir_codelist
         # FIXME: Nooit via _data (is private)
         dir_input = self.config.dir_codelist_input

@@ -10,20 +10,14 @@ power-designer:
 extractor:
   folder: "RETW"
 
-codelist:
-  folder: "CodeList"
-  input_folder: "./etl_templates/input/codeList/"
+deployment:
+  folder: "DA_MDDE"
+  folder_data: "./etl_templates/input/codeList/"
+  folder_mdde_objects: "./etl_templates/src/deployment/MDDE/"
 
 generator:
   folder: "Generator"
   templates_platform: "dedicated-pool"
-  created_ddls_json: "list_created_ddls.json"
-  folder_mdde_scripts: "./etl_templates/src/deployment/MDDE/"
-
-publisher:
-  folder: "GIT_repo"
-  vs_project_folder: "GIT_repo"
-  vs_project_file: "./CentralLayer/3. Central Layer.sqlproj"
 
 devops:
   folder: "GIT_repo"
@@ -33,3 +27,4 @@ devops:
   branch: "collaboration"
   work_item: "23936"
   work_item_description: "Testen automatische uitrol DDL en ETL"
+  vs_project_file: "./CentralLayer/3. Central Layer.sqlproj"
