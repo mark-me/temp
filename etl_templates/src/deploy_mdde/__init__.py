@@ -1,1 +1,1 @@
-from .deployment import Deployment
+from .deployment import DeploymentMDDE

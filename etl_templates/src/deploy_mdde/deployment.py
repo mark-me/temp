@@ -15,7 +15,7 @@ class TemplateType(Enum):
     POST_DEPLOY_CODELIST = "PostDeployScript_CodeList.sql"
 
 
-class Deployment:
+class DeploymentMDDE:
     def __init__(self, path_output: Path, schema_post_deploy: str, path_data: Path):
         self.schema = schema_post_deploy  # "DA_MDDE"
         self.path_output = path_output
