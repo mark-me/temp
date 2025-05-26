@@ -5,7 +5,7 @@ from config_file import ConfigFile
 from dependencies_checker import DagReporting
 from repository_manager import RepositoryHandler
 from deploy_mdde import Deployment
-from generator import CodeList, DDLGenerator
+from generator import DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
 
@@ -32,6 +32,7 @@ class Orchestrator:
         """
         self.file_config = Path(file_config)
         self.config = ConfigFile(file_config=self.file_config)
+        config = self.config
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
 
     def start_processing(self, skip_devops: bool = False) -> None:

@@ -93,9 +93,9 @@ class Deployment:
         Args:
             templates (dict): Bevat alle beschikbare templates en de locatie waar de templates te vinden zijn
         """
-
-        read_code_list = CodeList(dir_input=)
-        data_codeList = CodeList
+        pass
+        #read_code_list = CodeList(dir_input=)
+        #data_codeList = CodeList
 
         content = self.templates["PostDeploy_CodeList"].render(codeList=codeList)
 
