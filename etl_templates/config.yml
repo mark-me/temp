@@ -12,6 +12,7 @@ extractor:
 
 deployment:
   folder: "DA_MDDE"
+  schema: "MDDE"
   folder_data: "./etl_templates/input/codeList/"
   folder_mdde_objects: "./etl_templates/src/deployment/MDDE/"
 
