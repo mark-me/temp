@@ -10,15 +10,14 @@ power-designer:
 extractor:
   folder: "RETW"
 
+generator:
+  folder: "Generator"
+  templates_platform: "dedicated-pool"
+
 deployment:
   folder: "DA_MDDE"
   schema: "MDDE"
   folder_data: "./etl_templates/input/codeList/"
-  folder_mdde_objects: "./etl_templates/src/deployment/MDDE/"
-
-generator:
-  folder: "Generator"
-  templates_platform: "dedicated-pool"
 
 devops:
   folder: "GIT_repo"

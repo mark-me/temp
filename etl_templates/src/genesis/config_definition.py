@@ -4,6 +4,33 @@ from pathlib import Path
 from typing import List
 
 
+class ConfigFileError(Exception):
+    """Exception raised for configuration file errors."""
+
+    def __init__(self, message, error_code):
+        """
+        Initialiseert een ConfigFileError met een foutmelding en foutcode.
+        Deze exceptie wordt gebruikt om fouten in het configuratiebestand te signaleren.
+
+        Args:
+            message (str): De foutmelding.
+            error_code (int): De bijbehorende foutcode.
+        """
+        self.message = message
+        self.error_code = error_code
+        super().__init__(self.message)
+
+    def __str__(self):
+        """
+        Retourneert de string-representatie van de ConfigFileError.
+        Geeft de foutmelding samen met de foutcode terug.
+
+        Returns:
+            str: De foutmelding en foutcode als string.
+        """
+        return f"{self.message} (Error Code: {self.error_code})"
+
+
 @dataclass
 class PowerDesignerConfig:
     """Configuration settings for PowerDesigner.
@@ -46,6 +73,7 @@ class GeneratorConfig:
     templates_platform: str
     created_ddls_json: str
     folder_mdde_scripts: str
+    folder: str = "Generator"
 
     @property
     def dir_templates(self) -> Path:
@@ -58,8 +86,6 @@ class GeneratorConfig:
         root = "./etl_templates/src/generator/mdde_scripts"
         dir_scripts_mdde = Path(root)
         return dir_scripts_mdde
-
-    folder: str = "Generator"
 
 
 @dataclass
@@ -76,30 +102,7 @@ class DevOpsConfig:
     work_item: str
     work_item_description: str
     vs_project_file: str
-
-    @property
-    def featurebranch(self) -> str:
-        return (
-            f"feature/{self.work_item}_{self.work_item_description.replace(' ', '_')}_{os.getlogin().replace(' ', '_')}"
-        )
-
-    @property
-    def url(self) -> str:
-        return f"https://{self.organisation}@dev.azure.com/{self.organisation}/{self.project}/_git/{self.repo}"
-
-    @property
-    def url_check(self) -> str:
-        return (
-            f"https://dev.azure.com/{self.organisation}/{self.project}/_git/{self.repo}"
-        )
-
-    @property
-    def url_branch(self) -> str:
-        """De URL van de repository branch waar de wijzigingen in worden doorgevoerd"""
-        return f"https://dev.azure.com/{self.organisation}/{self.project}/_git/{self.repo}?version=GBfeature%2F{self.work_item}_{self.work_item_description.replace(' ', '_')}_{os.getlogin().replace(' ', '_')}"
-
     folder: str = "GIT_repo"
-
 
 @dataclass
 class ConfigData:

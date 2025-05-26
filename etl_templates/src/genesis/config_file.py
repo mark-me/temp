@@ -5,39 +5,32 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-
 from logtools import get_logger
 
-from config_definition import ConfigData, DevOpsConfig, DeploymentMDDEConfig, GeneratorConfig
+from config_definition import (
+    ConfigData,
+    ConfigFileError,
+    ExtractorConfig,
+    DeploymentMDDEConfig,
+    DevOpsConfig,
+    GeneratorConfig,
+    PowerDesignerConfig,
+)
 
 logger = get_logger(__name__)
 
 
-class ConfigFileError(Exception):
-    """Exception raised for configuration file errors."""
+def create_dir(path: Path) -> None:
+    """
+    Maakt de opgegeven directory aan als deze nog niet bestaat.
+    Controleert of het pad een bestand is en converteert het naar een director-ypad indien nodig.
 
-    def __init__(self, message, error_code):
-        """
-        Initialiseert een ConfigFileError met een foutmelding en foutcode.
-        Deze exceptie wordt gebruikt om fouten in het configuratiebestand te signaleren.
-
-        Args:
-            message (str): De foutmelding.
-            error_code (int): De bijbehorende foutcode.
-        """
-        self.message = message
-        self.error_code = error_code
-        super().__init__(self.message)
-
-    def __str__(self):
-        """
-        Retourneert de string-representatie van de ConfigFileError.
-        Geeft de foutmelding samen met de foutcode terug.
-
-        Returns:
-            str: De foutmelding en foutcode als string.
-        """
-        return f"{self.message} (Error Code: {self.error_code})"
+    Args:
+        dir_path (Path): Het pad naar de directory die aangemaakt moet worden.
+    """
+    if path.is_file():
+        path = os.path.dirname(path)
+    Path(path).mkdir(parents=True, exist_ok=True)
 
 
 class ConfigFile:
@@ -55,8 +48,14 @@ class ConfigFile:
             file_config (str): Het pad naar het configuratiebestand.
         """
         self._file = Path(file_config)
-        self._data: ConfigData = self._read_file()
+        data = self._read_file()
+        self.folder_intermediate_root = data.folder_intermediate_root
+        self.title = data.title
         self._version = self._determine_version()
+        self.power_designer = PowerDesigner(data.power_designer)
+        self.extractor = Extractor(data.extractor, path_intermediate=self.path_intermediate)
+        self.generator = Generator(data.generator, path_intermediate=self.path_intermediate)
+        self.devops = DevOps(data.devops, path_output_root=data.folder_intermediate_root)
 
     def _read_file(self) -> ConfigData:
         """
@@ -125,18 +124,6 @@ class ConfigFile:
                 raise ConfigFileError(f"Ontbrekende configuratie voor: '{f.name}'", 400)
         return cls(**init_args)
 
-    def _create_dir(self, dir_path: Path) -> None:
-        """
-        Maakt de opgegeven directory aan als deze nog niet bestaat.
-        Controleert of het pad een bestand is en converteert het naar een director-ypad indien nodig.
-
-        Args:
-            dir_path (Path): Het pad naar de directory die aangemaakt moet worden.
-        """
-        if dir_path.is_file():
-            dir_path = os.path.dirname(dir_path)
-        Path(dir_path).mkdir(parents=True, exist_ok=True)
-
     def _determine_version(self) -> str:
         """
         Bepaalt de volgende versienaam voor de outputfolder op basis van bestaande versies.
@@ -148,8 +135,8 @@ class ConfigFile:
         version = "v00.01.00"
         folder = Path(
             os.path.join(
-                self._data.folder_intermediate_root,
-                self._data.title,
+                self.folder_intermediate_root,
+                self.title,
             )
         )
         if folder.exists():
@@ -237,7 +224,7 @@ class ConfigFile:
             f.write(yaml_with_comments)
 
     @property
-    def dir_intermediate(self) -> Path:
+    def path_intermediate(self) -> Path:
         """
         Geeft het pad naar de tussenliggende outputfolder voor deze configuratie.
         Bepaalt en maakt de directory aan op basis van de root, titel en versie van de configuratie.
@@ -245,18 +232,17 @@ class ConfigFile:
         Returns:
             Path: Het pad naar de tussenliggende outputfolder.
         """
-        folder = Path(
-            os.path.join(
-                self._data.folder_intermediate_root,
-                self._data.title,
-                str(self._version),
-            )
-        )
-        self._create_dir(dir_path=folder)
+        folder = Path(self.folder_intermediate_root) / self.title / self._version
+        create_dir(path=folder)
         return folder
 
+
+class PowerDesigner:
+    def __init__(self, config: PowerDesignerConfig):
+        self._data = config
+
     @property
-    def files_power_designer(self) -> list:
+    def files(self) -> list:
         """
         Geeft een lijst van paden naar de PowerDesigner-bestanden die in de configuratie zijn opgegeven.
         Controleert of alle opgegeven bestanden bestaan en geeft anders een foutmelding.
@@ -267,11 +253,11 @@ class ConfigFile:
         Raises:
             ConfigFileError: Als een of meer PowerDesigner-bestanden ontbreken.
         """
-        lst_pd_files = self._data.power_designer.files
+        lst_pd_files = self._data.files
         lst_pd_files = [
             Path(
                 os.path.join(
-                    self._data.power_designer.folder,
+                    self._data.folder,
                     pd_file,
                 )
             )
@@ -282,8 +268,14 @@ class ConfigFile:
             raise ConfigFileError(msg, 404)
         return lst_pd_files
 
+
+class Extractor:
+    def __init__(self, config: ExtractorConfig, path_intermediate: Path):
+        self._data = config
+        self.path_intermediate = path_intermediate
+
     @property
-    def dir_extract(self) -> Path:
+    def path_output(self) -> Path:
         """
         Geeft het pad naar de extractie-outputfolder voor deze configuratie.
         Bepaalt en maakt de directory aan op basis van de tussenliggende outputfolder en de extractor folder uit de configuratie.
@@ -291,36 +283,64 @@ class ConfigFile:
         Returns:
             Path: Het pad naar de extractie-outputfolder.
         """
-        folder = Path(os.path.join(self.dir_intermediate, self._data.extractor.folder))
-        self._create_dir(folder)
+        folder = self.path_intermediate / self._data.folder
+        create_dir(folder)
+        return folder
+
+
+class Generator:
+    def __init__(self, config: GeneratorConfig, path_intermediate: Path):
+        self._data = config
+        self.path_intermediate = path_intermediate
+
+    @property
+    def path_output(self) -> Path:
+        """
+        Geeft het pad naar de extractie-outputfolder voor deze configuratie.
+        Bepaalt en maakt de directory aan op basis van de tussenliggende outputfolder en de extractor folder uit de configuratie.
+
+        Returns:
+            Path: Het pad naar de extractie-outputfolder.
+        """
+        folder = self.path_intermediate / self._data.folder
+        create_dir(folder)
         return folder
 
     @property
-    def dir_templates(self) -> Path:
+    def template_platform(self) -> str:
+        return self._data.templates_platform
+
+
+class DeploymentMDDE:
+    def __init__(self, config: DeploymentMDDEConfig, path_intermediate: Path):
+        self._data = config
+        self.path_intermediate = path_intermediate
+
+    @property
+    def path_output(self) -> Path:
         """
-        Geeft het pad naar de templates-folder voor deze configuratie.
-        Bepaalt en maakt de directory aan op basis van het platform uit de generatorconfiguratie.
+        Geeft het pad naar de extractie-outputfolder voor deze configuratie.
+        Bepaalt en maakt de directory aan op basis van de tussenliggende outputfolder en de extractor folder uit de configuratie.
 
         Returns:
-            Path: Het pad naar de templates-folder.
+            Path: Het pad naar de extractie-outputfolder.
         """
-        root = "./etl_templates/src/generator/templates"
-        folder = Path(os.path.join(root, self._data.generator.templates_platform))
-        self._create_dir(folder)
+        folder = self.path_intermediate / self._data.folder
+        create_dir(folder)
         return folder
 
     @property
-    def dir_generate(self) -> Path:
-        """
-        Geeft het pad naar de generator-outputfolder voor deze configuratie.
-        Bepaalt en maakt de directory aan op basis van de tussenliggende outputfolder en de generator folder uit de configuratie.
+    def schema(self) -> str:
+        return self._data.schema
 
-        Returns:
-            Path: Het pad naar de generator-outputfolder.
-        """
-        folder = Path(os.path.join(self.dir_intermediate, self._data.generator.folder))
-        self._create_dir(folder)
-        return folder
+    @property
+    def path_data_input(self) -> Path:
+        return Path(self._data.folder_data)
+
+class DevOps:
+    def __init__(self, config: DevOpsConfig, path_output_root: Path):
+        self._data = config
+        self.path_output_root = path_output_root
 
     @property
     def dir_repository(self) -> Path:
@@ -331,87 +351,42 @@ class ConfigFile:
         Returns:
             Path: Het pad naar de repository-folder.
         """
-        folder = Path(
-            os.path.join(self._data.folder_intermediate_root, self._data.devops.folder)
+        folder = self.path_output_root / self._data.folder
+        self._create_dir(folder)
+        return folder
+
+    @property
+    def feature_branch(self) -> str:
+        return f"feature/{self.config.work_item}_{self.config.work_item_description.replace(' ', '_')}_{os.getlogin().replace(' ', '_')}"
+
+    @property
+    def url(self) -> str:
+        return f"https://{self.config.organisation}@dev.azure.com/{self.config.organisation}/{self.config.project}/_git/{self.config.repo}"
+
+    @property
+    def url_check(self) -> str:
+        return (
+            f"https://dev.azure.com/{self.config.organisation}/{self.config.project}/_git/{self.config.repo}"
         )
-        self._create_dir(folder)
-        return folder
 
     @property
-    def devops_config(self) -> DevOpsConfig:
-        """
-        Geeft de DevOps configuratie uit het geladen configuratiebestand.
-        Retourneert het DevOpsConfig object met alle DevOps gerelateerde instellingen.
-
-        Returns:
-            DevOpsConfig: De DevOps configuratie.
-        """
-        return self._data.devops
+    def url_branch(self) -> str:
+        """De URL van de repository branch waar de wijzigingen in worden doorgevoerd"""
+        return (f"{self.url_check}?version=GBfeature%2F{self.config.work_item}_{self.config.work_item_description.replace(' ', '_')}_{os.getlogin().replace(' ', '_')}")
 
     @property
-    def deployment_config(self) -> DeploymentMDDEConfig:
-        """
-        Geeft de codelijstconfiguratie uit het geladen configuratiebestand.
-        Retourneert het CodelistConfig object met alle codelijst gerelateerde instellingen.
+    def path_vs_project_file(self):
+        return Path(self._data.vs_project_file)
 
-        Returns:
-            CodelistConfig: De codelijstconfiguratie.
-        """
-        return self._data.codelist
 
-    @property
-    def generator_config(self) -> GeneratorConfig:
-        """
-        Geeft de generator configuratie uit het geladen configuratiebestand.
-        Retourneert het GeneratorConfig object met alle generator gerelateerde instellingen.
-
-        Returns:
-            GeneratorConfig: De generator configuratie.
-        """
-        return self._data.generator
-
-    @property
-    def dir_codelist(self) -> Path:
-        """Directory for extracted data.
-
-        Returns the path to the extraction directory within the intermediate output folder.
-        """
-        folder = Path(os.path.join(self.dir_intermediate, self._data.codelist.folder))
-        self._create_dir(folder)
-        return folder
-
-    @property
-    def dir_codelist_input(self) -> Path:
-        """
-        Geeft het pad naar de inputfolder voor codelijsten uit de configuratie.
-        Controleert of de opgegeven inputfolder bestaat en een directory is, en geeft anders een foutmelding.
-
-        Returns:
-            Path: Het pad naar de codelist inputfolder.
-
-        Raises:
-            ConfigFileError: Als de inputfolder niet bestaat of geen directory is.
-        """
-        folder = Path(self._data.codelist.input_folder)
-        if not folder.exists():
-            ConfigFileError(
-                message=f"Code list input directory '{folder}' doesn't exist",
-                error_code=404,
-            )
-        if not folder.is_dir():
-            ConfigFileError(
-                message=f"Code list input directory '{folder}' is not a folder",
-                error_code=404,
-            )
-        return folder
-
-    @property
-    def file_codelist_output(self) -> Path:
-        """
-        Geeft het pad naar het outputbestand voor codelijsten uit de configuratie.
-        Retourneert het pad zoals opgegeven in de configuratie voor het codelist outputbestand.
-
-        Returns:
-            Path: Het pad naar het codelist outputbestand.
-        """
-        return Path(self._data.codelist.file_output)
+"""
+devops:
+  folder: "GIT_repo"
+  organisation: "migratie-dataketen-douane"
+  project: "Douane%20Datawerkorganisatie"
+  repo: "DWO%20DataCenter"
+  branch: "collaboration"
+  work_item: "23936"
+  work_item_description: "Testen automatische uitrol DDL en ETL"
+  vs_project_file: "./CentralLayer/3. Central Layer.sqlproj
+  """

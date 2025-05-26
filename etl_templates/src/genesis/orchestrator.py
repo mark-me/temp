@@ -32,7 +32,6 @@ class Orchestrator:
         """
         self.file_config = Path(file_config)
         self.config = ConfigFile(file_config=self.file_config)
-        config = self.config
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
 
     def start_processing(self, skip_devops: bool = False) -> None:
@@ -48,7 +47,7 @@ class Orchestrator:
         """
         logger.info("Start Genesis verwerking")
         lst_files_RETW = []
-        for pd_file in self.config.files_power_designer:
+        for pd_file in self.config.power_designer.files:
             file_RETW = self.extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
 
@@ -88,8 +87,7 @@ class Orchestrator:
         """
         logger.info(f"Start extraction for '{file_pd_ldm}'")
         document = PDDocument(file_pd_ldm=file_pd_ldm)
-        dir_output = self.config.dir_extract
-        file_RETW = Path(os.path.join(dir_output, f"{file_pd_ldm.stem}.json"))
+        file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
         document.write_result(file_output=file_RETW)
         logger.info(
             f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
@@ -112,8 +110,8 @@ class Orchestrator:
         dag = DagReporting()
         dag.add_RETW_files(files_RETW=files_RETW)
         # Visualization of the ETL flow for all RETW files combined
-        dir_report = self.config.dir_intermediate
-        dag.plot_etl_dag(file_html=f"{dir_report}/ETL_flow.html")
+        path_output = str(self.config.extractor.path_output / "ETL_flow.html")
+        dag.plot_etl_dag(file_html=path_output)
         # dag.plot_file_dependencies(f"{dir_report}/RETW_dependencies.html"=test) FIXME: Results in error
         return dag
 
@@ -149,8 +147,7 @@ class Orchestrator:
             None
         """
         logger.info("Start generating deployment code")
-        params = self.config
-        ddl_generator = DDLGenerator(params=params)
+        ddl_generator = DDLGenerator(params=self.config.generator)
         for file_RETW in files_RETW:
             ddl_generator.generate_ddls(file_RETW=file_RETW)
 
