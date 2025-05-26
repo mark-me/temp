@@ -1,23 +1,21 @@
-import xmltodict
 import codecs
-import yaml
 import json
-from pathlib import Path
 import shutil
+from pathlib import Path
 
-from log_config import logging
+import xmltodict
+from logtools import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
-class DDLPublisher:
+class ProjectFile:
     """Publish SQL files in VS Studio project and add them to the SQLProject file"""
 
-    def __init__(self, params: dict):
-        self.params = params
-        self.dir_repo = self.params.dir_repository
-        self.file_vs_project = self.params.publisher_config.vs_project_file
-        self.vs_project_file = Path(f"{self.dir_repo}/{self.file_vs_project}")
+    def __init__(self, path_repository: Path, path_file_project: Path):
+        self.dir_repo = path_repository
+        self.file_vs_project = path_file_project
+        self.project_file = Path(f"{self.dir_repo /self.file_vs_project}")
 
     def publish(self):
         """
@@ -212,7 +210,7 @@ class DDLPublisher:
         Returns:
             dict: De geparste XML-inhoud van het projectbestand als een dictionary.
         """
-        xml = codecs.open(self.vs_project_file, "r", "utf-8-sig")
+        xml = codecs.open(self.project_file, "r", "utf-8-sig")
         org_xml = xml.read()
         dict_xml = xmltodict.parse(org_xml, process_namespaces=False)
         xml.close()

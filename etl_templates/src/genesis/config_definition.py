@@ -33,7 +33,7 @@ class CodelistConfig:
     """
 
     input_folder: str
-    codeList_json: str
+    file_output: str
     folder: str = "CodeList"
 
 
@@ -53,7 +53,7 @@ class GeneratorConfig:
         root = "./etl_templates/src/generator/templates"
         dir_templates = Path(os.path.join(root, self.templates_platform))
         return dir_templates
-    
+
     @property
     def dir_scripts_mdde(self) -> Path:
         root = "./etl_templates/src/generator/mdde_scripts"
@@ -73,7 +73,7 @@ class PublisherConfig:
     vs_project_file: str
     codeList_json: str
     codeList_folder: str
-    
+
     folder: str = "GIT_repo"
 
 

@@ -26,4 +26,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     genesis = Orchestrator(file_config=Path(args.config_file))
-    genesis.start_processing(skip_deployment=args.skip)
+    genesis.start_processing(skip_devops=args.skip)

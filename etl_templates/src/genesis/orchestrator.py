@@ -1,20 +1,20 @@
-import json
 import os
-import sys
 from pathlib import Path
 
-from config_file import ConfigFile
-
+from .config_file import ConfigFile
 from dependencies_checker import DagReporting
-from generator import CodeList, DevOpsHandler, DDLGenerator, DDLPublisher
-from pd_extractor import PDDocument
+from repository_manager import RepositoryHandler
+from deployment import PostDeployment
+from generator import CodeList, DDLGenerator
 from logtools import get_logger, issue_tracker
+from pd_extractor import PDDocument
 
 logger = get_logger(__name__)
 
+
 class ExtractionIssuesFound(Exception):
     """Exception raised when extraction issues are found and processing should stop."""
-    pass
+
 
 class Orchestrator:
     """Orkestreert de Power Designer extractie en deployment workflow.
@@ -33,6 +33,46 @@ class Orchestrator:
         self.file_config = Path(file_config)
         self.config = ConfigFile(file_config=self.file_config)
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
+
+    def start_processing(self, skip_devops: bool = False) -> None:
+        """Start the main processing workflow.
+
+        Orchestrates the extraction, dependency checking, and deployment code generation.
+
+        Args:
+            skip_deployment (bool): Skip the deployment.
+
+        Returns:
+            None
+        """
+        logger.info("Start Genesis verwerking")
+        lst_files_RETW = []
+        for pd_file in self.config.files_power_designer:
+            file_RETW = self.extract(file_pd_ldm=pd_file)
+            lst_files_RETW.append(file_RETW)
+
+        dag = self.inspect_etl_dag(files_RETW=lst_files_RETW)
+        mapping_order = dag.get_mapping_order()
+
+        self.generate_codeList()
+        self.generate_code(files_RETW=lst_files_RETW, mapping_order=mapping_order)
+
+        # Stop process if extraction and dependecies check result in issues
+        self._handle_issues()
+
+        post_deployment = PostDeployment(
+            dir_output=self.config.dir_generate, schema_post_deploy="MDDE"
+        )
+        post_deployment.generate_ddl_Config(mapping_order=mapping_order)
+
+        if not skip_devops:
+            devops_handler = RepositoryHandler(
+                params=self.config.devops_config,
+                dir_repository=self.config.dir_repository,
+            )
+            devops_handler.clone()
+            # TODO: Copy code and codelist to repo and update project file
+            devops_handler.push()
 
     def extract(self, file_pd_ldm: Path) -> str:
         """Extract data from a PowerDesigner LDM file.
@@ -71,9 +111,9 @@ class Orchestrator:
         dag = DagReporting()
         dag.add_RETW_files(files_RETW=files_RETW)
         # Visualization of the ETL flow for all RETW files combined
-        dir_report = self.config.dir_generate
+        dir_report = self.config.dir_intermediate
         dag.plot_etl_dag(file_html=f"{dir_report}/ETL_flow.html")
-        dag.plot_file_dependencies(file_html=f"{dir_report}/RETW_dependencies.html")
+        # dag.plot_file_dependencies(f"{dir_report}/RETW_dependencies.html"=test) FIXME: Results in error
         return dag
 
     def generate_codeList(self) -> Path:
@@ -88,15 +128,13 @@ class Orchestrator:
         logger.info("Generating Codelist from files")
         dir_output = self.config.dir_codelist
         # FIXME: Nooit via _data (is private)
-        codelistfolder = Path(self.config._data.codelist.input_folder)
-        codelist = Path(
-            os.path.join(dir_output, self.config._data.codelist.codeList_json)
-        )
-        codelistmaker = CodeList(codelistfolder, codelist)
+        dir_input = self.config.dir_codelist_input
+        file_output = dir_output / self.config.file_codelist_output
+        generator_codelist = CodeList(dir_input=dir_input, file_output=file_output)
         # Generatate CodeList.json from input codelist files
-        codelistmaker.read_CodeLists()
-        codelistmaker.write_CodeLists()
-        return codelist
+        generator_codelist.read_CodeLists()
+        generator_codelist.write_CodeLists()
+        return file_output
 
     def generate_code(self, files_RETW: list, mapping_order: list) -> None:
         """Generate deployment code based on extracted data.
@@ -112,53 +150,8 @@ class Orchestrator:
         logger.info("Start generating deployment code")
         params = self.config
         ddl_generator = DDLGenerator(params=params)
-        publisher = DDLPublisher(params)
         for file_RETW in files_RETW:
-            # TODO: @Mark, generatorParams zou beter zijn als deze ook bijvoorbeeld bepaalde DIR properties bevat. Ik krijg dit niet voor elkaar..
-            # 3. Write all DLL, SoureViews and MDDE ETL to the Repo
-            ddl_generator.generate_code(
-                file_RETW=file_RETW, mapping_order=mapping_order
-            )
-            # 4. Write a JSON that contains all list with al written objects with there type. Is used by the publisher.
-            ddl_generator.write_json_created_ddls()
-        # 5. Write all new created DDL and ETL file to the VS SQL Project file as a reference.
-        publisher.publish()
-
-
-    def start_processing(self, skip_deployment: bool = False) -> None:
-        """Start the main processing workflow.
-
-        Orchestrates the extraction, dependency checking, and deployment code generation.
-
-        Args:
-            skip_deployment (bool): Skip the deployment.
-
-        Returns:
-            None
-        """
-        logger.info("Start Genesis verwerking")
-        lst_files_RETW = []
-        for pd_file in self.config.files_power_designer:
-            file_RETW = self.extract(file_pd_ldm=pd_file)
-            lst_files_RETW.append(file_RETW)
-
-        dag = self.inspect_etl_dag(files_RETW=lst_files_RETW)
-        mapping_order = dag.get_mapping_order()
-
-        self.generate_codeList()
-        self.generate_code(files_RETW=lst_files_RETW, mapping_order=mapping_order)
-
-        # Stop process if extraction and dependecies check result in issues
-        self._handle_issues()
-
-        devops_handler = DevOpsHandler(
-            params=self.config.devops_config, dir_repository=self.config.dir_repository
-        )
-        devops_handler.get_repo()
-
-        # TODO: Copy code and codelist to repo and update project file
-
-        devops_handler.publish_repo()
+            ddl_generator.generate_ddls(file_RETW=file_RETW)
 
     def _handle_issues(self):
         """
@@ -172,4 +165,6 @@ class Orchestrator:
         if issue_tracker.has_issues():
             file_issues = os.path.join(self.config.dir_extract, "extraction_issues.csv")
             issue_tracker.write_csv(file_csv=file_issues)
-            raise ExtractionIssuesFound(f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}")
+            raise ExtractionIssuesFound(
+                f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}"
+            )
