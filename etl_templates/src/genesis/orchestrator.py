@@ -4,7 +4,7 @@ from pathlib import Path
 from config_file import ConfigFile
 from dependencies_checker import DagReporting
 from repository_manager import RepositoryHandler
-from deploy_mdde import Deployment
+from deploy_mdde import DeploymentMDDE
 from generator import DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
@@ -32,7 +32,6 @@ class Orchestrator:
         """
         self.file_config = Path(file_config)
         self.config = ConfigFile(file_config=self.file_config)
-        config = self.config
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
 
     def start_processing(self, skip_devops: bool = False) -> None:
@@ -48,7 +47,7 @@ class Orchestrator:
         """
         logger.info("Start Genesis verwerking")
         lst_files_RETW = []
-        for pd_file in self.config.files_power_designer:
+        for pd_file in self.config.power_designer.files:
             file_RETW = self.extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
 
@@ -61,8 +60,8 @@ class Orchestrator:
         # Stop process if extraction and dependecies check result in issues
         # self._handle_issues()
 
-        post_deployment = Deployment(
-            dir_output=self.config.dir_generate, schema_post_deploy="MDDE"
+        post_deployment = DeploymentMDDE(
+            dir_output=self.config.dir_generate, schema="MDDE"
         )
         post_deployment.generate_load_config(mapping_order=mapping_order)
 
@@ -88,8 +87,7 @@ class Orchestrator:
         """
         logger.info(f"Start extraction for '{file_pd_ldm}'")
         document = PDDocument(file_pd_ldm=file_pd_ldm)
-        dir_output = self.config.dir_extract
-        file_RETW = Path(os.path.join(dir_output, f"{file_pd_ldm.stem}.json"))
+        file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
         document.write_result(file_output=file_RETW)
         logger.info(
             f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
@@ -112,8 +110,8 @@ class Orchestrator:
         dag = DagReporting()
         dag.add_RETW_files(files_RETW=files_RETW)
         # Visualization of the ETL flow for all RETW files combined
-        dir_report = self.config.dir_intermediate
-        dag.plot_etl_dag(file_html=f"{dir_report}/ETL_flow.html")
+        path_output = str(self.config.extractor.path_output / "ETL_flow.html")
+        dag.plot_etl_dag(file_html=path_output)
         # dag.plot_file_dependencies(f"{dir_report}/RETW_dependencies.html"=test) FIXME: Results in error
         return dag
 
@@ -127,15 +125,13 @@ class Orchestrator:
             Path: Het pad naar het gegenereerde CodeList-bestand.
         """
         logger.info("Generating MDDE scripts")
-        dir_output = self.config.dir_codelist
-        # FIXME: Nooit via _data (is private)
-        dir_input = self.config.dir_codelist_input
-        file_output = dir_output / self.config.file_codelist_output
-        generator_codelist = CodeList(dir_input=dir_input, file_output=file_output)
-        # Generatate CodeList.json from input codelist files
-        generator_codelist.read_CodeLists()
-        generator_codelist.write_CodeLists()
-        return file_output
+        deploy_mdde = DeploymentMDDE(
+            path_data=self.config.deploy_mdde.path_data_input,
+            schema=self.config.deploy_mdde.schema,
+            path_output=self.config.deploy_mdde.path_output,
+        )
+        deploy_mdde.generate_load_code_list()
+        deploy_mdde.generate_load_config()
 
     def generate_code(self, files_RETW: list, mapping_order: list) -> None:
         """Generate deployment code based on extracted data.
@@ -149,8 +145,7 @@ class Orchestrator:
             None
         """
         logger.info("Start generating deployment code")
-        params = self.config
-        ddl_generator = DDLGenerator(params=params)
+        ddl_generator = DDLGenerator(params=self.config.generator)
         for file_RETW in files_RETW:
             ddl_generator.generate_ddls(file_RETW=file_RETW)
 

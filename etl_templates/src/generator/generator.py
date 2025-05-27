@@ -44,9 +44,8 @@ class DDLGenerator:
             params (dict): Bevat alle parameters vanuit config.yml
         """
         logger.info("Initializing Class: 'DDLGenerator'.")
-        self.params = params
-        self.dir_generator = self.params.dir_generate
-        self.dir_templates = params.dir_templates
+        self.dir_generator = params.path_output
+        self.dir_templates = Path(__file__).parent / "templates" / params.template_platform
         self.source_layer_prefix = "SL_"
 
         self.entities = DDLEntities(
