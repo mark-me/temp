@@ -37,12 +37,25 @@ class DeploymentMDDE:
         self.post_deployment_scripts = []
 
     def process(self, mapping_order: list):
+        """
+        Voert het genereren van alle post-deployment scripts uit voor het opgegeven mapping order.
+        Roept interne methoden aan om codelijst- en configuratiescripts te genereren, database objecten te kopiëren
+        en het masterbestand bij te werken.
+
+        Args:
+            mapping_order (list): De mapping order configuratie die in het script verwerkt moet worden.
+        """
         self._generate_load_code_list()
         self._generate_load_config(mapping_order=mapping_order)
         self._copy_db_objects()
         self._generate_post_deploy_master()
 
     def _copy_db_objects(self):
+        """
+        Kopieert de database objecten van de bronmap naar de outputmap.
+        Zorgt ervoor dat alle benodigde database objecten beschikbaar zijn in de output directory.
+
+        """
         path_source = Path(__file__).parent / "db_objects"
         copytree(path_source, self.path_output, dirs_exist_ok=True)
 
