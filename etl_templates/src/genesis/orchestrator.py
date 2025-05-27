@@ -67,7 +67,7 @@ class Orchestrator:
 
         if not skip_devops:
             devops_handler = RepositoryHandler(
-                params=self.config.devops_config,
+                config=self.config.devops_config,
                 dir_repository=self.config.dir_repository,
             )
             devops_handler.clone()

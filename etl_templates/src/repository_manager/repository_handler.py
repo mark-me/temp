@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 class RepositoryHandler:
     """Handelt repository acties af zoals clonen, feature branches aanmaken, comitten en pushen naar de remote"""
 
-    def __init__(self, params: dict, dir_repository: str):
+    def __init__(self, config: dict, dir_repository: str):
         """
         Initialiseert de RepositoryHandler met repository parameters en een doel-directory.
 
@@ -22,21 +22,21 @@ class RepositoryHandler:
             params (dict): Dictionary die de repository parameters bevat zoals URL, branch, etc.
             dir_repository (str): Pad naar de locale repository directory.
         """
-        self.params = params
+        self.config = config
         self.dir_repository = Path(dir_repository).resolve
 
     def clone(self):
         """
-        Clonet de repository, maakt een featurebranch aan en schakelt hiernaar over.
+        Kloont de repository, maakt een feature-branch aan en schakelt hiernaar over.
 
-        Deze functie verwijdert eerst een bestaande repository, clonet vervolgens de opgegeven repository,
-        maakt een nieuwe featurebranch aan en schakelt hiernaar over. Indien nodig wordt de gebruiker gevraagd
+        Deze functie verwijdert eerst een bestaande repository, kloont vervolgens de opgegeven repository,
+        maakt een nieuwe feature-branch aan en schakelt hiernaar over. Indien nodig wordt de gebruiker gevraagd
         om in te loggen op DevOps.
 
         Returns:
             None
         """
-        logger.info("Initializing Function: 'devopsgetrepo'.")
+        logger.info("Kloon van repository '{self.params.url}'.")
         dir_current = Path("./").resolve()
         self._remove_old_repo()  # deletes a directory and all its contents.
         time.sleep(5)
@@ -45,9 +45,9 @@ class RepositoryHandler:
                 lst_command = [
                     "git",
                     "clone",
-                    self.params.url,
+                    self.config.url,
                     "-b",
-                    self.params.branch,
+                    self.config.branch,
                     str(self.dir_repository),
                 ]
                 logger.info(" ".join(lst_command))
@@ -57,12 +57,12 @@ class RepositoryHandler:
                 lst_command = [
                     "git",
                     "branch",
-                    self.params.featurebranch,
-                    self.params.branch,
+                    self.config.featurebranch,
+                    self.config.branch,
                 ]
                 logger.info(" ".join(lst_command))
                 subprocess.run(lst_command)
-                lst_command = ["git", "switch", self.params.featurebranch]
+                lst_command = ["git", "switch", self.config.featurebranch]
                 logger.info(" ".join(lst_command))
                 subprocess.run(lst_command)
                 i += 99
@@ -70,7 +70,7 @@ class RepositoryHandler:
                 logger.warning(
                     "Er is wat mis gegaan. Waarschijnlijk moet je eerst inloggen op Devops. "
                 )
-                webbrowser.open(self.params.url_check, new=0, autoraise=True)
+                webbrowser.open(self.config.url_check, new=0, autoraise=True)
                 logger.info("Wait timer for 15 seconds, to allow user to log in to DevOps")
                 time.sleep(15)
                 continue
@@ -124,16 +124,16 @@ class RepositoryHandler:
             "git",
             "commit",
             "-m"
-            f"Commit: {self.params.work_item_description.replace(' ', '_')} #{int(self.params.work_item)}",
+            f"Commit: {self.config.work_item_description.replace(' ', '_')} #{int(self.config.work_item)}",
         ]
         logger.info(" ".join(lst_command))
         subprocess.run(lst_command)
-        lst_command = ["git", "push", "origin", self.params.featurebranch]
+        lst_command = ["git", "push", "origin", self.config.featurebranch]
         logger.info(" ".join(lst_command))
         subprocess.run(lst_command)
 
         # Open browser to check Commit tot DevOps
-        webbrowser.open(self.params.url_branch, new=0, autoraise=True)
+        webbrowser.open(self.config.url_branch, new=0, autoraise=True)
 
 
     def add_directory(self, path_source: Path):
@@ -160,7 +160,7 @@ class RepositoryHandler:
         logger.info("Start copy of MDDE scripts to vs Project repo folder.")
         # dir_root = f"{self.params.dir_repository}\\"
         dir_output = "CentralLayer/DA_MDDE"
-        dir_scripts_mdde = self.params.generator_config.dir_scripts_mdde
+        dir_scripts_mdde = self.config.generator_config.dir_scripts_mdde
         for platform in [d for d in Path(dir_scripts_mdde).iterdir() if d.is_dir()]:
             logger.info(f"Found platform folder: {dir_scripts_mdde}/{platform.name}.")
             for schema in [d for d in platform.iterdir() if d.is_dir()]:
@@ -189,10 +189,15 @@ class RepositoryHandler:
                         dest.write_text(file.read_text())
                         # Create a copy of the new file to the intermediate folder
                         cp_folder = Path(
-                            f"{self.params.dir_generate}/{dir_output_type}/"
+                            f"{self.config.dir_generate}/{dir_output_type}/"
                         )
                         cp_folder.mkdir(parents=True, exist_ok=True)
                         shutil.copy2(
                             Path(dest),
                             Path(f"{cp_folder}/{file.name}"),
                         )
+    
+    def update_post_deployment_master(self, path_file: Path):
+        
+        
+        pass

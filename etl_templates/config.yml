@@ -1,6 +1,6 @@
 title: "first-dry-run"
 
-folder_intermediate_root: "./etl_templates/intermediate"
+folder-intermediate-root: "./etl_templates/intermediate"
 
 power-designer:
   folder: "./etl_templates/input"

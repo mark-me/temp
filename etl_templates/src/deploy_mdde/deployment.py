@@ -74,7 +74,6 @@ class DeploymentMDDE:
         content = template.render(config=mapping_order)
 
         path_output = self.dir_output / "CentralLayer" / self.schema / "PostDeployment"
-
         path_output.mkdir(parents=True, exist_ok=True)
         path_file_output = path_output / "PostDeploy_MetaData_Config_MappingOrder.sql"
         with open(str(path_file_output), mode="w", encoding="utf-8") as file_ddl:
@@ -96,14 +95,12 @@ class DeploymentMDDE:
 
         path_output = self.path_output / "CentralLayer" / self.schema / "PostDeployment"
         path_file_output = path_output / "PostDeploy_MetaData_Config_CodeList.sql"
-
         path_output.mkdir(parents=True, exist_ok=True)
         with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)
         logger.info(
             f"Written CodeTable Post deploy script: {path_file_output.resolve()}"
         )
-
         self._add_to_post_deploy_master(path_file_output)
 
     def _add_to_post_deploy_master(self, path_file_output: Path):
