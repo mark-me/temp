@@ -1,6 +1,6 @@
 from shutil import copytree
 from enum import Enum
-from pathlib import Path
+from pathlib import Path, WindowsPath
 
 from jinja2 import Environment, FileSystemLoader, Template
 from logtools import get_logger
@@ -148,9 +148,10 @@ class DeploymentMDDE:
         path_output_master.parent.mkdir(parents=True, exist_ok=True)
         with open(path_output_master, "w") as f:
             for script in self.post_deployment_scripts:
-                path_output_master.as_posix
+                test_script = str(script).replace("/", "\\")
+                test_master = str(path_output_master).replace("/", "\\")
                 print(script)
-            f.write(
-                f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{script}\n"
-            )
-            f.write(f":r ..\\DA_MDDE\\PostDeployment\\{script}\n")
+                f.write(
+                    f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{script}\n"
+                )
+                f.write(f":r ..\\DA_MDDE\\PostDeployment\\{script}\n")
