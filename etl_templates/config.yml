@@ -11,11 +11,11 @@ extractor:
   folder-output: "RETW"
 
 generator:
-  folder-output: "Generator"
+  folder-output: "CentralLayer"
   templates-platform: "dedicated-pool"
 
 deployment-mdde:
-  folder-output: "DA_MDDE"
+  folder-output: "CentralLayer/DA_MDDE"
   schema: "MDDE"
   folder-data: "./etl_templates/input/codeList/"
 

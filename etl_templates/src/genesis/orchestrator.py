@@ -54,25 +54,19 @@ class Orchestrator:
         dag = self.inspect_etl_dag(files_RETW=lst_files_RETW)
         mapping_order = dag.get_mapping_order()
 
-        self.generate_code(files_RETW=lst_files_RETW, mapping_order=mapping_order)
-        self.generate_mdde_deployment()
+        self.generate_code(files_RETW=lst_files_RETW)
+        self.generate_mdde_deployment(mapping_order=mapping_order)
 
         # Stop process if extraction and dependecies check result in issues
         # self._handle_issues()
-
-        post_deployment = DeploymentMDDE(
-            dir_output=self.config.dir_generate, schema="MDDE"
-        )
-        post_deployment.generate_load_config(mapping_order=mapping_order)
-
-        if not skip_devops:
-            devops_handler = RepositoryHandler(
-                config=self.config.devops_config,
-                dir_repository=self.config.dir_repository,
-            )
-            devops_handler.clone()
-            # TODO: Copy code and codelist to repo and update project file
-            devops_handler.push()
+        # if not skip_devops:
+        #     devops_handler = RepositoryHandler(
+        #         config=self.config.devops_config,
+        #         dir_repository=self.config.dir_repository,
+        #     )
+        #     devops_handler.clone()
+        #     # TODO: Copy code and codelist to repo and update project file
+        #     devops_handler.push()
 
     def extract(self, file_pd_ldm: Path) -> str:
         """Extract data from a PowerDesigner LDM file.
@@ -115,7 +109,7 @@ class Orchestrator:
         # dag.plot_file_dependencies(f"{dir_report}/RETW_dependencies.html"=test) FIXME: Results in error
         return dag
 
-    def generate_mdde_deployment(self) -> Path:
+    def generate_mdde_deployment(self, mapping_order: list) -> Path:
         """
         Genereert een CodeList-bestand op basis van de input codelist-bestanden.
 
@@ -130,10 +124,9 @@ class Orchestrator:
             schema=self.config.deploy_mdde.schema,
             path_output=self.config.deploy_mdde.path_output,
         )
-        deploy_mdde.generate_load_code_list()
-        deploy_mdde.generate_load_config()
+        deploy_mdde.process(mapping_order=mapping_order)
 
-    def generate_code(self, files_RETW: list, mapping_order: list) -> None:
+    def generate_code(self, files_RETW: list) -> None:
         """Generate deployment code based on extracted data.
 
         Generates the necessary code for deployment based on the extracted data and dependencies.

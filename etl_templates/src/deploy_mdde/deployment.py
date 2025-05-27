@@ -1,3 +1,4 @@
+from shutil import copytree
 from enum import Enum
 from pathlib import Path
 
@@ -14,6 +15,7 @@ class TemplateType(Enum):
     Enum die de verschillende types post-deployment templates specificeert.
     Wordt gebruikt om het juiste templatebestand te selecteren voor het genereren van scripts.
     """
+
     POST_DEPLOY_CONFIG = "PostDeployScript_Config.sql"
     POST_DEPLOY_CODELIST = "PostDeployScript_CodeList.sql"
 
@@ -32,6 +34,17 @@ class DeploymentMDDE:
         self.schema = schema
         self.path_output = path_output
         self.path_data = path_data
+        self.post_deployment_scripts = []
+
+    def process(self, mapping_order: list):
+        self._generate_load_code_list()
+        self._generate_load_config(mapping_order=mapping_order)
+        self._copy_db_objects()
+        self._generate_post_deploy_master()
+
+    def _copy_db_objects(self):
+        path_source = Path(__file__).parent / "db_objects"
+        copytree(path_source, self.path_output, dirs_exist_ok=True)
 
     def _get_template(self, type_template: TemplateType) -> Template:
         """
@@ -47,22 +60,22 @@ class DeploymentMDDE:
         Raises:
             FileNotFoundError: Als de template directory niet gevonden kan worden.
         """
-        dir_templates = Path(__file__).parent / "templates"
-        if not dir_templates.is_dir():
+        path_templates = Path(__file__).parent / "templates"
+        if not path_templates.is_dir():
             logger.error(
-                f"Directory for post deployment templates not found '{dir_templates}'"
+                f"Directory for post deployment templates not found '{path_templates}'"
             )
             raise FileNotFoundError
 
         # Loading templates
         environment = Environment(
-            loader=FileSystemLoader(dir_templates),
+            loader=FileSystemLoader(path_templates),
             trim_blocks=True,
             lstrip_blocks=True,
         )
         return environment.get_template(type_template.value)
 
-    def generate_load_config(self, mapping_order: list):
+    def _generate_load_config(self, mapping_order: list):
         """
         Genereert het post-deploy script voor de mapping order configuratie.
         Rendert het template met de mapping order en schrijft het resultaat naar het juiste outputbestand.
@@ -73,16 +86,18 @@ class DeploymentMDDE:
         template = self._get_template(TemplateType.POST_DEPLOY_CONFIG)
         content = template.render(config=mapping_order)
 
-        path_output = self.dir_output / "CentralLayer" / self.schema / "PostDeployment"
+        path_output = self.path_output / "PostDeployment"
         path_output.mkdir(parents=True, exist_ok=True)
         path_file_output = path_output / "PostDeploy_MetaData_Config_MappingOrder.sql"
         with open(str(path_file_output), mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)
-        logger.info(f"Written MDDE PostDeploy_Config file {path_file_output.resolve()}")
+        logger.info(
+            f"Created MDDE Config post deployment script '{path_file_output.resolve()}'"
+        )
 
-        self._add_to_post_deploy_master(path_file_output)
+        self.post_deployment_scripts.append(path_file_output)
 
-    def generate_load_code_list(self):
+    def _generate_load_code_list(self):
         """
         Genereert het post-deploy script voor alle codelijsten in de data directory.
         Leest de codelijsten, rendert het template en schrijft het resultaat naar het juiste outputbestand.
@@ -93,17 +108,20 @@ class DeploymentMDDE:
         template = self._get_template(TemplateType.POST_DEPLOY_CODELIST)
         content = template.render(codeList=code_list)
 
-        path_output = self.path_output / "CentralLayer" / self.schema / "PostDeployment"
-        path_file_output = path_output / "PostDeploy_MetaData_Config_CodeList.sql"
-        path_output.mkdir(parents=True, exist_ok=True)
+        path_file_output = (
+            self.path_output
+            / "PostDeployment"
+            / "PostDeploy_MetaData_Config_CodeList.sql"
+        )
+        path_file_output.parent.mkdir(parents=True, exist_ok=True)
         with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)
         logger.info(
-            f"Written CodeTable Post deploy script: {path_file_output.resolve()}"
+            f"Created CodeTable post deployment script '{path_file_output.resolve()}'"
         )
-        self._add_to_post_deploy_master(path_file_output)
+        self.post_deployment_scripts.append(path_file_output)
 
-    def _add_to_post_deploy_master(self, path_file_output: Path):
+    def _generate_post_deploy_master(self):
         """
         Voegt een post-deploy scriptbestand toe aan het masterbestand voor post-deployment scripts.
         Controleert of het bestand al is opgenomen en voegt het toe indien nodig.
@@ -112,20 +130,14 @@ class DeploymentMDDE:
             path_file_output (Path): Het pad naar het toe te voegen post-deploy scriptbestand.
         """
         path_output_master = (
-            self.path_output
-            / "CentralLayer/PostDeployment"
-            / "PostDeploy.sql"
+            self.path_output.parent / "PostDeployment" / "PostDeploy.sql"
         )
-        # Add file to master file.
-        if not path_output_master.is_file():
-            with open(path_output_master, "a+") as f:
-                f.write("/* Post deploy master file. */\n")
-        else:
-            with open(path_output_master, "r") as fr:
-                if f":r ..\\DA_MDDE\\PostDeployment\\{path_file_output}\n" not in fr.read():
-                    fr.close()
-                    with open(path_output_master, "a") as f:
-                        f.write(
-                            f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{path_file_output}\n"
-                        )
-                        f.write(f":r ..\\DA_MDDE\\PostDeployment\\{path_file_output}\n")
+        path_output_master.parent.mkdir(parents=True, exist_ok=True)
+        with open(path_output_master, "w") as f:
+            for script in self.post_deployment_scripts:
+                path_output_master.as_posix
+                print(script)
+            f.write(
+                f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{script}\n"
+            )
+            f.write(f":r ..\\DA_MDDE\\PostDeployment\\{script}\n")

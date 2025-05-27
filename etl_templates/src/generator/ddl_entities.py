@@ -88,7 +88,7 @@ class DDLEntities(DDLGeneratorBase):
             tuple: (path_output_file, file_output)
         """
         dir_output = Path(
-            f"{self.dir_output}/CentralLayer/{entity['CodeModel']}/Tables/"
+            f"{self.dir_output}/{entity['CodeModel']}/Tables/"
         )
         dir_output.mkdir(parents=True, exist_ok=True)
         file_output = f"{entity['Code']}.sql"

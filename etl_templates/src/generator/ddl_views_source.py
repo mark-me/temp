@@ -65,7 +65,7 @@ class DDLSourceViews(DDLViewBase):
             tuple: (dir_output, file_output, path_file_output)
         """
         dir_output = Path(
-            f"{self.dir_output}/CentralLayer/{mapping['EntityTarget']['CodeModel']}/Views/"
+            f"{self.dir_output}/{mapping['EntityTarget']['CodeModel']}/Views/"
         )
         dir_output.mkdir(parents=True, exist_ok=True)
         file_output = f"vw_src_{mapping['Name']}.sql"
