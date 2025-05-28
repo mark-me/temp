@@ -118,7 +118,7 @@ class RepositoryManager:
                 )
                 webbrowser.open(self._config.url_check, new=0, autoraise=True)
                 logger.info(
-                    "Wait timer for 15 seconds, to allow user to log in to DevOps"
+                    "Wacht 15 seconden, zodat de gebruiker kan inloggen op DevOps"
                 )
                 time.sleep(15)
                 continue
