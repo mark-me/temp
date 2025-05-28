@@ -37,7 +37,7 @@ class RepositoryManager:
         Returns:
             None
         """
-        logger.info("Kloon van repository '{self.params.url}'.")
+        logger.info(f"Kloon van repository '{self.params.url}'.")
         dir_current = Path("./").resolve()
         self._remove_old_repo()  # deletes a directory and all its contents.
         # time.sleep(5)
@@ -50,7 +50,11 @@ class RepositoryManager:
             str(self._path_local),
         ]
         logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command)
+        try:
+            subprocess.run(lst_command, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to clone repository: {e}")
+            raise
         logger.info(f"chdir to: {self._path_local}")
         os.chdir(self._path_local)
         lst_command = [
@@ -78,7 +82,7 @@ class RepositoryManager:
         Returns:
             None
         """
-        logger.info("Kloon van repository '{self.params.url}'.")
+        logger.info(f"Kloon van repository '{self.params.url}'.")
         dir_current = Path("./").resolve()
         self._remove_old_repo()  # deletes a directory and all its contents.
         time.sleep(5)
@@ -157,6 +161,20 @@ class RepositoryManager:
             None
         """
         os.chdir(self._path_local)
+        self._git_add_all()
+        self._git_commit()
+        self._git_push()
+        self._open_branch_in_browser()
+
+    def _git_add_all(self):
+        """
+        Voegt alle gewijzigde, nieuwe en verwijderde bestanden toe aan de git staging area.
+
+        Deze functie voert een 'git add -A' uit om alle wijzigingen voor commit voor te bereiden.
+
+        Returns:
+            None
+        """
         lst_command = [
             "git",
             "add",
@@ -164,6 +182,16 @@ class RepositoryManager:
         ]
         logger.info(f"Executed: {' '.join(lst_command)}")
         subprocess.run(lst_command)
+
+    def _git_commit(self):
+        """
+        Voert een git commit uit met een werkitem-omschrijving als commit message.
+
+        Deze functie maakt een commit van alle toegevoegde wijzigingen met een beschrijving van het werkitem.
+
+        Returns:
+            None
+        """
         lst_command = [
             "git",
             "commit",
@@ -172,15 +200,45 @@ class RepositoryManager:
         ]
         logger.info(f"Executed: {' '.join(lst_command)}")
         subprocess.run(lst_command)
+
+    def _git_push(self):
+        """
+        Voert een git push uit naar de feature-branch van de remote repository.
+
+        Deze functie pusht de lokale wijzigingen naar de opgegeven feature-branch op de remote repository.
+
+        Returns:
+            None
+        """
         lst_command = ["git", "push", "origin", self._config.feature_branch]
         logger.info(f"Executed: {' '.join(lst_command)}")
         subprocess.run(lst_command)
 
-        # Open browser to check Commit tot DevOps
+    def _open_branch_in_browser(self):
+        """
+        Opent de branch-URL in de browser om de commit in DevOps te controleren.
+
+        Deze functie opent de URL van de subprocess.run(lst_command, cwd=self._path_local)
+feature-branch in de standaard webbrowser.
+
+        Returns:
+            None
+        """
         webbrowser.open(self._config.url_branch, new=0, autoraise=True)
 
     def add_directory_to_repo(self, path_source: Path):
-        # Add files not, currently found in the repository, to the project file
+        """
+        Voegt een bronmap toe aan de repository en werkt het projectbestand bij.
+
+        Deze functie zoekt naar nieuwe bestanden in de bronmap die nog niet in de repository staan,
+        werkt het projectbestand bij en kopieert alle bestanden naar de repository.
+
+        Args:
+            path_source (Path): De bronmap die toegevoegd moet worden aan de repository.
+
+        Returns:
+            None
+        """
         lst_files_new = self._find_files_new(path_source=path_source)
         project_file = ProjectFile(
             path_repository=self.path_repository,
