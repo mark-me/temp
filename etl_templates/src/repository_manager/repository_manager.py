@@ -146,7 +146,7 @@ class RepositoryManager:
         self._path_local.rmdir()
         logger.info(f"Delete existing folder: {self._path_local}")
 
-    def push(self) -> None:
+    def publish(self) -> None:
         """
         Voert een commit en push uit naar de DevOps repository en opent de branch in de browser.
 
