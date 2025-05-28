@@ -183,7 +183,6 @@ class RepositoryManager:
         # Add files not, currently found in the repository, to the project file
         lst_files_new = self._find_files_new(path_source=path_source)
         project_file = ProjectFile(
-            dir,
             path_repository=self.path_repository,
             path_file_project=self.config.path_vs_project_file,
         )
