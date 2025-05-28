@@ -187,11 +187,31 @@ class RepositoryHandler:
             path_repository=self.path_repository,
             path_file_project=self.config.path_vs_project_file,
         )
+        project_file.publish()
         # Copy all files to repository
+        copytree(src=path_source, dst=self._path_local, dirs_exist_ok=True)
 
     def _find_files_new(self, path_source: Path) -> list:
-        # Find files which are not in the repository
+        """
+        Zoekt naar bestanden die wel in de bronmap staan, maar nog niet in de repository.
+
+        Deze functie vergelijkt de bestanden in de bronmap met die in de repository en retourneert een lijst van nieuwe bestanden.
+
+        Args:
+            path_source (Path): De bronmap waarin gezocht wordt naar nieuwe bestanden.
+
+        Returns:
+            list: Een lijst met bestandsnamen die nieuw zijn in de bronmap en nog niet in de repository staan.
+        """
+        lst_files_new = []
         lst_generated = list(path_source.rglob("*"))
+        lst_generated = [str(file) for file in lst_generated]
+        lst_generated = [file.replace(f"{path_source}/", '') for file in lst_generated]
+
         lst_repository = self._path_local.rglob("*")
-        pass
+        lst_repository = [str(file) for file in lst_repository]
+        lst_repository = [file.replace(f"{self._path_local}/", '') for file in lst_repository]
+
+        lst_files_new = [file for file in lst_generated if file not in lst_repository]
+        return lst_files_new
 

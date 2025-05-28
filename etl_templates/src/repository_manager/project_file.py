@@ -17,11 +17,12 @@ class ProjectFile:
         self.file_vs_project = path_file_project
         self.project_file = Path(f"{self.dir_repo /self.file_vs_project}")
 
-    def publish(self):
+    def publish(self, lst_files_new: list):
         """
         Publiceert SQL-bestanden in het Visual Studio-project en voegt ze toe aan het SQLProject-bestand.
 
-        Deze functie verwerkt de aangemaakte DDL's, voegt nieuwe mappen, bestanden en post-deploy scripts toe aan het projectbestand en slaat het resultaat op.
+        Deze functie verwerkt de aangemaakte DDL's, voegt nieuwe mappen, bestanden en post-deploy scripts toe
+        aan het projectbestand en slaat het resultaat op.
 
         Returns:
             None: De functie voert acties uit en slaat wijzigingen op, maar retourneert geen waarde.
