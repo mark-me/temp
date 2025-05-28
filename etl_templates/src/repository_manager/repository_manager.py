@@ -190,27 +190,33 @@ class RepositoryManager:
         # Copy all files to repository
         copytree(src=path_source, dst=self._path_local, dirs_exist_ok=True)
 
-    def _find_files_new(self, path_source: Path) -> list:
+    def _find_files_new(self, path_source: Path) -> list[Path]:
         """
         Zoekt naar bestanden die wel in de bronmap staan, maar nog niet in de repository.
 
-        Deze functie vergelijkt de bestanden in de bronmap met die in de repository en retourneert een lijst van nieuwe bestanden.
+        Deze functie vergelijkt de relatieve paden van bestanden in de bronmap met die in de repository
+        en retourneert een lijst van bestanden die nog niet aanwezig zijn in de repository.
 
         Args:
             path_source (Path): De bronmap waarin gezocht wordt naar nieuwe bestanden.
 
         Returns:
-            list: Een lijst met bestandsnamen die nieuw zijn in de bronmap en nog niet in de repository staan.
+            list[Path]: Een lijst met relatieve paden van bestanden die nieuw zijn.
         """
-        lst_files_new = []
-        lst_generated = list(path_source.rglob("*"))
-        lst_generated = [str(file) for file in lst_generated]
-        lst_generated = [file.replace(f"{path_source}/", '') for file in lst_generated]
+        # Genereer relatieve paden van bestanden in de bronmap
+        files_in_source = {
+            file.relative_to(path_source)
+            for file in path_source.rglob("*")
+            if file.is_file()
+        }
 
-        lst_repository = self._path_local.rglob("*")
-        lst_repository = [str(file) for file in lst_repository]
-        lst_repository = [file.replace(f"{self._path_local}/", '') for file in lst_repository]
+        # Genereer relatieve paden van bestanden in de repository
+        files_in_repo = {
+            file.relative_to(self._path_local)
+            for file in self._path_local.rglob("*")
+            if file.is_file()
+        }
 
-        lst_files_new = [file for file in lst_generated if file not in lst_repository]
-        return lst_files_new
-
+        # Bepaal welke bestanden nog niet in de repository staan
+        new_files = list(files_in_source - files_in_repo)
+        return new_files
