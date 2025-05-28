@@ -31,6 +31,6 @@ class DDLViewBase(DDLGeneratorBase):
                 else datasource
             )
         else:
-            logger.warning(f"Geen datasource opgegeven voor mapping {mapping['Name']}")
+            logger.error(f"Geen datasource opgegeven voor mapping {mapping['Name']}")
         return mapping
 

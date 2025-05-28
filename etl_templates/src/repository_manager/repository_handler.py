@@ -67,7 +67,7 @@ class RepositoryHandler:
                 subprocess.run(lst_command)
                 i += 99
             except:
-                logger.warning(
+                logger.error(
                     "Er is wat mis gegaan. Waarschijnlijk moet je eerst inloggen op Devops. "
                 )
                 webbrowser.open(self._config.url_check, new=0, autoraise=True)
