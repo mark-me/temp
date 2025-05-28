@@ -136,6 +136,11 @@ class DeploymentMDDE:
         self.post_deployment_scripts.append(path_file_output)
 
     def _generate_load_dates(self):
+        """
+        Genereert het post-deploy script voor het laden van datums in de database.
+        Schrijft een SQL-opdracht naar een bestand om de stored procedure voor het laden van datums uit te voeren.
+
+        """
         content = "EXEC [DA_MDDE].[sp_LoadDates]"
 
         path_file_output = self.path_output / "PostDeployment" / "PostDeploy_Dates.sql"
@@ -171,6 +176,17 @@ class DeploymentMDDE:
                 file.writelines(line + "\n" for line in script_entries)
 
     def _get_relative_path(self, path_base: Path, path_relative: Path) -> str:
+        """
+        Bepaalt het relatieve pad van een scriptbestand ten opzichte van het masterbestand.
+        Vergelijkt de padonderdelen en construeert een relatief pad voor gebruik in het master post-deploy script.
+
+        Args:
+            path_base (Path): Het basispad (meestal het masterbestand).
+            path_relative (Path): Het pad van het scriptbestand waarvoor het relatieve pad bepaald moet worden.
+
+        Returns:
+            str: Het relatieve pad van het scriptbestand ten opzichte van het masterbestand.
+        """
         parts_compare = list(path_base.parts)
         parts_output = list(path_relative.parts)
 
