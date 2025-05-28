@@ -393,21 +393,29 @@ class DevOps(BaseConfigComponent):
         return folder
 
     @property
+    def branch(self) -> str:
+        return self._data.branch
+
+    @property
     def feature_branch(self) -> str:
-        return f"feature/{self.config.work_item}_{self.config.work_item_description.replace(' ', '_')}_{os.getlogin().replace(' ', '_')}"
+        user_login = os.getlogin().replace(' ', '_')
+        descr_work_item = self._data.work_item_description.replace(' ', '_')
+        return f"feature/{self._data.work_item}_{descr_work_item}_{user_login}"
 
     @property
     def url(self) -> str:
-        return f"https://{self.config.organisation}@dev.azure.com/{self.config.organisation}/{self.config.project}/_git/{self.config.repo}"
+        return f"https://{self._data.organisation}@dev.azure.com/{self._data.organisation}/{self._data.project}/_git/{self._data.repo}"
 
     @property
     def url_check(self) -> str:
-        return f"https://dev.azure.com/{self.config.organisation}/{self.config.project}/_git/{self.config.repo}"
+        return f"https://dev.azure.com/{self._data.organisation}/{self._data.project}/_git/{self._data.repo}"
 
     @property
     def url_branch(self) -> str:
         """De URL van de repository branch waar de wijzigingen in worden doorgevoerd"""
-        return f"{self.url_check}?version=GBfeature%2F{self.config.work_item}_{self.config.work_item_description.replace(' ', '_')}_{os.getlogin().replace(' ', '_')}"
+        user_login = os.getlogin().replace(' ', '_')
+        descr_work_item = self._data.work_item_description.replace(' ', '_')
+        return f"{self.url_check}?version=GBfeature%2F{self._data.work_item}_{descr_work_item}_{user_login}"
 
     @property
     def path_vs_project_file(self):

@@ -135,6 +135,18 @@ class DeploymentMDDE:
         )
         self.post_deployment_scripts.append(path_file_output)
 
+    def _generate_load_dates(self):
+        content = "EXEC [DA_MDDE].[sp_LoadDates]"
+
+        path_file_output = self.path_output / "PostDeployment" / "PostDeploy_Dates.sql"
+        path_file_output.parent.mkdir(parents=True, exist_ok=True)
+        with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:
+            file_ddl.write(content)
+        logger.info(
+            f"Created Dates post deployment script '{path_file_output.resolve()}'"
+        )
+        self.post_deployment_scripts.append(path_file_output)
+
     def _generate_post_deploy_master(self):
         """
         Voegt een post-deploy scriptbestand toe aan het masterbestand voor post-deployment scripts.

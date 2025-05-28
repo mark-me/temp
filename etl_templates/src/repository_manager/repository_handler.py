@@ -1,5 +1,5 @@
 import os
-import shutil
+from shutil import copytree
 import subprocess
 import time
 import webbrowser
@@ -11,8 +11,9 @@ from .project_file import ProjectFile
 
 logger = get_logger(__name__)
 
+
 class RepositoryHandler:
-    """Handelt repository acties af zoals clonen, feature branches aanmaken, comitten en pushen naar de remote"""
+    """Handelt repository acties af zoals klonen, feature branches aanmaken, comitten en pushen naar de remote"""
 
     def __init__(self, config: dict):
         """
@@ -39,6 +40,47 @@ class RepositoryHandler:
         logger.info("Kloon van repository '{self.params.url}'.")
         dir_current = Path("./").resolve()
         self._remove_old_repo()  # deletes a directory and all its contents.
+        # time.sleep(5)
+        lst_command = [
+            "git",
+            "clone",
+            self._config.url,
+            "-b",
+            self._config.branch,
+            str(self._path_local),
+        ]
+        logger.info(f"Executed: {' '.join(lst_command)}")
+        subprocess.run(lst_command)
+        logger.info(f"chdir to: {self._path_local}")
+        os.chdir(self._path_local)
+        lst_command = [
+            "git",
+            "branch",
+            self._config.feature_branch,
+            self._config.branch,
+        ]
+        logger.info(f"Executed: {' '.join(lst_command)}")
+        subprocess.run(lst_command)
+        lst_command = ["git", "switch", self._config.feature_branch]
+        logger.info(f"Executed: {' '.join(lst_command)}")
+        subprocess.run(lst_command)
+        # Relocate to org root folder
+        os.chdir(dir_current)
+
+    def clone2(self):
+        """
+        Kloont de repository, maakt een feature-branch aan en schakelt hiernaar over.
+
+        Deze functie verwijdert eerst een bestaande repository, kloont vervolgens de opgegeven repository,
+        maakt een nieuwe feature-branch aan en schakelt hiernaar over. Indien nodig wordt de gebruiker gevraagd
+        om in te loggen op DevOps.
+
+        Returns:
+            None
+        """
+        logger.info("Kloon van repository '{self.params.url}'.")
+        dir_current = Path("./").resolve()
+        self._remove_old_repo()  # deletes a directory and all its contents.
         time.sleep(5)
         for i in range(2):
             try:
@@ -50,7 +92,7 @@ class RepositoryHandler:
                     self._config.branch,
                     str(self._path_local),
                 ]
-                logger.info(" ".join(lst_command))
+                logger.info(f"Executed: {' '.join(lst_command)}")
                 subprocess.run(lst_command)
                 logger.info(f"chdir to: {self._path_local}")
                 os.chdir(self._path_local)
@@ -60,10 +102,10 @@ class RepositoryHandler:
                     self._config.featurebranch,
                     self._config.branch,
                 ]
-                logger.info(" ".join(lst_command))
+                logger.info(f"Executed: {' '.join(lst_command)}")
                 subprocess.run(lst_command)
                 lst_command = ["git", "switch", self._config.featurebranch]
-                logger.info(" ".join(lst_command))
+                logger.info(f"Executed: {' '.join(lst_command)}")
                 subprocess.run(lst_command)
                 i += 99
             except:
@@ -71,7 +113,9 @@ class RepositoryHandler:
                     "Er is wat mis gegaan. Waarschijnlijk moet je eerst inloggen op Devops. "
                 )
                 webbrowser.open(self._config.url_check, new=0, autoraise=True)
-                logger.info("Wait timer for 15 seconds, to allow user to log in to DevOps")
+                logger.info(
+                    "Wait timer for 15 seconds, to allow user to log in to DevOps"
+                )
                 time.sleep(15)
                 continue
             else:
@@ -107,7 +151,7 @@ class RepositoryHandler:
         Voert een commit en push uit naar de DevOps repository en opent de branch in de browser.
 
         Deze functie voegt alle wijzigingen toe, maakt een commit met een werkitem-omschrijving,
-        pusht naar de featurebranch en opent de branch-URL in de browser.
+        pusht naar de feature-branch en opent de branch-URL in de browser.
 
         Returns:
             None
@@ -118,7 +162,7 @@ class RepositoryHandler:
             "add",
             "-A",
         ]
-        logger.info(" ".join(lst_command))
+        logger.info(f"Executed: {' '.join(lst_command)}")
         subprocess.run(lst_command)
         lst_command = [
             "git",
@@ -126,78 +170,28 @@ class RepositoryHandler:
             "-m"
             f"Commit: {self._config.work_item_description.replace(' ', '_')} #{int(self._config.work_item)}",
         ]
-        logger.info(" ".join(lst_command))
+        logger.info(f"Executed: {' '.join(lst_command)}")
         subprocess.run(lst_command)
-        lst_command = ["git", "push", "origin", self._config.featurebranch]
-        logger.info(" ".join(lst_command))
+        lst_command = ["git", "push", "origin", self._config.feature_branch]
+        logger.info(f"Executed: {' '.join(lst_command)}")
         subprocess.run(lst_command)
 
         # Open browser to check Commit tot DevOps
         webbrowser.open(self._config.url_branch, new=0, autoraise=True)
 
-
-    def add_directory(self, path_source: Path):
-        lst_files_new = self._find_files_new()
-        project_file = ProjectFile(dir, path_repository=self.path_repository, )
-
-    def _find_files_new(self) -> list:
-        # Find files which are not in the repository
-        project_file = ProjectFile()
-
-
-    def _copy_file(self, file_source: str, file_destination: str):
-        dest_folder = Path(file_destination).parent
-        dest_folder.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(
-            Path(file_source),
-            Path(file_destination),
+    def add_directory_to_repo(self, path_source: Path):
+        # Add files not, currently found in the repository, to the project file
+        lst_files_new = self._find_files_new(path_source=path_source)
+        project_file = ProjectFile(
+            dir,
+            path_repository=self.path_repository,
+            path_file_project=self.config.path_vs_project_file,
         )
+        # Copy all files to repository
 
-    def _copy_mdde_scripts(self):
-        """
-        Kopieer de MDDE scripts naar een Visual Studio Project repository folder
-        """
-        logger.info("Start copy of MDDE scripts to vs Project repo folder.")
-        # dir_root = f"{self.params.dir_repository}\\"
-        dir_output = "CentralLayer/DA_MDDE"
-        dir_scripts_mdde = self._config.generator_config.dir_scripts_mdde
-        for platform in [d for d in Path(dir_scripts_mdde).iterdir() if d.is_dir()]:
-            logger.info(f"Found platform folder: {dir_scripts_mdde}/{platform.name}.")
-            for schema in [d for d in platform.iterdir() if d.is_dir()]:
-                logger.info(
-                    f"Found schema folder: {dir_scripts_mdde}/{platform.name}/{schema.name}."
-                )
-                for object_type in [d for d in schema.iterdir() if d.is_dir()]:
-                    logger.info(
-                        f"Found object type folder: {dir_scripts_mdde}\\{platform.name}\\{schema.name}\\{object_type.name}."
-                    )
-                    for file in [f for f in object_type.iterdir() if f.is_file()]:
-                        # Add used folders to dict_created_ddls to be later used to add to the VS Project file
-                        self.__add_object_to_ddl(
-                            code_model=schema.name,
-                            type_objects=object_type,
-                            file_output=file.name,
-                        )
-                        dir_output_type = f"{dir_output}/{object_type.name}/"
-                        Path(os.path.join(self.dir_root, dir_output_type.name)).mkdir(
-                            parents=True, exist_ok=True
-                        )
-                        dest = Path(
-                            os.path.join(self.dir_root, dir_output_type, file.name)
-                        )
-                        logger.info(f"Copy {file} to: {dest.resolve()}")
-                        dest.write_text(file.read_text())
-                        # Create a copy of the new file to the intermediate folder
-                        cp_folder = Path(
-                            f"{self._config.dir_generate}/{dir_output_type}/"
-                        )
-                        cp_folder.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(
-                            Path(dest),
-                            Path(f"{cp_folder}/{file.name}"),
-                        )
-
-    def update_post_deployment_master(self, path_file: Path):
-
-
+    def _find_files_new(self, path_source: Path) -> list:
+        # Find files which are not in the repository
+        lst_generated = list(path_source.rglob("*"))
+        lst_repository = self._path_local.rglob("*")
         pass
+
