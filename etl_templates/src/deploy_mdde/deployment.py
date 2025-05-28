@@ -1,6 +1,7 @@
 from shutil import copytree
 from enum import Enum
 from pathlib import Path, WindowsPath
+import os
 
 from jinja2 import Environment, FileSystemLoader, Template
 from logtools import get_logger
@@ -146,12 +147,29 @@ class DeploymentMDDE:
             self.path_output.parent / "PostDeployment" / "PostDeploy.sql"
         )
         path_output_master.parent.mkdir(parents=True, exist_ok=True)
-        with open(path_output_master, "w") as f:
+        with open(path_output_master, "w") as file:
             for script in self.post_deployment_scripts:
-                test_script = str(script).replace("/", "\\")
-                test_master = str(path_output_master).replace("/", "\\")
-                print(script)
-                f.write(
-                    f"\nPRINT N'Running PostDeploy: ..\\DA_MDDE\\PostDeployment\\{script}\n"
+                script_path = self._get_relative_path(
+                    path_base=path_output_master, path_relative=Path(script)
                 )
-                f.write(f":r ..\\DA_MDDE\\PostDeployment\\{script}\n")
+                script_entries = [
+                    f"PRINT N'Running PostDeploy: {script_path}'",
+                    f":r {script_path}",
+                ]
+                file.writelines(line + "\n" for line in script_entries)
+
+    def _get_relative_path(self, path_base: Path, path_relative: Path) -> str:
+        parts_compare = list(path_base.parts)
+        parts_output = list(path_relative.parts)
+
+        is_part_in_common = True
+        i = 0
+        while is_part_in_common and i < len(parts_output) and len(parts_compare):
+            if parts_compare[i] != parts_output[i]:
+                is_part_in_common = False
+            i += 1
+
+        parts_new = parts_output[i - 1 :]
+        dir_output = os.path.join(*parts_new)
+        dir_output = "..\\" + dir_output
+        return dir_output
