@@ -48,27 +48,26 @@ class Orchestrator:
         logger.info("Start Genesis verwerking")
         lst_files_RETW = []
         for pd_file in self.config.power_designer.files:
-            file_RETW = self.extract(file_pd_ldm=pd_file)
+            file_RETW = self._extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
 
-        dag = self.inspect_etl_dag(files_RETW=lst_files_RETW)
+        dag = self._inspect_etl_dag(files_RETW=lst_files_RETW)
         mapping_order = dag.get_mapping_order()
 
-        self.generate_code(files_RETW=lst_files_RETW)
-        self.generate_mdde_deployment(mapping_order=mapping_order)
+        self._generate_code(files_RETW=lst_files_RETW)
+        self._generate_mdde_deployment(mapping_order=mapping_order)
 
-        # Stop process if extraction and dependecies check result in issues
+        # Stop process if extraction and dependencies check result in issues
         # self._handle_issues()
-        # if not skip_devops:
-        #     devops_handler = RepositoryHandler(
-        #         config=self.config.devops_config,
-        #         dir_repository=self.config.dir_repository,
-        #     )
-        #     devops_handler.clone()
-        #     # TODO: Copy code and codelist to repo and update project file
+        if not skip_devops:
+            devops_handler = RepositoryHandler(
+                config=self.config.devops
+            )
+            devops_handler.clone()
+            # TODO: Copy code and codelist to repo and update project file
         #     devops_handler.push()
 
-    def extract(self, file_pd_ldm: Path) -> str:
+    def _extract(self, file_pd_ldm: Path) -> str:
         """Extract data from a PowerDesigner LDM file.
 
         Extracts the logical data model and mappings from the specified file and saves them as a JSON file.
@@ -88,7 +87,7 @@ class Orchestrator:
         )
         return file_RETW
 
-    def inspect_etl_dag(self, files_RETW: list):
+    def _inspect_etl_dag(self, files_RETW: list):
         """
         Inspecteert de ETL-afhankelijkheden en genereert een overzicht van de mappingvolgorde.
 
@@ -109,7 +108,7 @@ class Orchestrator:
         # dag.plot_file_dependencies(f"{dir_report}/RETW_dependencies.html"=test) FIXME: Results in error
         return dag
 
-    def generate_mdde_deployment(self, mapping_order: list) -> Path:
+    def _generate_mdde_deployment(self, mapping_order: list) -> Path:
         """
         Genereert een CodeList-bestand op basis van de input codelist-bestanden.
 
@@ -126,7 +125,7 @@ class Orchestrator:
         )
         deploy_mdde.process(mapping_order=mapping_order)
 
-    def generate_code(self, files_RETW: list) -> None:
+    def _generate_code(self, files_RETW: list) -> None:
         """Generate deployment code based on extracted data.
 
         Generates the necessary code for deployment based on the extracted data and dependencies.

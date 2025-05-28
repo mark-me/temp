@@ -21,19 +21,6 @@ from config_definition import (
 logger = get_logger(__name__)
 
 
-def create_dir(path: Path) -> None:
-    """
-    Maakt de opgegeven directory aan als deze nog niet bestaat.
-    Controleert of het pad een bestand is en converteert het naar een director-ypad indien nodig.
-
-    Args:
-        dir_path (Path): Het pad naar de directory die aangemaakt moet worden.
-    """
-    if path.is_file():
-        path = os.path.dirname(path)
-    Path(path).mkdir(parents=True, exist_ok=True)
-
-
 class ConfigFile:
     """Leest configuratie uit een YAML bestand.
 
@@ -54,14 +41,22 @@ class ConfigFile:
         self.title = data.title
         self._version = self._determine_version()
         self.power_designer = PowerDesigner(data.power_designer)
-        self.extractor = Extractor(data.extractor, path_intermediate=self.path_intermediate)
-        self.generator = Generator(data.generator, path_intermediate=self.path_intermediate)
-        self.deploy_mdde = DeploymentMDDE(data.deployment_mdde, path_intermediate=self.path_intermediate)
-        self.devops = DevOps(data.devops, path_output_root=data.folder_intermediate_root)
+        self.extractor = Extractor(
+            data.extractor, path_intermediate=self.path_intermediate
+        )
+        self.generator = Generator(
+            data.generator, path_intermediate=self.path_intermediate
+        )
+        self.deploy_mdde = DeploymentMDDE(
+            data.deployment_mdde, path_intermediate=self.path_intermediate
+        )
+        self.devops = DevOps(
+            data.devops, path_output_root=data.folder_intermediate_root
+        )
 
     def _read_file(self) -> ConfigData:
         try:
-            with open(self._file, 'r') as file:
+            with open(self._file, "r") as file:
                 config_dict = yaml.safe_load(file)
 
             # Transform keys with hyphens to underscores
@@ -71,7 +66,7 @@ class ConfigFile:
             config = from_dict(
                 data_class=ConfigData,
                 data=config_dict,
-                config=Config(strict=True)  # Will raise error if extra/missing fields
+                config=Config(strict=True),  # Will raise error if extra/missing fields
             )
             return config
         except FileNotFoundError as e:
@@ -84,10 +79,14 @@ class ConfigFile:
             raise ConfigFileError(f"Verplichte waarde ontbreekt: {e}", 102) from e
 
         except WrongTypeError as e:
-            raise ConfigFileError(f"Verkeerd type voor configuratieparameter: {e}", 103)  from e
+            raise ConfigFileError(
+                f"Verkeerd type voor configuratieparameter: {e}", 103
+            ) from e
 
         except Exception as e:
-            raise ConfigFileError(f"Onverwachte fout bij het laden van de configuratie: {e}", 199)  from e
+            raise ConfigFileError(
+                f"Onverwachte fout bij het laden van de configuratie: {e}", 199
+            ) from e
 
     def _replace_hyphens_with_underscores(self, config_raw: Any) -> dict:
         """
@@ -103,7 +102,7 @@ class ConfigFile:
 
         if isinstance(config_raw, dict):
             return {
-                k.replace('-', '_'): self._replace_hyphens_with_underscores(v)
+                k.replace("-", "_"): self._replace_hyphens_with_underscores(v)
                 for k, v in config_raw.items()
             }
         elif isinstance(config_raw, list):
@@ -254,13 +253,29 @@ class ConfigFile:
             Path: Het pad naar de tussenliggende outputfolder.
         """
         folder = Path(self.folder_intermediate_root) / self.title / self._version
-        create_dir(path=folder)
+        folder.mkdir(parents=True, exist_ok=True)
         return folder
 
 
-class PowerDesigner:
-    def __init__(self, config: PowerDesignerConfig):
+class BaseConfigComponent:
+    def __init__(self, config):
         self._data = config
+
+    def create_dir(self, path: Path) -> None:
+        """
+        Maakt de opgegeven directory aan als deze nog niet bestaat.
+        Controleert of het pad een bestand is en converteert het naar een director-ypad indien nodig.
+
+        Args:
+            dir_path (Path): Het pad naar de directory die aangemaakt moet worden.
+        """
+        if path.is_file():
+            path = os.path.dirname(path)
+        Path(path).mkdir(parents=True, exist_ok=True)
+
+class PowerDesigner(BaseConfigComponent):
+    def __init__(self, config: PowerDesignerConfig):
+        super().__init__(config)
 
     @property
     def files(self) -> list:
@@ -290,9 +305,9 @@ class PowerDesigner:
         return lst_pd_files
 
 
-class Extractor:
+class Extractor(BaseConfigComponent):
     def __init__(self, config: ExtractorConfig, path_intermediate: Path):
-        self._data = config
+        super().__init__(config)
         self.path_intermediate = path_intermediate
 
     @property
@@ -305,13 +320,13 @@ class Extractor:
             Path: Het pad naar de extractie-outputfolder.
         """
         folder = self.path_intermediate / self._data.folder_output
-        create_dir(folder)
+        self.create_dir(folder)
         return folder
 
 
-class Generator:
+class Generator(BaseConfigComponent):
     def __init__(self, config: GeneratorConfig, path_intermediate: Path):
-        self._data = config
+        super().__init__(config)
         self.path_intermediate = path_intermediate
 
     @property
@@ -324,7 +339,7 @@ class Generator:
             Path: Het pad naar de extractie-outputfolder.
         """
         folder = self.path_intermediate / self._data.folder_output
-        create_dir(folder)
+        self.create_dir(folder)
         return folder
 
     @property
@@ -332,9 +347,9 @@ class Generator:
         return self._data.templates_platform
 
 
-class DeploymentMDDE:
+class DeploymentMDDE(BaseConfigComponent):
     def __init__(self, config: DeploymentMDDEConfig, path_intermediate: Path):
-        self._data = config
+        super().__init__(config)
         self.path_intermediate = path_intermediate
 
     @property
@@ -347,7 +362,7 @@ class DeploymentMDDE:
             Path: Het pad naar de extractie-outputfolder.
         """
         folder = self.path_intermediate / self._data.folder_output
-        create_dir(folder)
+        self.create_dir(folder)
         return folder
 
     @property
@@ -358,13 +373,14 @@ class DeploymentMDDE:
     def path_data_input(self) -> Path:
         return Path(self._data.folder_data)
 
-class DevOps:
+
+class DevOps(BaseConfigComponent):
     def __init__(self, config: DevOpsConfig, path_output_root: Path):
-        self._data = config
-        self.path_output_root = path_output_root
+        super().__init__(config)
+        self._path_output_root = path_output_root
 
     @property
-    def dir_repository(self) -> Path:
+    def path_local(self) -> Path:
         """
         Geeft het pad naar de DevOps repository-folder voor deze configuratie.
         Bepaalt en maakt de directory aan op basis van de root en de devops folder uit de configuratie.
@@ -372,8 +388,8 @@ class DevOps:
         Returns:
             Path: Het pad naar de repository-folder.
         """
-        folder = self.path_output_root / self._data.folder
-        self._create_dir(folder)
+        folder = Path(self._path_output_root) / self._data.folder
+        self.create_dir(folder)
         return folder
 
     @property
@@ -386,14 +402,12 @@ class DevOps:
 
     @property
     def url_check(self) -> str:
-        return (
-            f"https://dev.azure.com/{self.config.organisation}/{self.config.project}/_git/{self.config.repo}"
-        )
+        return f"https://dev.azure.com/{self.config.organisation}/{self.config.project}/_git/{self.config.repo}"
 
     @property
     def url_branch(self) -> str:
         """De URL van de repository branch waar de wijzigingen in worden doorgevoerd"""
-        return (f"{self.url_check}?version=GBfeature%2F{self.config.work_item}_{self.config.work_item_description.replace(' ', '_')}_{os.getlogin().replace(' ', '_')}")
+        return f"{self.url_check}?version=GBfeature%2F{self.config.work_item}_{self.config.work_item_description.replace(' ', '_')}_{os.getlogin().replace(' ', '_')}"
 
     @property
     def path_vs_project_file(self):

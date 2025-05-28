@@ -1,6 +1,6 @@
 from shutil import copytree
 from enum import Enum
-from pathlib import Path, WindowsPath
+from pathlib import Path
 import os
 
 from jinja2 import Environment, FileSystemLoader, Template

@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 class RepositoryHandler:
     """Handelt repository acties af zoals clonen, feature branches aanmaken, comitten en pushen naar de remote"""
 
-    def __init__(self, config: dict, dir_repository: str):
+    def __init__(self, config: dict):
         """
         Initialiseert de RepositoryHandler met repository parameters en een doel-directory.
 
@@ -22,8 +22,8 @@ class RepositoryHandler:
             params (dict): Dictionary die de repository parameters bevat zoals URL, branch, etc.
             dir_repository (str): Pad naar de locale repository directory.
         """
-        self.config = config
-        self.dir_repository = Path(dir_repository).resolve
+        self._config = config
+        self._path_local = config.path_local.resolve()
 
     def clone(self):
         """
@@ -45,24 +45,24 @@ class RepositoryHandler:
                 lst_command = [
                     "git",
                     "clone",
-                    self.config.url,
+                    self._config.url,
                     "-b",
-                    self.config.branch,
-                    str(self.dir_repository),
+                    self._config.branch,
+                    str(self._path_local),
                 ]
                 logger.info(" ".join(lst_command))
                 subprocess.run(lst_command)
-                logger.info(f"chdir to: {self.dir_repository}")
-                os.chdir(self.dir_repository)
+                logger.info(f"chdir to: {self._path_local}")
+                os.chdir(self._path_local)
                 lst_command = [
                     "git",
                     "branch",
-                    self.config.featurebranch,
-                    self.config.branch,
+                    self._config.featurebranch,
+                    self._config.branch,
                 ]
                 logger.info(" ".join(lst_command))
                 subprocess.run(lst_command)
-                lst_command = ["git", "switch", self.config.featurebranch]
+                lst_command = ["git", "switch", self._config.featurebranch]
                 logger.info(" ".join(lst_command))
                 subprocess.run(lst_command)
                 i += 99
@@ -70,7 +70,7 @@ class RepositoryHandler:
                 logger.warning(
                     "Er is wat mis gegaan. Waarschijnlijk moet je eerst inloggen op Devops. "
                 )
-                webbrowser.open(self.config.url_check, new=0, autoraise=True)
+                webbrowser.open(self._config.url_check, new=0, autoraise=True)
                 logger.info("Wait timer for 15 seconds, to allow user to log in to DevOps")
                 time.sleep(15)
                 continue
@@ -89,18 +89,18 @@ class RepositoryHandler:
         Returns:
             None
         """
-        if not self.dir_repository.is_dir():
+        if not self._path_local.is_dir():
             return
         # change owner of file .idx, else we get an error
-        for root, dirs, files in self.dir_repository.walk(top_down=False):
+        for root, dirs, files in self._path_local.walk(top_down=False):
             for d in dirs:
                 os.chmod((root / d), 0o777)
                 (root / d).rmdir()
             for f in files:
                 os.chmod((root / f), 0o777)
                 (root / f).unlink()
-        self.dir_repository.rmdir()
-        logger.info(f"Delete existing folder: {self.dir_repository}")
+        self._path_local.rmdir()
+        logger.info(f"Delete existing folder: {self._path_local}")
 
     def push(self) -> None:
         """
@@ -112,7 +112,7 @@ class RepositoryHandler:
         Returns:
             None
         """
-        os.chdir(self.dir_repository)
+        os.chdir(self._path_local)
         lst_command = [
             "git",
             "add",
@@ -124,16 +124,16 @@ class RepositoryHandler:
             "git",
             "commit",
             "-m"
-            f"Commit: {self.config.work_item_description.replace(' ', '_')} #{int(self.config.work_item)}",
+            f"Commit: {self._config.work_item_description.replace(' ', '_')} #{int(self._config.work_item)}",
         ]
         logger.info(" ".join(lst_command))
         subprocess.run(lst_command)
-        lst_command = ["git", "push", "origin", self.config.featurebranch]
+        lst_command = ["git", "push", "origin", self._config.featurebranch]
         logger.info(" ".join(lst_command))
         subprocess.run(lst_command)
 
         # Open browser to check Commit tot DevOps
-        webbrowser.open(self.config.url_branch, new=0, autoraise=True)
+        webbrowser.open(self._config.url_branch, new=0, autoraise=True)
 
 
     def add_directory(self, path_source: Path):
@@ -160,7 +160,7 @@ class RepositoryHandler:
         logger.info("Start copy of MDDE scripts to vs Project repo folder.")
         # dir_root = f"{self.params.dir_repository}\\"
         dir_output = "CentralLayer/DA_MDDE"
-        dir_scripts_mdde = self.config.generator_config.dir_scripts_mdde
+        dir_scripts_mdde = self._config.generator_config.dir_scripts_mdde
         for platform in [d for d in Path(dir_scripts_mdde).iterdir() if d.is_dir()]:
             logger.info(f"Found platform folder: {dir_scripts_mdde}/{platform.name}.")
             for schema in [d for d in platform.iterdir() if d.is_dir()]:
@@ -189,15 +189,15 @@ class RepositoryHandler:
                         dest.write_text(file.read_text())
                         # Create a copy of the new file to the intermediate folder
                         cp_folder = Path(
-                            f"{self.config.dir_generate}/{dir_output_type}/"
+                            f"{self._config.dir_generate}/{dir_output_type}/"
                         )
                         cp_folder.mkdir(parents=True, exist_ok=True)
                         shutil.copy2(
                             Path(dest),
                             Path(f"{cp_folder}/{file.name}"),
                         )
-    
+
     def update_post_deployment_master(self, path_file: Path):
-        
-        
+
+
         pass
