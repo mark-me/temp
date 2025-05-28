@@ -112,9 +112,9 @@ class RepositoryManager:
                 logger.info(f"Executed: {' '.join(lst_command)}")
                 subprocess.run(lst_command)
                 i += 99
-            except:
+            except OSError as e:
                 logger.error(
-                    "Er is wat mis gegaan. Waarschijnlijk moet je eerst inloggen op Devops. "
+                    f"Er is wat mis gegaan. Waarschijnlijk moet je eerst inloggen op Devops. Foutmelding: {e}"
                 )
                 webbrowser.open(self._config.url_check, new=0, autoraise=True)
                 logger.info(
