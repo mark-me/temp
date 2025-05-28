@@ -294,14 +294,24 @@ MappingExtractor --> PDdocument
 
 ### ::: src.generator.generator.DDLGenerator
 
----
-
-### ::: src.generator.publisher.DDLPublisher
+### ::: src.generator.generator.TemplateType
 
 ---
 
-### ::: src.generator.devops.DevOpsHandler
+### ::: src.generator.ddl_entities.DDLEntities
 
 ---
 
-### ::: src.generator.codelists.CodeList
+### ::: src.generator.ddl_base.DDLGeneratorBase
+
+---
+
+### ::: src.generator.ddl_views_source.DDLSourceViews
+
+---
+
+### ::: src.generator.ddl_views_source_aggr.DDLSourceViewsAggr
+
+---
+
+### ::: src.generator.ddl_views_base.DDLViewBase

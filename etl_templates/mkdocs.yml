@@ -48,6 +48,8 @@ nav:
     - Extractor: Extractor.md
     - Afhankelijkheidscontrole: Dependency_checker.md
     - Generator: Generator.md
+    - Deployment MDDE: Deploy_MDDE.md
+    - Repository management: Repository_Handler.md
   - Hulp packages:
     - Logging: Logtools.md
     - Documentatie genereren: Documentation_Creation.md

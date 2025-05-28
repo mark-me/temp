@@ -12,7 +12,7 @@ from .project_file import ProjectFile
 logger = get_logger(__name__)
 
 
-class RepositoryHandler:
+class RepositoryManager:
     """Handelt repository acties af zoals klonen, feature branches aanmaken, comitten en pushen naar de remote"""
 
     def __init__(self, config: dict):

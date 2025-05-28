@@ -153,13 +153,13 @@ classDiagram
 
 ---
 
-::: src.genesis.config_file.ConfigFileError
+### Configuratie validatie
+
+::: src.genesis.config_definition.ConfigFileError
     options:
       heading_level: 4
 
 ---
-
-### Configuratie validatie
 
 ::: src.genesis.config_definition.ConfigData
     options:
@@ -186,11 +186,5 @@ classDiagram
 ---
 
 ::: src.genesis.config_definition.PowerDesignerConfig
-    options:
-      heading_level: 4
-
----
-
-::: src.genesis.config_definition.PublisherConfig
     options:
       heading_level: 4
