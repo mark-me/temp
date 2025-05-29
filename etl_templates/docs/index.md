@@ -9,7 +9,7 @@ Genesis is een programma dat het mogelijk maakt om Power Designer-logische datam
 ```mermaid
 block-beta
 columns 1
-    PDDocument("Power Designer<br>LDM-bestand")
+    PDDocument("Power Designer<br>LDM-bestand(en)")
     space
     block:Orchestrator
         RETW[["Power Designer<br>extractie"]]
