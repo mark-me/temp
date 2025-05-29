@@ -4,7 +4,7 @@
 
 ## Wat is Genesis?
 
-Genesis is een programma dat het mogelijk maakt om Power Designer-logische datamodeldocumenten om te zetten in code die tabellen genereert en ETL-programma’s om die tabellen te vullen. Om dit doel te bereiken doorloopt Genesis een aantal stappen:
+Genesis is een programma dat het mogelijk maakt om Power Designer-logische datamodeldocumenten om te zetten in code die tabellen en ETL-programma’s genereert om die tabellen te vullen. Om dit doel te bereiken doorloopt Genesis een aantal stappen:
 
 ```mermaid
 block-beta
