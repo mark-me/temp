@@ -17,7 +17,7 @@ class ProjectFile:
         self.file_vs_project = path_file_project
         self.project_file = Path(f"{self.dir_repo /self.file_vs_project}")
 
-    def publish(self, lst_files_new: list):
+    def publish(self, lst_files_new: list) -> None:
         """
         Publiceert SQL-bestanden in het Visual Studio-project en voegt ze toe aan het SQLProject-bestand.
 

@@ -99,7 +99,6 @@ class DDLGenerator:
 
         Args:
             file_RETW (str): Het pad naar het RETW JSON-modelbestand.
-            mapping_order (list): De volgorde waarin mappings verwerkt moeten worden.
         """
         # self.__copy_mdde_scripts()\
         dict_RETW = self._read_model_file(file_RETW=file_RETW)

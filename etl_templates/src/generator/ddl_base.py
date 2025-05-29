@@ -25,8 +25,6 @@ class DDLGeneratorBase:
 
         Args:
             content (str): De te schrijven SQL-inhoud.
-            dir_output (Path): De outputdirectory voor de source view.
-            file_output (str): De bestandsnaam van de source view.
             path_file_output (str): Het volledige pad waar de source view wordt opgeslagen.
         """
         with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:

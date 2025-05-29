@@ -35,12 +35,12 @@ class Orchestrator:
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
 
     def start_processing(self, skip_devops: bool = False) -> None:
-        """Start the main processing workflow.
+        """Start het Genesis verwerkingsproces.
 
-        Orchestrates the extraction, dependency checking, and deployment code generation.
+        Orkestreert extractie, afhankelijkheidsanalyse, codegeneratie en repository-operaties voor het ETL-proces.
 
         Args:
-            skip_deployment (bool): Skip the deployment.
+            skip_devops (bool): Indien True, worden DevOps repository-operaties overgeslagen.
 
         Returns:
             None

@@ -16,17 +16,17 @@ class RepositoryManager:
     """Handelt repository acties af zoals klonen, feature branches aanmaken, comitten en pushen naar de remote"""
 
     def __init__(self, config: dict):
-        """
-        Initialiseert de RepositoryHandler met repository parameters en een doel-directory.
+        """Initialiseert de RepositoryManager met de opgegeven configuratie.
+
+        Stelt de lokale repositorypad en configuratie in op basis van de meegegeven parameters.
 
         Args:
-            params (dict): Dictionary die de repository parameters bevat zoals URL, branch, etc.
-            dir_repository (str): Pad naar de locale repository directory.
+            config (dict): Configuratieobject met repository-instellingen.
         """
         self._config = config
         self._path_local = config.path_local.resolve()
 
-    def clone(self):
+    def clone(self) -> None:
         """
         Kloont de repository, maakt een feature-branch aan en schakelt hiernaar over.
 
@@ -71,7 +71,7 @@ class RepositoryManager:
         # Relocate to org root folder
         os.chdir(dir_current)
 
-    def clone2(self):
+    def clone2(self) -> None:
         """
         Kloont de repository, maakt een feature-branch aan en schakelt hiernaar over.
 
@@ -226,7 +226,7 @@ feature-branch in de standaard webbrowser.
         """
         webbrowser.open(self._config.url_branch, new=0, autoraise=True)
 
-    def add_directory_to_repo(self, path_source: Path):
+    def add_directory_to_repo(self, path_source: Path) -> None:
         """
         Voegt een bronmap toe aan de repository en werkt het projectbestand bij.
 

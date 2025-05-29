@@ -2,7 +2,7 @@
 
 ![Deployment](images/deployment.png){ align=right width="90" }
 
-Deze documentatie beschrijft het gebruik van het Python-package dat uitrol van een metadata-gedreven dataomgeving (MDDE) binnen een ETL-systeem (Extract, Transform, Load). Het primaire doel is het automatiseren van de generatie en organisatie van post-deployment SQL-scripts, die worden gebruikt om databaseobjecten te configureren en te vullen na de uitrol. Het bestand maakt gebruik van Jinja2-templating voor scriptgeneratie, beheert bestandsoperaties voor uitvoer en onderhoudt een hoofdscript om de uitvoering van alle gegenereerde scripts te orkestreren.
+Deze documentatie beschrijft het gebruik van het Python-package dat uitrol van een model-gedreven data engineering (MDDE) omgeving binnen een ETL-systeem (Extract, Transform, Load). Het primaire doel is het automatiseren van de generatie en organisatie van post-deployment SQL-scripts, die worden gebruikt om databaseobjecten te configureren en te vullen na de uitrol. Het bestand maakt gebruik van Jinja2-templating voor scriptgeneratie, beheert bestandsoperaties voor uitvoer en onderhoudt een hoofdscript om de uitvoering van alle gegenereerde scripts te orkestreren.
 
 ---
 

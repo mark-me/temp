@@ -34,27 +34,25 @@ extractor:
 # Generator-instellingen
 generator:
   # Submap waar gegenereerde output wordt opgeslagen
-  folder: "generator"
+  folder: "CentralLayer"
   # Platformconfiguratie voor templates (bijv. "dedicated-pool" of "shared")
   templates_platform: "dedicated-pool"
-  # Naam van JSON-bestand waarin gemaakte DDL-bestanden worden geregistreerd
-  created_ddls_json: "list_created_ddls.json"
 
-# Publisher-instellingen
-publisher:
-  # Pad naar de Visual Studio-projectmap
-  vs_project_folder: "VSProject"
-  # Pad naar het .sqlproj-bestand binnen het project
-  vs_project_file: "./CentralLayer/project.sqlproj"
-  # JSON-bestand met een lijst van codelijsten
-  codeList_json: "./output/codeList.json"
-  # Map waarin codelijsten als input worden verwacht
-  codeList_folder: "./input/codeList/"
-  # Map met MDDE scripts voor deployment
-  mdde_scripts_folder: "./src/mdde_scripts/"
+deployment-mdde:
+  folder-output: "CentralLayer/DA_MDDE"
+  schema: "MDDE"
+  folder-data: "./etl_templates/input/codeList/"
+
+
+## Publisher-instellingen - Out of date
+#publisher:
+#  # Pad naar de Visual Studio-projectmap
+#  vs_project_folder: "VSProject"
 
 # DevOps-integratie-instellingen
 devops:
+  # Locale folder voor het repository
+  folder: "GIT_repo"
   # Naam van de Azure DevOps organisatie
   organisation: "organisatie-naam"
   # Naam van het project in Azure DevOps
@@ -62,11 +60,13 @@ devops:
   # Repository waarin wijzigingen worden gepusht
   repo: "repository-naam"
   # Naam van de branch waarop gewerkt wordt
-  branch: "feature-branch"
+  branch: "collaboration"
   # Werkitem-ID dat gekoppeld wordt aan deze deployment
   work_item: "12345"
   # Omschrijving van het werkitem of de deployment
   work_item_description: "Beschrijving van deze automatische deployment"
+  # Pad naar het .sqlproj-bestand binnen het project
+  vs-project-file: "./CentralLayer/3. Central Layer.sqlproj"
 ```
 
 ### Belangrijke componenten
