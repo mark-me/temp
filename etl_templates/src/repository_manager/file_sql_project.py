@@ -37,6 +37,7 @@ class SqlProjEditor:
         return ET.SubElement(self.root, 'ItemGroup')
 
     def add_build_file(self, filepath: str) -> None:
+        # sourcery skip: class-extract-method
         """Voegt een build-bestand toe aan het SQL projectbestand.
 
         Maakt een Build-element aan voor het opgegeven bestand en voegt dit toe aan het projectbestand.
@@ -84,9 +85,3 @@ class SqlProjEditor:
         if backup:
             self.path_sqlproj.rename(self.path_sqlproj.with_suffix('.sqlproj.bak'))
         self.tree.write(self.path_sqlproj, encoding='utf-8', xml_declaration=True)
-
-# Gebruik:
-editor = SqlProjEditor('Pad/naar/project.sqlproj')
-editor.add_build_file('Scripts/Tables/NewTable.sql')
-editor.add_postdeploy_script('Scripts/PostDeploy/SeedData.sql')
-editor.save()

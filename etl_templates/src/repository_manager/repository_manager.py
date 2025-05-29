@@ -7,7 +7,7 @@ from pathlib import Path
 
 from logtools import get_logger
 
-from .project_file import ProjectFile
+from .file_sql_project import SqlProjEditor
 
 logger = get_logger(__name__)
 
@@ -37,7 +37,7 @@ class RepositoryManager:
         Returns:
             None
         """
-        logger.info(f"Kloon van repository '{self.params.url}'.")
+        logger.info(f"Kloon van repository '{self._config.url}'.")
         dir_current = Path("./").resolve()
         self._remove_old_repo()  # deletes a directory and all its contents.
         # time.sleep(5)
@@ -52,8 +52,8 @@ class RepositoryManager:
         logger.info(f"Executed: {' '.join(lst_command)}")
         try:
             subprocess.run(lst_command, check=True)
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to clone repository: {e}")
+        except subprocess.CalledProcessError:
+            logger.error(f"Failed to clone repository: {self._config.url}")
             raise
         logger.info(f"chdir to: {self._path_local}")
         os.chdir(self._path_local)
@@ -150,6 +150,58 @@ class RepositoryManager:
         self._path_local.rmdir()
         logger.info(f"Delete existing folder: {self._path_local}")
 
+    def add_directory_to_repo(self, path_source: Path, paths_post_deployment: list[Path]) -> None:
+        """
+        Voegt een directory met nieuwe bestanden en post-deployment scripts toe aan de repository.
+
+        Zoekt naar nieuwe bestanden in de bronmap, werkt het projectbestand bij en kopieert alle bestanden naar de lokale repository.
+
+        Args:
+            path_source (Path): De bronmap met te publiceren bestanden.
+            paths_post_deployment (list[Path]): Lijst met paden naar post-deployment scripts die toegevoegd moeten worden.
+
+        Returns:
+            None
+        """
+        lst_files_new = self._find_files_new(path_source=path_source)
+        lst_files_build = [file for file in lst_files_new if file not in paths_post_deployment]
+        project_editor = SqlProjEditor(path_sqlproj=self.config.path_vs_project_file)
+
+        project_editor.publish()
+        # Copy all files to repository
+        copytree(src=path_source, dst=self._path_local, dirs_exist_ok=True)
+
+    def _find_files_new(self, path_source: Path) -> list[Path]:
+        """
+        Zoekt naar bestanden die wel in de bronmap staan, maar nog niet in de repository.
+
+        Deze functie vergelijkt de relatieve paden van bestanden in de bronmap met die in de repository
+        en retourneert een lijst van bestanden die nog niet aanwezig zijn in de repository.
+
+        Args:
+            path_source (Path): De bronmap waarin gezocht wordt naar nieuwe bestanden.
+
+        Returns:
+            list[Path]: Een lijst met relatieve paden van bestanden die nieuw zijn.
+        """
+        # Genereer relatieve paden van bestanden in de bronmap
+        files_in_source = {
+            file.relative_to(path_source)
+            for file in path_source.rglob("*")
+            if file.is_file()
+        }
+
+        # Genereer relatieve paden van bestanden in de repository
+        files_in_repo = {
+            file.relative_to(self._path_local)
+            for file in self._path_local.rglob("*")
+            if file.is_file()
+        }
+
+        # Bepaal welke bestanden nog niet in de repository staan
+        new_files = list(files_in_source - files_in_repo)
+        return new_files
+
     def publish(self) -> None:
         """
         Voert een commit en push uit naar de DevOps repository en opent de branch in de browser.
@@ -225,56 +277,3 @@ class RepositoryManager:
             None
         """
         webbrowser.open(self._config.url_branch, new=0, autoraise=True)
-
-    def add_directory_to_repo(self, path_source: Path, paths_post_deployment: list[Path]) -> None:
-        """
-        Voegt een directory met nieuwe bestanden en post-deployment scripts toe aan de repository.
-
-        Zoekt naar nieuwe bestanden in de bronmap, werkt het projectbestand bij en kopieert alle bestanden naar de lokale repository.
-
-        Args:
-            path_source (Path): De bronmap met te publiceren bestanden.
-            paths_post_deployment (list[Path]): Lijst met paden naar post-deployment scripts die toegevoegd moeten worden.
-
-        Returns:
-            None
-        """
-        lst_files_new = self._find_files_new(path_source=path_source)
-        project_file = ProjectFile(
-            path_repository=self.path_repository,
-            path_file_project=self.config.path_vs_project_file,
-        )
-        project_file.publish()
-        # Copy all files to repository
-        copytree(src=path_source, dst=self._path_local, dirs_exist_ok=True)
-
-    def _find_files_new(self, path_source: Path) -> list[Path]:
-        """
-        Zoekt naar bestanden die wel in de bronmap staan, maar nog niet in de repository.
-
-        Deze functie vergelijkt de relatieve paden van bestanden in de bronmap met die in de repository
-        en retourneert een lijst van bestanden die nog niet aanwezig zijn in de repository.
-
-        Args:
-            path_source (Path): De bronmap waarin gezocht wordt naar nieuwe bestanden.
-
-        Returns:
-            list[Path]: Een lijst met relatieve paden van bestanden die nieuw zijn.
-        """
-        # Genereer relatieve paden van bestanden in de bronmap
-        files_in_source = {
-            file.relative_to(path_source)
-            for file in path_source.rglob("*")
-            if file.is_file()
-        }
-
-        # Genereer relatieve paden van bestanden in de repository
-        files_in_repo = {
-            file.relative_to(self._path_local)
-            for file in self._path_local.rglob("*")
-            if file.is_file()
-        }
-
-        # Bepaal welke bestanden nog niet in de repository staan
-        new_files = list(files_in_source - files_in_repo)
-        return new_files
