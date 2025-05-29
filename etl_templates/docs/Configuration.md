@@ -240,7 +240,7 @@ classDiagram
 
 ---
 
-### Configuratie validatie
+### Configuratie validatie API
 
 #### ::: src.genesis.config_definition.ConfigFileError
 
