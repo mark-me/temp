@@ -7,45 +7,56 @@
 Genesis is een programma dat het mogelijk maakt om Power Designer-logische datamodeldocumenten om te zetten in code die tabellen en ETL-programma’s genereert om die tabellen te vullen. Om dit doel te bereiken doorloopt Genesis een aantal stappen:
 
 ```mermaid
-block-beta
-columns 1
+graph
     PDDocument("Power Designer<br>LDM-bestand(en)")
-    space
-    block:Orchestrator
-        RETW[["Power Designer<br>extractie"]]
-        Dependency[["Afhankelijkheids-<br>controle"]]
-        Generator[["Genereer code<br>DB objecten"]]
-        DeployMDDE[["Genereer code voor<br>MDDE Deployment"]]
-        RepositoryHandler[["Voeg toe aan<br>DevOps repository"]]
+
+    subgraph Genesis
+    direction TB
+    Configuratie
+        subgraph Orkestrator
+        direction LR
+            RETW[["Power Designer<br>extractie"]]
+            Dependency[["Bepaling<br>afhankelijkheden"]]
+            Generator[["Code<br>DB objecten"]]
+            DeployMDDE[["MDDE<br>deployment code"]]
+            RepositoryHandler[["DevOps repository<br>management"]]
+        end
     end
-    space
     DedicatedPool("Dedicated Pool<br>deployment")
-    PDDocument --> Orchestrator
+    PDDocument --> Genesis
+    Genesis --> DedicatedPool
+
+    Configuratie --> Orkestrator
+
     RETW --> Dependency
     Dependency --> Generator
     Generator --> DeployMDDE
     DeployMDDE --> RepositoryHandler
-    Orchestrator --> DedicatedPool
 
     style PDDocument fill:#FFFFE0,stroke:#FFD700;
+    style Configuratie fill:#FFFFE0,stroke:#FFD700;
     style DedicatedPool fill:#87CEFA,stroke:#808080;
-    style Orchestrator fill:#DCDCDC,stroke:#191970;
+    style Genesis fill:#DCDCDC,stroke:#191970;
 
-    classDef genesis fill:#98FB98,stroke:#006400;
-    class RETW,Dependency,Generator,DeployMDDE,RepositoryHandler genesis
+    classDef functional fill:#90EE90,stroke:#006400;
+    class RETW,Dependency,Generator,DeployMDDE,RepositoryHandler functional
 ```
 
-## Belangrijke componenten
+## Componenten
 
 ### Orkestrator
 
 Het startpunt voor de "Genesis" is de workflow-orkestrator waar alle andere belangrijke componenten samenkomen. De voornaamste functie is het beheren en uitvoeren van de stappen die in de configuratie zijn gedefinieerd, mogelijk inclusief uitrol-stappen. Meer informatie over dit proces is te vinden op de [Orkestrator-pagina](Orkestrator.md).
 
-### Extractor
+#### Configuratie
+
+De orchestrator flow wordt bepaald door een configuratiebestand. Meer informatie over configuratiebestanden en de methodes waarmee deze worden ingelezen en geverifieerd is te vinden op de [Configuratie-pagina](Configuration.md)
+
+### Power Designer extractie
 
 De Extractor neemt een Power Designer-logisch datamodeldocument (herkenbaar aan de extensie .ldm) en extraheert model- en mapping-relevante informatie in een JSON-bestand (vaak aangeduid als een RETW-bestand). Meer informatie over dit proces is te vinden op de [Extractor-pagina](Extractor.md).
 
-### Afhankelijkheidscontrole
+### Bepaling afhankelijkheden
 
 Deze component biedt inzicht in het netwerk van entiteiten en mappings, op basis van RETW-outputbestanden, om te bepalen:
 
@@ -55,15 +66,15 @@ Deze component biedt inzicht in het netwerk van entiteiten en mappings, op basis
 
 Meer informatie is te vinden op de pagina [Afhankelijkheidscontrole](Dependency_checker.md).
 
-### Generator
+### Generator code DB objecten
 
 De Generator gebruikt de output van de Extractor om code te genereren die database objecten kan aanmaken en ETL-processen kan implementeren. Meer informatie hierover is te vinden op de [Generator-pagina](Generator.md).
 
-### Deployment MDDE
+### Generator MDDE deployment code
 
 De MDDE Deployment zorgt ervoor dat de ETL processen in een pipeline kunnen worden gezet voor de ETL orchestratie. Meer informatie hierover is te vinden op de [Deployment MDDE-pagina](Deploy_MDDE.md).
 
-### Repository manager
+### DevOps repository management
 
 De Repository handler zorgt ervoor dat alle gegenereerde code naar DevOps wordt gebracht zodat deze op Azure geimplementeerd kan worden. Meer informatie hierover is te vinden op de [Repository management-pagina](Repository_Manager.md).
 
@@ -76,18 +87,22 @@ Naast de kernfunctionaliteit heeft Genesis ook enkele hulpmiddelen voor Data Mod
 * [Logger](Logtools.md) die naast reguliere logging ook issues vastlegt in de modellen en mappings deze gebruikt kan worden voor de Genesis flow en om de modelleurs op de hoogte te stellen van deze issues.
 * [Documentatie generatie](Documentation_Creation.md) waarmee Markdown bestanden en [DocStrings](https://en.wikipedia.org/wiki/Docstring) in de code omgezet kan worden tot documentatiepagina's (die je hier leest).
 
-## Project mappenstructuur
+## Project folderstructuur
 
-```md
+```bash
 etl_templates
-├───docs
-├───input
-├───site                        # Gegenereerde HTML documentatie. Deze directory is niet aanwezig in het repository maar wordt aangemaakt
+├───docs  # Source voor documentatie
+├───input # Placeholder voor Power Designer documenten
+├───site  # Gegenereerde HTML documentatie (niet aanwezig in repo).
 └───src
-    ├───dependencies_checker
-    ├───generator
+    ├───dependencies_checker   # Bepaling afhankelijkheden
+    ├───deploy_mdde            # MDDE deployment code
+    ├───generator              # Code DB objecten
     ├───genesis
-    ├───logtools
-    ├───log_config              # Oude logger, moet nog aanwezig zijn indien code nod gebruik maakt van de oude
-    └───pd_extractor
+    |      ├───config_file.py  # Configuratie lezen
+    |      ├───main.py         # Start-script Genesis
+    |      └───orchestrator.py # Orkestrator
+    ├───logtools               # Logging en issue tracking
+    ├───pd_extractor           # Power Designer extractie
+    └───repository_manager     # DevOps repository management
 ```

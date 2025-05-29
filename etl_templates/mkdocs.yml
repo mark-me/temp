@@ -41,15 +41,14 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Genesis:
-    - Orkestrator: Orkestrator.md
+  - Componenten:
     - Configuratie: Configuration.md
-  - Subcomponenten:
-    - Extractor: Extractor.md
-    - Afhankelijkheidscontrole: Dependency_checker.md
-    - Generator: Generator.md
-    - Deployment MDDE: Deploy_MDDE.md
-    - Repository management: Repository_Manager.md
+    - Orkestrator: Orkestrator.md
+    - Power Designer extractie: Extractor.md
+    - Bepaling afhankelijkheden: Dependency_checker.md
+    - Code DB objecten: Generator.md
+    - MDDE deployment code  : Deploy_MDDE.md
+    - DevOps repository management: Repository_Manager.md
   - Hulp packages:
     - Logging: Logtools.md
     - Documentatie genereren: Documentation_Creation.md
