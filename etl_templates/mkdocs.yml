@@ -44,7 +44,7 @@ nav:
   - Genesis:
     - Orkestrator: Orkestrator.md
     - Configuratie: Configuration.md
-  - Componenten:
+  - Subcomponenten:
     - Extractor: Extractor.md
     - Afhankelijkheidscontrole: Dependency_checker.md
     - Generator: Generator.md

@@ -7,18 +7,32 @@
 Genesis is een programma dat het mogelijk maakt om Power Designer-logische datamodeldocumenten om te zetten in code die tabellen genereert en ETL-programma’s om die tabellen te vullen. Om dit doel te bereiken doorloopt Genesis een aantal stappen:
 
 ```mermaid
-flowchart LR
-    PDDocument@{ shape: notch-rect, label: "Power Designer<br>LDM-bestand" }
-    RETW@{ shape: rect, label: "Power Designer<br>extractie" }
-    Dependency@{ shape: rect, label: "Afhankelijkheids-<br>controle" }
-    Generator@{ shape: rect, label: "Genereer code<br>DB objecten" }
-    DeployMDDE@{ shape: rect, label: "Code voor<br>MDDE Deployment"}
-    RepositoryHandler@{ shape: rect, label: "Voeg toe aan<br>DevOps repository" }
-    DedicatedPool@{ shape: database, label: "Dedicated Pool<br>deployment" }
-    subgraph Orkestrator
-        direction LR
-        PDDocument --> RETW --> Dependency --> Generator --> DeployMDDE --> RepositoryHandler --> DedicatedPool
+block-beta
+columns 1
+    PDDocument("Power Designer<br>LDM-bestand")
+    space
+    block:Orchestrator
+        RETW[["Power Designer<br>extractie"]]
+        Dependency[["Afhankelijkheids-<br>controle"]]
+        Generator[["Genereer code<br>DB objecten"]]
+        DeployMDDE[["Genereer code voor<br>MDDE Deployment"]]
+        RepositoryHandler[["Voeg toe aan<br>DevOps repository"]]
     end
+    space
+    DedicatedPool("Dedicated Pool<br>deployment")
+    PDDocument --> Orchestrator
+    RETW --> Dependency
+    Dependency --> Generator
+    Generator --> DeployMDDE
+    DeployMDDE --> RepositoryHandler
+    Orchestrator --> DedicatedPool
+
+    style PDDocument fill:#FFFFE0,stroke:#FFD700;
+    style DedicatedPool fill:#87CEFA,stroke:#808080;
+    style Orchestrator fill:#DCDCDC,stroke:#191970;
+
+    classDef genesis fill:#98FB98,stroke:#006400;
+    class RETW,Dependency,Generator,DeployMDDE,RepositoryHandler genesis
 ```
 
 ## Belangrijke componenten
