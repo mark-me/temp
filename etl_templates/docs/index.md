@@ -2,9 +2,13 @@
 
 # Welkom bij de Genesis documentatie
 
+Genesis is een modulair Python-framework dat Power Designer-modellen omzet naar bruikbare database- en ETL-code. Het helpt data-engineers en modelleurs om complexe datamodellen automatisch te vertalen naar uitvoerbare oplossingen in Azure DevOps.
+
+Dankzij een configureerbare, stap-voor-stap workflow kunnen modeldata worden geëxtraheerd, afhankelijkheden geanalyseerd, deployment-scripts gegenereerd en repositories bijgewerkt — volledig geautomatiseerd en reproduceerbaar.
+
 ## Wat is Genesis?
 
-Genesis is een programma dat het mogelijk maakt om Power Designer-logische datamodeldocumenten om te zetten in code die tabellen en ETL-programma’s genereert om die tabellen te vullen. Om dit doel te bereiken doorloopt Genesis een aantal stappen:
+Genesis bestaat uit een reeks samenwerkende componenten die elk een fase in de dataproductieketen ondersteunen: van modelinvoer tot deployment. De volledige workflow wordt georkestreerd vanuit een centrale configuratie. Onderstaande figuur toont het overzicht van de hoofdfasen:
 
 ```mermaid
 graph
