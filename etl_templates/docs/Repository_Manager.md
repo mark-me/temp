@@ -16,10 +16,18 @@ De centrale klasse waarin alle logica voor repositorybeheer is ondergebracht. Wo
 Werkt samen met een `ProjectFile`-klasse (geïmporteerd uit een zuster-module) om projectspecifieke metadata of configuratie te beheren.
 
 ```python
-editor = SqlProjEditor('Pad/naar/project.sqlproj')
-editor.add_build_file('Scripts/Tables/NewTable.sql')
-editor.add_postdeploy_script('Scripts/PostDeploy/SeedData.sql')
-editor.save()
+SQLPROJ_PATH = "pad/naar/project.sqlproj"
+BUILD_SQL_FOLDER = "src/sql/build"
+POSTDEPLOY_SQL_FOLDER = "src/sql/postdeploy"
+
+# === UITVOERING ===
+
+if __name__ == "__main__":
+    editor = SqlProjEditor(SQLPROJ_PATH)
+    editor.remove_missing_files()
+    editor.add_new_files(BUILD_SQL_FOLDER, item_type="Build")
+    editor.add_new_files(POSTDEPLOY_SQL_FOLDER, item_type="None")
+    editor.save()
 ```
 
 ## API referentie
