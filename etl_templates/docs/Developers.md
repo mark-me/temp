@@ -1,8 +1,9 @@
-# 👥 Developers
+# Developers
+
+![Developers](images/developers.png){ align=right width="90" }
 
 Ons development team bestaat uit gedreven specialisten met ieder hun eigen expertise, maar allen met de focus op het data domein. Samen realiseren ze schaalbare, betrouwbare en toekomstgerichte software-oplossingen.
 
----
 
 ## Ina van Dijk
 
@@ -57,4 +58,4 @@ Ons development team bestaat uit gedreven specialisten met ieder hun eigen exper
 
 * **Rol**: Genesis Developer, Product Owner
 * **Expertise**: Angular, TypeScript, SCSS
-* **[LinkedIn](https://github.com/sara-vries)**, **[Github](https://github.com/mark-me)**
+* **[LinkedIn](https://www.linkedin.com/in/markzwart76/)**, **[Github](https://github.com/mark-me)**
