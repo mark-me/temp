@@ -1,13 +1,13 @@
 # 👥 Developers
 
-Ons development team bestaat uit gedreven specialisten met ieder hun eigen expertise. Samen realiseren ze schaalbare, betrouwbare en toekomstgerichte software-oplossingen in het data domein.
+Ons development team bestaat uit gedreven specialisten met ieder hun eigen expertise, maar allen met de focus op het data domein. Samen realiseren ze schaalbare, betrouwbare en toekomstgerichte software-oplossingen.
 
 ---
 
 ## Ina van Dijk
 
 * **Rol**: Modelleur
-* **Expertise**: Douane processen, Data modelling, SQL, Python
+* **Expertise**: Processen, Data modelling, SQL, Python
 * **LinkedIn**: [sara-vries](https://github.com/sara-vries)
 
 ## Anil Dipai
