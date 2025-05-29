@@ -11,11 +11,11 @@ from logtools import get_logger
 from config_definition import (
     ConfigData,
     ConfigFileError,
-    DeploymentMDDEConfig,
-    DevOpsConfig,
-    ExtractorConfig,
-    GeneratorConfig,
-    PowerDesignerConfig,
+    DeploymentMDDEConfigData,
+    DevOpsConfigData,
+    ExtractorConfigData,
+    GeneratorConfigData,
+    PowerDesignerConfigData,
 )
 
 logger = get_logger(__name__)
@@ -40,17 +40,17 @@ class ConfigFile:
         self.folder_intermediate_root = data.folder_intermediate_root
         self.title = data.title
         self._version = self._determine_version()
-        self.power_designer = PowerDesigner(data.power_designer)
-        self.extractor = Extractor(
+        self.power_designer = PowerDesignerConfig(data.power_designer)
+        self.extractor = ExtractorConfig(
             data.extractor, path_intermediate=self.path_intermediate
         )
-        self.generator = Generator(
+        self.generator = GeneratorConfig(
             data.generator, path_intermediate=self.path_intermediate
         )
-        self.deploy_mdde = DeploymentMDDE(
+        self.deploy_mdde = DeploymentMDDEConfig(
             data.deployment_mdde, path_intermediate=self.path_intermediate
         )
-        self.devops = DevOps(
+        self.devops = DevOpsConfig(
             data.devops, path_output_root=data.folder_intermediate_root
         )
 
@@ -273,8 +273,8 @@ class BaseConfigComponent:
             path = os.path.dirname(path)
         Path(path).mkdir(parents=True, exist_ok=True)
 
-class PowerDesigner(BaseConfigComponent):
-    def __init__(self, config: PowerDesignerConfig):
+class PowerDesignerConfig(BaseConfigComponent):
+    def __init__(self, config: PowerDesignerConfigData):
         super().__init__(config)
 
     @property
@@ -305,8 +305,8 @@ class PowerDesigner(BaseConfigComponent):
         return lst_pd_files
 
 
-class Extractor(BaseConfigComponent):
-    def __init__(self, config: ExtractorConfig, path_intermediate: Path):
+class ExtractorConfig(BaseConfigComponent):
+    def __init__(self, config: ExtractorConfigData, path_intermediate: Path):
         super().__init__(config)
         self.path_intermediate = path_intermediate
 
@@ -324,8 +324,8 @@ class Extractor(BaseConfigComponent):
         return folder
 
 
-class Generator(BaseConfigComponent):
-    def __init__(self, config: GeneratorConfig, path_intermediate: Path):
+class GeneratorConfig(BaseConfigComponent):
+    def __init__(self, config: GeneratorConfigData, path_intermediate: Path):
         super().__init__(config)
         self.path_intermediate = path_intermediate
 
@@ -347,8 +347,8 @@ class Generator(BaseConfigComponent):
         return self._data.templates_platform
 
 
-class DeploymentMDDE(BaseConfigComponent):
-    def __init__(self, config: DeploymentMDDEConfig, path_intermediate: Path):
+class DeploymentMDDEConfig(BaseConfigComponent):
+    def __init__(self, config: DeploymentMDDEConfigData, path_intermediate: Path):
         super().__init__(config)
         self.path_intermediate = path_intermediate
 
@@ -374,8 +374,8 @@ class DeploymentMDDE(BaseConfigComponent):
         return Path(self._data.folder_data)
 
 
-class DevOps(BaseConfigComponent):
-    def __init__(self, config: DevOpsConfig, path_output_root: Path):
+class DevOpsConfig(BaseConfigComponent):
+    def __init__(self, config: DevOpsConfigData, path_output_root: Path):
         super().__init__(config)
         self._path_output_root = path_output_root
 

@@ -13,7 +13,7 @@ class SqlProjEditor:
         Laadt het projectbestand en bereidt het voor op bewerkingen.
 
         Args:
-            sqlproj_path (str): Pad naar het SQL Server projectbestand (.sqlproj).
+            path_sqlproj (str): Pad naar het SQL Server projectbestand (.sqlproj).
         """
         self.path_sqlproj = Path(path_sqlproj)
         self.tree = ET.parse(self.path_sqlproj)

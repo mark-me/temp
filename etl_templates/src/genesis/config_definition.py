@@ -32,7 +32,7 @@ class ConfigFileError(Exception):
 
 
 @dataclass
-class PowerDesignerConfig:
+class PowerDesignerConfigData:
     """Configuration settings for PowerDesigner.
 
     Holds the folder path and a list of PowerDesigner file names.
@@ -43,7 +43,7 @@ class PowerDesignerConfig:
 
 
 @dataclass
-class ExtractorConfig:
+class ExtractorConfigData:
     """Configuration settings for the Extractor.
 
     Specifies the folder for extractor output.
@@ -53,7 +53,7 @@ class ExtractorConfig:
 
 
 @dataclass
-class DeploymentMDDEConfig:
+class DeploymentMDDEConfigData:
     """Configuration settings MDDE deployment settings
 
     Specifies the output folder, input folder for creating Codelists .
@@ -65,7 +65,7 @@ class DeploymentMDDEConfig:
 
 
 @dataclass
-class GeneratorConfig:
+class GeneratorConfigData:
     """Configuration settings for the Generator.
 
     Specifies the output folder, platform templates, and JSON file for created DDLs.
@@ -88,7 +88,7 @@ class GeneratorConfig:
 
 
 @dataclass
-class DevOpsConfig:
+class DevOpsConfigData:
     """Configuration settings for DevOps.
 
     Specifies details for DevOps integration, including organization, project, repository, branch, and work item information.
@@ -113,8 +113,8 @@ class ConfigData:
 
     title: str
     folder_intermediate_root: str
-    power_designer: PowerDesignerConfig = field(default_factory=PowerDesignerConfig)
-    extractor: ExtractorConfig = field(default_factory=ExtractorConfig)
-    generator: GeneratorConfig = field(default_factory=GeneratorConfig)
-    devops: DevOpsConfig = field(default_factory=DevOpsConfig)
-    deployment_mdde: DeploymentMDDEConfig = field(default_factory=DeploymentMDDEConfig)
+    power_designer: PowerDesignerConfigData = field(default_factory=PowerDesignerConfigData)
+    extractor: ExtractorConfigData = field(default_factory=ExtractorConfigData)
+    generator: GeneratorConfigData = field(default_factory=GeneratorConfigData)
+    devops: DevOpsConfigData = field(default_factory=DevOpsConfigData)
+    deployment_mdde: DeploymentMDDEConfigData = field(default_factory=DeploymentMDDEConfigData)

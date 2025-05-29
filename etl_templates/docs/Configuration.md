@@ -87,58 +87,119 @@ devops:
 
 ```mermaid
 classDiagram
+    class ConfigFileError {
+        str message
+        int error_code
+    }
+    class PowerDesignerConfigData {
+        str folder
+        List~str~ files
+    }
+    class ExtractorConfigData {
+        str folder_output
+    }
+    class DeploymentMDDEConfigData {
+        str folder_data
+        str schema
+        str folder_output
+    }
+    class GeneratorConfigData {
+        str templates_platform
+        str folder_output
+        Path dir_templates
+        Path dir_scripts_mdde
+    }
+    class DevOpsConfigData {
+        str organisation
+        str project
+        str repo
+        str branch
+        str work_item
+        str work_item_description
+        str vs_project_file
+        str folder
+    }
+    class ConfigData {
+        str title
+        str folder_intermediate_root
+        PowerDesignerConfigData power_designer
+        ExtractorConfigData extractor
+        GeneratorConfigData generator
+        DevOpsConfigData devops
+        DeploymentMDDEConfigData deployment_mdde
+    }
     class ConfigFile {
-        +__init__(file_config: str)
-        +example_config(file_output: str) : None
-        +dir_intermediate : str
-        +files_power_designer : list
-        +dir_extract : str
-        +dir_generate : str
-        +devops_config : DevOpsConfig
+        Path _file
+        str folder_intermediate_root
+        str title
+        str _version
+        PowerDesigner power_designer
+        Extractor extractor
+        Generator generator
+        DeploymentMDDE deploy_mdde
+        DevOps devops
+        Path path_intermediate
+        +example_config(file_output: str)
     }
-    class PowerDesignerConfig{
-        +folder: str
-        +files: List[str]
+    class BaseConfigComponent {
+        Any _data
+        +create_dir(path: Path)
     }
-    class ExtractorConfig{
-        +folder: str
+    class PowerDesignerConfig {
+        +files: list
     }
-    class GeneratorConfig{
-        +templates_platform: str
-        +created_ddls_json: str
-        +folder: str
+    class ExtractorConfig {
+        Path path_intermediate
+        +path_output: Path
     }
-    class PublisherConfig{
-        +vs_project_folder: str
-        +vs_project_file: str
-        +codeList_json: str
-        +codeList_folder: str
-        +mdde_scripts_folder: str
+    class GeneratorConfig {
+        Path path_intermediate
+        +path_output: Path
+        +template_platform: str
     }
-    class DevOpsConfig{
-        +organisation: str
-        +project: str
-        +repo: str
+    class DeploymentMDDEConfig {
+        Path path_intermediate
+        +path_output: Path
+        +schema: str
+        +path_data_input: Path
+    }
+    class DevOpsConfig {
+        Path _path_output_root
+        +path_local: Path
         +branch: str
-        +work_item: str
-        +work_item_description: str
-    }
-    class ConfigData{
-        +title: str
-        +folder_intermediate_root: str
-        +power_designer: PowerDesignerConfig
-        +extractor: ExtractorConfig
-        +generator: GeneratorConfig
-        +publisher: PublisherConfig
-        +devops: DevOpsConfig
+        +feature_branch: str
+        +url: str
+        +url_check: str
+        +url_branch: str
+        +path_vs_project_file
     }
 
-    ConfigFile -- ConfigData : has a
-    ConfigData o-- PowerDesignerConfig : has
-    ConfigData o-- ExtractorConfig : has
-    ConfigData o-- GeneratorConfig : has
-    ConfigData o-- PublisherConfig : has
-    ConfigData o-- DevOpsConfig : has
+    ConfigData --> PowerDesignerConfigData : power_designer
+    ConfigData --> ExtractorConfigData : extractor
+    ConfigData --> GeneratorConfigData : generator
+    ConfigData --> DevOpsConfigData : devops
+    ConfigData --> DeploymentMDDEConfigData : deployment_mdde
+
+    ConfigFile --> PowerDesignerConfig
+    ConfigFile --> ExtractorConfig
+    ConfigFile --> GeneratorConfig
+    ConfigFile --> DeploymentMDDEConfig
+    ConfigFile --> DevOpsConfig
+    ConfigFile --> ConfigData : _read_file
+
+    PowerDesignerConfigData --> PowerDesignerConfig : __init__
+    ExtractorConfigData --> ExtractorConfig : __init__
+    GeneratorConfigData --> GeneratorConfig : __init__
+    DeploymentMDDEConfigData --> DeploymentMDDEConfig : __init__
+    DevOpsConfigData --> DevOpsConfig : __init__
+
+    PowerDesignerConfig --|> BaseConfigComponent
+    ExtractorConfig --|> BaseConfigComponent
+    GeneratorConfig --|> BaseConfigComponent
+    DeploymentMDDEConfig --|> BaseConfigComponent
+    DevOpsConfig --|> BaseConfigComponent
+
+    ConfigFileError --|> Exception
 ```
 
 ---
@@ -147,44 +208,50 @@ classDiagram
 
 ### Configuratie lezen
 
-::: src.genesis.config_file.ConfigFile
-    options:
-      heading_level: 4
+#### ::: src.genesis.config_file.ConfigFile
+
+---
+
+#### ::: src.genesis.config_file.PowerDesignerConfig
+
+---
+
+#### ::: src.genesis.config_file.ExtractorConfig
+
+---
+
+#### ::: src.genesis.config_file.GeneratorConfig
+
+---
+
+#### ::: src.genesis.config_file.DeploymentMDDEConfig
+
+---
+
+#### ::: src.genesis.config_file.DevOpsConfig
 
 ---
 
 ### Configuratie validatie
 
-::: src.genesis.config_definition.ConfigFileError
-    options:
-      heading_level: 4
+#### ::: src.genesis.config_definition.ConfigFileError
 
 ---
 
-::: src.genesis.config_definition.ConfigData
-    options:
-      heading_level: 4
+#### ::: src.genesis.config_definition.ConfigData
 
 ---
 
-::: src.genesis.config_definition.DevOpsConfig
-    options:
-      heading_level: 4
+#### ::: src.genesis.config_definition.DevOpsConfigData
 
 ---
 
-::: src.genesis.config_definition.ExtractorConfig
-    options:
-      heading_level: 4
+#### ::: src.genesis.config_definition.ExtractorConfigData
 
 ---
 
-::: src.genesis.config_definition.GeneratorConfig
-    options:
-      heading_level: 4
+#### ::: src.genesis.config_definition.GeneratorConfigData
 
 ---
 
-::: src.genesis.config_definition.PowerDesignerConfig
-    options:
-      heading_level: 4
+#### ::: src.genesis.config_definition.PowerDesignerConfigData
