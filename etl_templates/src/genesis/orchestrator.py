@@ -55,17 +55,19 @@ class Orchestrator:
         mapping_order = dag.get_mapping_order()
 
         self._generate_code(files_RETW=lst_files_RETW)
-        lst_paths_post_deployment = self._generate_mdde_deployment(mapping_order=mapping_order)
+        paths_post_deployment = self._generate_mdde_deployment(
+            mapping_order=mapping_order
+        )
 
         # Stop process if extraction and dependencies check result in issues
         # self._handle_issues()
         if not skip_devops:
-            devops_handler = RepositoryManager(
-                config=self.config.devops
-            )
+            devops_handler = RepositoryManager(config=self.config.devops)
             devops_handler.clone()
             path_source = self.config.generator.path_output
-            devops_handler.add_directory_to_repo(path_source=path_source)
+            devops_handler.add_directory_to_repo(
+                path_source=path_source, paths_post_deployment=paths_post_deployment
+            )
             # TODO: Copy code and codelist to repo and update project file
         #     devops_handler.push()
 
