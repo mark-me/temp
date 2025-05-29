@@ -32,24 +32,29 @@ class DeploymentMDDE:
             schema (str): De naam van het database schema.
             path_output (Path): Het pad naar de output directory voor de scripts.
         """
-        self.schema = schema
-        self.path_output = path_output
-        self.path_data = path_data
+        self._schema = schema
+        self._path_output = path_output
+        self._path_data = path_data
         self.post_deployment_scripts = []
 
-    def process(self, mapping_order: list):
+    def process(self, mapping_order: list) -> list:
         """
-        Voert het genereren van alle post-deployment scripts uit voor het opgegeven mapping order.
-        Roept interne methoden aan om codelijst- en configuratiescripts te genereren, database objecten te kopiëren
-        en het masterbestand bij te werken.
+        Voert het volledige post-deployment scriptgeneratieproces uit.
+
+        Genereert en kopieert alle benodigde post-deployment scripts, waaronder codelijsten, configuratie, datums en database objecten. Voegt alle scripts samen in een master post-deploy scriptbestand.
 
         Args:
             mapping_order (list): De mapping order configuratie die in het script verwerkt moet worden.
+
+        Returns:
+            list: Een lijst met paden naar de gegenereerde post-deployment scripts.
         """
         self._generate_load_code_list()
         self._generate_load_config(mapping_order=mapping_order)
+        self._generate_load_dates()
         self._copy_db_objects()
         self._generate_post_deploy_master()
+        return self.post_deployment_scripts
 
     def _copy_db_objects(self):
         """
@@ -58,7 +63,7 @@ class DeploymentMDDE:
 
         """
         path_source = Path(__file__).parent / "db_objects"
-        copytree(path_source, self.path_output, dirs_exist_ok=True)
+        copytree(path_source, self._path_output, dirs_exist_ok=True)
 
     def _get_template(self, type_template: TemplateType) -> Template:
         """
@@ -100,7 +105,7 @@ class DeploymentMDDE:
         template = self._get_template(TemplateType.POST_DEPLOY_CONFIG)
         content = template.render(config=mapping_order)
 
-        path_output = self.path_output / "PostDeployment"
+        path_output = self._path_output / "PostDeployment"
         path_output.mkdir(parents=True, exist_ok=True)
         path_file_output = path_output / "PostDeploy_MetaData_Config_MappingOrder.sql"
         with open(str(path_file_output), mode="w", encoding="utf-8") as file_ddl:
@@ -117,13 +122,13 @@ class DeploymentMDDE:
         Leest de codelijsten, rendert het template en schrijft het resultaat naar het juiste outputbestand.
 
         """
-        code_list_reader = CodeListReader(dir_input=self.path_data)
+        code_list_reader = CodeListReader(dir_input=self._path_data)
         code_list = code_list_reader.read()
         template = self._get_template(TemplateType.POST_DEPLOY_CODELIST)
         content = template.render(codeList=code_list)
 
         path_file_output = (
-            self.path_output
+            self._path_output
             / "PostDeployment"
             / "PostDeploy_MetaData_Config_CodeList.sql"
         )
@@ -143,7 +148,7 @@ class DeploymentMDDE:
         """
         content = "EXEC [DA_MDDE].[sp_LoadDates]"
 
-        path_file_output = self.path_output / "PostDeployment" / "PostDeploy_Dates.sql"
+        path_file_output = self._path_output / "PostDeployment" / "PostDeploy_Dates.sql"
         path_file_output.parent.mkdir(parents=True, exist_ok=True)
         with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)
@@ -161,7 +166,7 @@ class DeploymentMDDE:
             path_file_output (Path): Het pad naar het toe te voegen post-deploy scriptbestand.
         """
         path_output_master = (
-            self.path_output.parent / "PostDeployment" / "PostDeploy.sql"
+            self._path_output.parent / "PostDeployment" / "PostDeploy.sql"
         )
         path_output_master.parent.mkdir(parents=True, exist_ok=True)
         with open(path_output_master, "w") as file:

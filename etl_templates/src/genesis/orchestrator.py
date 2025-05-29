@@ -55,7 +55,7 @@ class Orchestrator:
         mapping_order = dag.get_mapping_order()
 
         self._generate_code(files_RETW=lst_files_RETW)
-        self._generate_mdde_deployment(mapping_order=mapping_order)
+        lst_paths_post_deployment = self._generate_mdde_deployment(mapping_order=mapping_order)
 
         # Stop process if extraction and dependencies check result in issues
         # self._handle_issues()
@@ -110,14 +110,17 @@ class Orchestrator:
         # dag.plot_file_dependencies(f"{dir_report}/RETW_dependencies.html"=test) FIXME: Results in error
         return dag
 
-    def _generate_mdde_deployment(self, mapping_order: list) -> Path:
+    def _generate_mdde_deployment(self, mapping_order: list) -> list:
         """
-        Genereert een CodeList-bestand op basis van de input codelist-bestanden.
+        Genereert MDDE post-deployment scripts op basis van de opgegeven mapping order.
 
-        Deze functie leest de codelist-bestanden, verwerkt ze en schrijft het resultaat naar een JSON-bestand.
+        Roept het DeploymentMDDE component aan om alle benodigde scripts te genereren en retourneert de paden naar de gegenereerde scripts.
+
+        Args:
+            mapping_order (list): De mapping order configuratie die in het script verwerkt moet worden.
 
         Returns:
-            Path: Het pad naar het gegenereerde CodeList-bestand.
+            list: Een lijst met paden naar de gegenereerde post-deployment scripts.
         """
         logger.info("Generating MDDE scripts")
         deploy_mdde = DeploymentMDDE(
@@ -125,7 +128,7 @@ class Orchestrator:
             schema=self.config.deploy_mdde.schema,
             path_output=self.config.deploy_mdde.path_output,
         )
-        deploy_mdde.process(mapping_order=mapping_order)
+        return deploy_mdde.process(mapping_order=mapping_order)
 
     def _generate_code(self, files_RETW: list) -> None:
         """Generate deployment code based on extracted data.

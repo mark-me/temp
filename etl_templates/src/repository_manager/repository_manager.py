@@ -64,7 +64,7 @@ class RepositoryManager:
             self._config.branch,
         ]
         logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command)
+        subprocess.run(lst_command, check=True)
         lst_command = ["git", "switch", self._config.feature_branch]
         logger.info(f"Executed: {' '.join(lst_command)}")
         subprocess.run(lst_command)
@@ -97,20 +97,20 @@ class RepositoryManager:
                     str(self._path_local),
                 ]
                 logger.info(f"Executed: {' '.join(lst_command)}")
-                subprocess.run(lst_command)
+                subprocess.run(lst_command, check=True)
                 logger.info(f"chdir to: {self._path_local}")
                 os.chdir(self._path_local)
                 lst_command = [
                     "git",
                     "branch",
-                    self._config.featurebranch,
+                    self._config.feature_branch,
                     self._config.branch,
                 ]
                 logger.info(f"Executed: {' '.join(lst_command)}")
-                subprocess.run(lst_command)
-                lst_command = ["git", "switch", self._config.featurebranch]
+                subprocess.run(lst_command, check=True)
+                lst_command = ["git", "switch", self._config.feature_branch]
                 logger.info(f"Executed: {' '.join(lst_command)}")
-                subprocess.run(lst_command)
+                subprocess.run(lst_command, check=True)
                 i += 99
             except OSError as e:
                 logger.error(
@@ -181,7 +181,7 @@ class RepositoryManager:
             "-A",
         ]
         logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command)
+        subprocess.run(lst_command, check=True)
 
     def _git_commit(self):
         """
@@ -199,7 +199,7 @@ class RepositoryManager:
             f"Commit: {self._config.work_item_description.replace(' ', '_')} #{int(self._config.work_item)}",
         ]
         logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command)
+        subprocess.run(lst_command, check=True)
 
     def _git_push(self):
         """
@@ -212,29 +212,29 @@ class RepositoryManager:
         """
         lst_command = ["git", "push", "origin", self._config.feature_branch]
         logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command)
+        subprocess.run(lst_command, check=True)
 
     def _open_branch_in_browser(self):
         """
         Opent de branch-URL in de browser om de commit in DevOps te controleren.
 
         Deze functie opent de URL van de subprocess.run(lst_command, cwd=self._path_local)
-feature-branch in de standaard webbrowser.
+        feature-branch in de standaard webbrowser.
 
         Returns:
             None
         """
         webbrowser.open(self._config.url_branch, new=0, autoraise=True)
 
-    def add_directory_to_repo(self, path_source: Path) -> None:
+    def add_directory_to_repo(self, path_source: Path, paths_post_deployment: list[Path]) -> None:
         """
-        Voegt een bronmap toe aan de repository en werkt het projectbestand bij.
+        Voegt een directory met nieuwe bestanden en post-deployment scripts toe aan de repository.
 
-        Deze functie zoekt naar nieuwe bestanden in de bronmap die nog niet in de repository staan,
-        werkt het projectbestand bij en kopieert alle bestanden naar de repository.
+        Zoekt naar nieuwe bestanden in de bronmap, werkt het projectbestand bij en kopieert alle bestanden naar de lokale repository.
 
         Args:
-            path_source (Path): De bronmap die toegevoegd moet worden aan de repository.
+            path_source (Path): De bronmap met te publiceren bestanden.
+            paths_post_deployment (list[Path]): Lijst met paden naar post-deployment scripts die toegevoegd moeten worden.
 
         Returns:
             None
