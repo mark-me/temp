@@ -47,6 +47,9 @@ class Orchestrator:
         """
         logger.info("Start Genesis verwerking")
         lst_files_RETW = []
+        if not self.config.power_designer.files:
+            logger.warning("Geen PowerDesigner-bestanden geconfigureerd. Genesis verwerking wordt afgebroken.")
+            return
         for pd_file in self.config.power_designer.files:
             file_RETW = self._extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
@@ -145,8 +148,15 @@ class Orchestrator:
         """
         logger.info("Start generating deployment code")
         ddl_generator = DDLGenerator(params=self.config.generator)
+        errors = []
         for file_RETW in files_RETW:
-            ddl_generator.generate_ddls(file_RETW=file_RETW)
+            try:
+                ddl_generator.generate_ddls(file_RETW=file_RETW)
+            except Exception as e:
+                logger.error(f"Failed to generate DDLs for {file_RETW}: {e}", exc_info=True)
+                errors.append((file_RETW, str(e)))
+        if errors:
+            logger.warning(f"DDL generation completed with errors for {len(errors)} file(s).")
 
     def _handle_issues(self):
         """

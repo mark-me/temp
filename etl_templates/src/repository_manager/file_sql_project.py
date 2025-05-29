@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 from logtools import get_logger
@@ -13,14 +14,14 @@ class SqlProjEditor:
     Hiermee kunnen build-bestanden en post-deploy scripts aan een SQL projectbestand worden toegevoegd,
     verwijzingen naar ontbrekende bestanden worden verwijderd en het projectbestand worden opgeslagen.
     """
-    def __init__(self, path_sqlproj):
+    def __init__(self, path_sqlproj: Path):
         """
         Initialiseert de SqlProjEditor met het opgegeven .sqlproj-bestand.
 
         Laadt het projectbestand, stelt het projectdirectory in en initialiseert de XML-parser en namespace mapping.
 
         Args:
-            path_sqlproj (str or Path): Pad naar het SQL Server projectbestand (.sqlproj).
+            path_sqlproj (Path): Pad naar het SQL Server projectbestand (.sqlproj).
         """
         self.path_sqlproj = Path(path_sqlproj)
         self.project_dir = self.path_sqlproj.parent
@@ -61,7 +62,7 @@ class SqlProjEditor:
             includes.add(path)
         return includes
 
-    def remove_missing_files(self) -> None:
+    def _remove_missing_files(self) -> None:
         """
         Verwijdert verwijzingen naar niet-bestaande bestanden uit het SQL projectbestand.
 
@@ -74,7 +75,9 @@ class SqlProjEditor:
         qty_removed = 0
         for elem in self.root.xpath("//msbuild:*[@Include]", namespaces=self.nsmap):
             include_path = elem.get("Include")
-            full_path = self.project_dir / include_path
+            # Normalize path for cross-platform compatibility
+            normalized_include_path = Path(include_path.replace("\\", "/"))
+            full_path = self.project_dir / normalized_include_path
             if not full_path.exists():
                 parent = elem.getparent()
                 parent.remove(elem)
@@ -96,7 +99,7 @@ class SqlProjEditor:
         """
         folder = Path(folder)
         if not folder.is_dir():
-            print(f"[WARN] Map bestaat niet: {folder}")
+            logger.warning(f"Map bestaat niet: {folder}")
             return
 
         item_group = self._find_or_create_itemgroup()
@@ -108,14 +111,14 @@ class SqlProjEditor:
             if relative_path in existing:
                 continue
 
-            el = etree.SubElement(item_group, f"{self.nsmap['msbuild']}{item_type}")
-            el.set("Include", relative_path)
+            element = etree.SubElement(item_group, f"{{{self.nsmap['msbuild']}}}{item_type}")
+            element.set("Include", relative_path)
 
             if item_type == "None":
-                subtype = etree.SubElement(el, f"{{{self.nsmap['msbuild']}}}SubType")
+                subtype = etree.SubElement(element, f"{{{self.nsmap['msbuild']}}}SubType")
                 subtype.text = "Designer"
                 copy = etree.SubElement(
-                    el, f"{{{self.nsmap['msbuild']}}}CopyToOutputDirectory"
+                    element, f"{{{self.nsmap['msbuild']}}}CopyToOutputDirectory"
                 )
                 copy.text = "PreserveNewest"
 
@@ -139,7 +142,7 @@ class SqlProjEditor:
         """
         if backup:
             backup_path = self.path_sqlproj.with_suffix(".sqlproj.bak")
-            self.path_sqlproj.replace(backup_path)
+            shutil.copy2(self.path_sqlproj, backup_path)
             logger.info(f"Backup gemaakt: {backup_path}")
         self.tree.write(
             str(self.path_sqlproj),

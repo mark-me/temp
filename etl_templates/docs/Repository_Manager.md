@@ -11,24 +11,29 @@ Deze documentatie beschrijft het gebruik van het Python-package datverantwoordel
 De centrale klasse waarin alle logica voor repositorybeheer is ondergebracht. Wordt geïnitialiseerd met een configuratieobject dat repositorydetails bevat (zoals URL, branchnamen, paden, enz.).
 
 
-### Integratie met `ProjectFile`
+### Integratie met `SqlProjEditor`
 
-Werkt samen met een `ProjectFile`-klasse (geïmporteerd uit een zuster-module) om projectspecifieke metadata of configuratie te beheren.
+Werkt samen met een hulpprogramma-klasse, `SqlProjEditor`, voor het programmatisch beheren van Microsoft SQL Server .sqlproj projectbestanden. Het hoofddoel is het automatiseren van het onderhoud van deze projectbestanden door:
 
+* Het verwijderen van verwijzingen naar ontbrekende SQL-bestanden.
+* Het toevoegen van nieuwe SQL-bestanden uit opgegeven mappen aan het project.
+* Het opslaan van wijzigingen, met optionele back-upfunctionaliteit.
+
+Het script is bedoeld om zelfstandig te worden uitgevoerd en werkt een .sqlproj-bestand bij zodat het overeenkomt met de actuele staat van SQL-scripts in de projectmappen. Het maakt gebruik van XML-parsing (via lxml.etree) om het projectbestand te manipuleren en gebruikt logging voor statusrapportage.
+
+<details><summary>Voorbeeld code</summary>
 ```python
-SQLPROJ_PATH = "pad/naar/project.sqlproj"
-BUILD_SQL_FOLDER = "src/sql/build"
-POSTDEPLOY_SQL_FOLDER = "src/sql/postdeploy"
+PATH_SQLPROJ = "pad/naar/project.sqlproj"
+FOLDER_BUILD_SQL = "src/sql/build"
+FOLDER_POSTDEPLOY_SQL = "src/sql/postdeploy"
 
-# === UITVOERING ===
-
-if __name__ == "__main__":
-    editor = SqlProjEditor(SQLPROJ_PATH)
-    editor.remove_missing_files()
-    editor.add_new_files(BUILD_SQL_FOLDER, item_type="Build")
-    editor.add_new_files(POSTDEPLOY_SQL_FOLDER, item_type="None")
-    editor.save()
+editor = SqlProjEditor(PATH_SQLPROJ)
+editor.remove_missing_files()
+editor.add_new_files(FOLDER_BUILD_SQL, item_type="Build")
+editor.add_new_files(FOLDER_POSTDEPLOY_SQL, item_type="None")
+editor.save()
 ```
+</details>
 
 ## API referentie
 
