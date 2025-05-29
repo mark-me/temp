@@ -71,17 +71,25 @@ devops:
 
 ### Belangrijke componenten
 
-**```ConfigData```**: Bevat globale instellingen zoals de titel van het project en het pad naar de output-map.
+**`ConfigFile`**: Leest de configuratie uit een YAML-bestand en biedt toegang tot de verschillende configuratiecomponenten als properties. Valideert de configuratie en zorgt voor correcte paden en standaardwaarden.
 
-**```PowerDesignerConfig```**: Bevat de map en bestanden van PowerDesigner.
+**`PowerDesignerConfig`**: Bevat logica voor het ophalen en valideren van PowerDesigner-bestanden uit de configuratie.
 
-**```ExtractorConfig```**: Map voor geëxtraheerde RETW-bestanden.
+**`ExtractorConfig`**: Bevat logica voor het bepalen van de outputfolder voor extractie en het aanmaken van de benodigde directories.
 
-**```GeneratorConfig```**: Bevat configuratie voor de Generator, inclusief platform-templates, een JSON-bestand met aangemaakte DDL’s en de uitvoer-map.
+**`GeneratorConfig`**: Bevat logica voor het bepalen van de outputfolder voor gegenereerde code en het ophalen van het gebruikte template-platform.
 
-**```PublisherConfig```**: Bevat instellingen voor de Publisher, zoals paden naar Visual Studio-projecten, codelijsten en MDDE-scripts.
+**`DeploymentMDDEConfig`**: Bevat logica voor het bepalen van de outputfolder, het schema en de inputfolder voor MDDE deployment.
 
-**```DevOpsConfig```**: Bevat informatie met betrekking tot DevOps-integratie, waaronder organisatie, project, repository, branch en details van het werkitem.
+**`DevOpsConfig`**: Bevat logica voor het bepalen van lokale repository-paden, branch-namen, DevOps-URLs en het pad naar het Visual Studio projectbestand.
+
+#### Configuratie validatie
+
+**`ConfigFileError`** Exception die wordt opgegooid bij fouten in het configuratiebestand, zoals ontbrekende of foutieve waarden.
+
+**`ConfigData`** Dataclass die de volledige configuratiestructuur bevat, bestaande uit alle componenten.
+
+**`PowerDesignerConfigData`**, **`ExtractorConfigData`**, **`GeneratorConfigData`**, **`DeploymentMDDEConfigData`**, **`DevOpsConfigData`** Dataclasses die de configuratie voor de respectievelijke componenten bevatten.
 
 #### Klasse diagram
 
