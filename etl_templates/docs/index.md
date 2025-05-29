@@ -6,7 +6,7 @@ Genesis is een modulair Python-framework dat Power Designer-modellen omzet naar 
 
 Dankzij een configureerbare, stap-voor-stap workflow kunnen modeldata worden geëxtraheerd, afhankelijkheden geanalyseerd, deployment-scripts gegenereerd en repositories bijgewerkt — volledig geautomatiseerd en reproduceerbaar.
 
-## Wat is Genesis?
+## Hoe werkt Genesis?
 
 Genesis bestaat uit een reeks samenwerkende componenten die elk een fase in de dataproductieketen ondersteunen: van modelinvoer tot deployment. De volledige workflow wordt georkestreerd vanuit een centrale configuratie. Onderstaande figuur toont het overzicht van de hoofdfasen:
 
@@ -46,6 +46,14 @@ graph
     class RETW,Dependency,Generator,DeployMDDE,RepositoryHandler functional
 ```
 
+## Voor wie is Genesis?
+
+Genesis is ontwikkeld voor:
+
+* **Data Modellers** die werken met Power Designer-modellen;
+* **Data Engineers** die ETL-processen implementeren op basis van deze modellen;
+* **DevOps-teams** die verantwoordelijk zijn voor de uitrol van gegenereerde databronnen en pipelines.
+
 ## Componenten
 
 ### Orkestrator
@@ -80,16 +88,16 @@ De MDDE Deployment zorgt ervoor dat de ETL processen in een pipeline kunnen word
 
 ### DevOps repository management
 
-De Repository handler zorgt ervoor dat alle gegenereerde code naar DevOps wordt gebracht zodat deze op Azure geimplementeerd kan worden. Meer informatie hierover is te vinden op de [Repository management-pagina](Repository_Manager.md).
+De Repository Handler plaatst de gegenereerde code automatisch in een DevOps-repository, zodat deze kan worden uitgerold in een Azure-omgeving. Meer informatie hierover is te vinden op de [Repository management-pagina](Repository_Manager.md).
 
 ## Hulpprogramma’s
 
-Naast de kernfunctionaliteit heeft Genesis ook enkele hulpmiddelen voor Data Modellers en Data Engineers om:
+Genesis bevat daarnaast handige tools voor Data Modellers en Data Engineers om:
 
-* de [impact van wijzigingen te bepalen](Dependency_checker.md) die op het punt staan te worden doorgevoerd,
-* [afhankelijkheden tussen Power Designer-documenten op te sporen](Dependency_checker.md).
-* [Logger](Logtools.md) die naast reguliere logging ook issues vastlegt in de modellen en mappings deze gebruikt kan worden voor de Genesis flow en om de modelleurs op de hoogte te stellen van deze issues.
-* [Documentatie generatie](Documentation_Creation.md) waarmee Markdown bestanden en [DocStrings](https://en.wikipedia.org/wiki/Docstring) in de code omgezet kan worden tot documentatiepagina's (die je hier leest).
+* de [impact van wijzigingen](Dependency_checker.md) te bepalen;
+* [afhankelijkheden tussen Power Designer-documenten](Dependency_checker.md) te analyseren;
+* met behulp van de [Logger](Logtools.md) automatisch issues vast te leggen in modellen en mappings;
+* met [Documentatie generatie](Documentation_Creation.md) Markdown-bestanden en docstrings om te zetten in leesbare documentatiepagina’s.
 
 ## Project folderstructuur
 

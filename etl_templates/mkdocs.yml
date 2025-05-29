@@ -52,3 +52,4 @@ nav:
   - Hulp packages:
     - Logging: Logtools.md
     - Documentatie genereren: Documentation_Creation.md
+  - Developers: Developers.md
