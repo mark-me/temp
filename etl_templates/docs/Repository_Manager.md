@@ -22,3 +22,7 @@ Werkt samen met een `ProjectFile`-klasse (geïmporteerd uit een zuster-module) o
 ---
 
 ### ::: src.repository_manager.project_file.ProjectFile
+
+---
+
+### ::: src.repository_manager.file_sql_project.SqlProjEditor

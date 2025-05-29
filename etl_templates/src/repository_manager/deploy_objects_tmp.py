@@ -29,7 +29,6 @@ class ProjectFile:
         """
         logger.info("--> Starting MDDE Publisher <--")
         # Opening JSON file
-        created_ddls = self._read_created_ddls()
         dict_xml = self._read_project_file()
         dict_xml = self._remove_vs_version_condition(dict_xml)
         # Add new Folders:
@@ -55,6 +54,36 @@ class ProjectFile:
         out = xmltodict.unparse(dict_xml, pretty=True, short_empty_elements=False)
         with open(self.file_vs_project, "wb") as file:
             file.write(out.encode("utf-8"))
+    def __add_object_to_ddl(self, code_model: str, type_objects: str, file_output: str):
+        """
+        Voegt een object toe aan de lijst van aangemaakte DDL's voor het model en het type object.
+
+        Deze methode houdt bij welke folders en bestanden zijn aangemaakt, zodat deze later kunnen worden toegevoegd aan het VS Project.
+
+        Args:
+            code_model (str): De code van het model.
+            type_objects (str): Het type object, bijvoorbeeld 'Tables' of 'Views'.
+            file_output (str): De bestandsnaam van het gegenereerde DDL-bestand.
+        """
+        folder_model = code_model
+        if folder_model not in self.created_ddls["Folder Include"]:
+            self.created_ddls["Folder Include"].append(folder_model)
+        folder_tables = f"{code_model}\\{type_objects}"
+        if folder_tables not in self.created_ddls["Folder Include"]:
+            self.created_ddls["Folder Include"].append(folder_tables)
+        table_file = f"{folder_tables}\\{file_output}"
+        if table_file not in self.created_ddls["Build Include"]:
+            self.created_ddls["Build Include"].append(table_file)
+
+    def _add_items(self, dict_xml, tag, lst_new):
+        for group in dict_xml["Project"]["ItemGroup"]:
+            if tag in group:
+                existing = [item["@Include"] for item in group[tag]]
+                to_add = set(lst_new) - set(existing)
+                group[tag].extend({"@Include": i} for i in to_add)
+                for i in to_add:
+                    logger.info(f"Added {tag} to VS SQL Project file: {i}")
+        return dict_xml
 
 
     def _add_files(self, dict_xml: dict, lst_files: list) -> dict:
@@ -70,19 +99,9 @@ class ProjectFile:
         Returns:
             dict: Het aangepaste XML-woordenboek met de toegevoegde bestanden.
         """
-        for ItemGroup in dict_xml["Project"]["ItemGroup"]:
-            if "Build" in ItemGroup:
-                lst_files_existing = []
-                lst_files_existing.extend(
-                    include["@Include"] for include in ItemGroup["Build"]
-                )
-                # create a list with items not already in the vs project file
-                lst_addFiles = set(lst_files) - set(
-                    lst_files_existing
-                )
-                for i in lst_addFiles:
-                    ItemGroup["Build"].append({"@Include": i})
-                    logger.info(f"Added file to VS SQL Project file:  {i}")
+        dict_xml = self._add_items(dict_xml, "Folder", lst_folders)
+        dict_xml = self._add_items(dict_xml, "Build", lst_files)
+        dict_xml = self._add_items(dict_xml, "None", lst_post_deploy)
         return dict_xml
 
     def _add_folders(self, dict_xml: dict, lst_folders: list):

@@ -11,7 +11,7 @@ flowchart LR
     PDDocument@{ shape: notch-rect, label: "Power Designer<br>LDM-bestand" }
     RETW@{ shape: rect, label: "Power Designer<br>extractie" }
     Dependency@{ shape: rect, label: "Afhankelijkheids-<br>controle" }
-    Generator@{ shape: rect, label: "Genereer code<br>schema's en ETL" }
+    Generator@{ shape: rect, label: "Genereer code<br>DB objecten" }
     DeployMDDE@{ shape: rect, label: "Code voor<br>MDDE Deployment"}
     RepositoryHandler@{ shape: rect, label: "Voeg toe aan<br>DevOps repository" }
     DedicatedPool@{ shape: database, label: "Dedicated Pool<br>deployment" }
@@ -43,13 +43,13 @@ Meer informatie is te vinden op de pagina [Afhankelijkheidscontrole](Dependency_
 
 ### Generator
 
-De Generator gebruikt de output van de Extractor om code te genereren die tabellen kan aanmaken en ETL-processen kan implementeren. Meer informatie hierover is te vinden op de [Generator-pagina](Generator.md).
+De Generator gebruikt de output van de Extractor om code te genereren die database objecten kan aanmaken en ETL-processen kan implementeren. Meer informatie hierover is te vinden op de [Generator-pagina](Generator.md).
 
 ### Deployment MDDE
 
 De MDDE Deployment zorgt ervoor dat de ETL processen in een pipeline kunnen worden gezet voor de ETL orchestratie. Meer informatie hierover is te vinden op de [Deployment MDDE-pagina](Deploy_MDDE.md).
 
-### Repository handler
+### Repository manager
 
 De Repository handler zorgt ervoor dat alle gegenereerde code naar DevOps wordt gebracht zodat deze op Azure geimplementeerd kan worden. Meer informatie hierover is te vinden op de [Repository management-pagina](Repository_Manager.md).
 
