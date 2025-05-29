@@ -67,7 +67,7 @@ class RepositoryManager:
         subprocess.run(lst_command, check=True)
         lst_command = ["git", "switch", self._config.feature_branch]
         logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command)
+        subprocess.run(lst_command, check=True)
         # Relocate to org root folder
         os.chdir(dir_current)
 
