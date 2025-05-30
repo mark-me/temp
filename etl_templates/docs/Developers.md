@@ -32,6 +32,13 @@ Ons development team bestaat uit gedreven specialisten met ieder hun eigen exper
 * **Expertise**: ...
 * **[LinkedIn](https://www.linkedin.com/in/youritristanjongejan/)**
 
+## Avinash Kalicharan
+![Avinash Kalicharan](images/developers/avinash_kalicharan.jpeg){ align=left width="80" }
+
+* **Rol**: ...
+* **Expertise**: ...
+* **[LinkedIn](https://www.linkedin.com/in/avinashkalicharan/)**
+
 ## Mijcke Peek
 ![Mijcke Peek](images/developers/mijcke_peek.jpeg){ align=left width="80" }
 
@@ -45,13 +52,6 @@ Ons development team bestaat uit gedreven specialisten met ieder hun eigen exper
 * **Rol**: Lead Developer
 * **Expertise**: ...
 * **[LinkedIn](https://www.linkedin.com/in/jeroenpoll/)**
-
-## Avinash Kalicharan
-![Avinash Kalicharan](images/developers/avinash_kalicharan.jpeg){ align=left width="80" }
-
-* **Rol**: ...
-* **Expertise**: ...
-* **[LinkedIn](https://www.linkedin.com/in/avinashkalicharan/)**
 
 ## Mark Zwart
 ![Mark Zwart](images/developers/mark_zwart.jpeg){ align=left width="80" }
