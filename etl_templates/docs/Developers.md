@@ -2,14 +2,14 @@
 
 ![Developers](images/developers.png){ align=right width="90" }
 
-Ons Genesis development team bestaat uit gedreven specialisten met de focus op het data domein en een gedeelde passie voor Model Driven Data Engineering ([MDDE](https://en.wikipedia.org/wiki/Model-driven_engineering)) waarmee ze schaalbare, betrouwbare en toekomstgerichte informatie-oplossingen ontwikkelen.
+Ons Genesis development team bestaat uit gedreven specialisten met een focus op het data domein en een gedeelde passie voor Model Driven Data Engineering ([MDDE](https://en.wikipedia.org/wiki/Model-driven_engineering)) waarmee ze schaalbare, betrouwbare en toekomstgerichte informatie-oplossingen ontwikkelen.
 
 
 ## Ina van Dijk
 
 * **Rol**: Modelleur
 * **Expertise**: Processen, Data modelling, SQL, Python
-* **LinkedIn**: [sara-vries](https://github.com/sara-vries)
+* **[LinkedIn](https://github.com/sara-vries)**
 
 ## Anil Dipai
 ![Anil Dipai](images/developers/anil_dipai.jpeg){ align=left width="80" }
