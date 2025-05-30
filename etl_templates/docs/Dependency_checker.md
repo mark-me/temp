@@ -303,8 +303,8 @@ Voor projecten waarin meerdere configuratiebestanden of mapping-regels gelden, z
 
 ---
 
-#### ::: src.dependencies_checker.dag_reporting.DagReporting
+### ::: src.dependencies_checker.dag_reporting.DagReporting
 
 ---
 
-#### ::: src.dependencies_checker.dag_etl_failure.EtlFailure
+### ::: src.dependencies_checker.dag_etl_failure.EtlFailure
