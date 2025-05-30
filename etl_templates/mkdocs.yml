@@ -49,7 +49,7 @@ nav:
     - Code DB objecten: Generator.md
     - MDDE deployment code  : Deploy_MDDE.md
     - DevOps repository management: Repository_Manager.md
-  - Hulp packages:
-    - Logging: Logtools.md
-    - Documentatie genereren: Documentation_Creation.md
+    - Hulp packages:
+      - Logging: Logtools.md
+      - Documentatie genereren: Documentation_Creation.md
   - Developers: Developers.md
