@@ -1,14 +1,59 @@
-Natuurlijk! Hieronder vind je de verbeterde versie van je Markdown-pagina **zonder de inhoudsopgave** en met de **ondersteunde laadtypes in een tabel**.
-
----
-
 # ETL Laadprocedures
 
 ![Deployment](images/etl.png){ align=right width="90" }
 
-Deze pagina beschrijft de verschillende procedures voor het laden van gegevens binnen het ETL-proces.
+Deze documentatie beschrijft de standaard laadprocedures die worden gebruikt in onze ETL-omgeving. Het doel van deze procedures is om op een gestandaardiseerde manier data uit brontabellen te laden naar doeltabellen binnen dezelfde database en schema.
 
----
+De masterprocedure bepaalt op basis van configuratie welk type laadmechanisme moet worden toegepast. Afhankelijk van het laadtype wordt een specifieke implementatie aangeroepen (full load, incrementeel, dimensioneel, enz.).
+
+Alle procedures zijn ontworpen om:
+
+* herbruikbaar te zijn voor verschillende entiteiten,
+* controle op datatype en kolomstructuur mogelijk te maken,
+* logging en foutafhandeling te ondersteunen.
+
+Deze aanpak draagt bij aan een robuuste en onderhoudbare ETL-laag.
+
+## Database Objecten
+
+De ETL-laadprocedures maken gebruik van een reeks databaseobjecten die zijn opgenomen in de directory `src/deploy_mdde/db_objects`. Deze objecten zijn essentieel voor het uitvoeren, loggen en configureren van de laadprocessen.
+
+De objecten zijn georganiseerd in drie categorieën:
+
+* **Functions**: Kleine herbruikbare functies, zoals het bepalen van standaardwaarden of het vervangen van nulls.
+* **Stored Procedures**: De kernlogica van het ETL-proces zit in de stored procedures. Deze voeren taken uit zoals data laden, logging, initialisatie van dimensies en het bijwerken van configuratiestatussen.
+* **Tables**: Configuratie- en loggingstabellen die het gedrag van de laadprocedures sturen en het verloop van een run registreren.
+
+### Overzicht van objecten
+
+```bash
+src/deploy_mdde/db_objects
+├── Functions
+│   ├── fn_GetDefaultValueForDatatype.sql      # Bepaalt een standaardwaarde op basis van datatype
+│   └── fn_IsNull.sql                          # Alternatief voor ISNULL/COALESCE met typecontrole
+├── Stored Procedures
+│   ├── sp_InitializeDimension.sql             # Voegt een dummyregel toe aan een dimensionele tabel (key = -1)
+│   ├── sp_InsertConfigExecution.sql           # Registreert de start van een laadproces
+│   ├── sp_LoadDates.sql                       # Laadt een datumdimensie op basis van een datumbereik
+│   ├── sp_LoadEntityData_DeltaLoad.sql        # Niet-actief (voorbeeld of legacy)
+│   ├── sp_LoadEntityData_FullLoad.sql         # Implementeert de full load procedure
+│   ├── sp_LoadEntityData_IncrementalLoad.sql  # Implementeert de incrementele laadprocedure
+│   ├── sp_LoadEntityData.sql                  # Masterprocedure die bepaalt welk laadtype wordt toegepast
+│   ├── sp_Logger.sql                          # Schrijft logregels naar de logtabel
+│   └── sp_UpdateConfigExecution.sql           # Registreert de eindstatus van een laadproces
+└── Tables
+    ├── CodeList.sql                           # Optionele codetabel voor typeclassificatie of mapping
+    ├── ConfigExecutions.sql                   # Houdt bij welke laadtaken zijn uitgevoerd met status/tijd
+    ├── Config.sql                             # Stuurt het laadgedrag (mapping, bronnen, doel)
+    ├── Dates.sql                              # Tabel voor de datumdimensie
+    └── Logger.sql                             # Tabel voor logging van laadstappen, rijen en fouten
+```
+
+### Gebruik in het ETL-proces
+
+Tijdens een laadproces wordt de configuratie gelezen uit de `Config`-tabel. Bij de start van een run wordt een nieuwe regel toegevoegd aan `ConfigExecutions` met details over de uitvoering. De hoofdprocedure (`sp_LoadEntityData`) bepaalt op basis van deze configuratie welke specifieke laadprocedure wordt aangeroepen (full, incremental, dimensioneel). Tijdens de uitvoering wordt met `sp_Logger` gelogd wat er gebeurt en hoeveel rijen zijn verwerkt. Na afloop wordt met `sp_UpdateConfigExecution` de runstatus bijgewerkt.
+
+De `fn_GetDefaultValueForDatatype` wordt bijvoorbeeld gebruikt bij het initialiseren van dummy-dimensieregels (key = -1), zodat alle velden zinvolle, verwachte waarden bevatten bij een onbekende of ontbrekende referentie.
 
 ## Master Load Procedure
 
@@ -62,7 +107,7 @@ Deze procedure laadt de volledige inhoud van een bron naar een doeltabel.
 * Bronnaam
 * Doelnaam
 * Mappingnaam
-* Debug (0/1)
+* Debug (`0`/`1`)
 
 ### Uitgangspunten
 
@@ -91,7 +136,7 @@ De incrementele laadprocedure voert updates en inserts uit op basis van business
 * Bronnaam
 * Doelnaam
 * Mappingnaam
-* Debug (0/1)
+* Debug (`0`/`1`)
 
 ### Uitgangspunten
 
