@@ -2,7 +2,7 @@
 
 ![Developers](images/developers.png){ align=right width="90" }
 
-Ons development team bestaat uit gedreven specialisten met ieder hun eigen expertise, maar allen met de focus op het data domein. Samen realiseren ze schaalbare, betrouwbare en toekomstgerichte software-oplossingen.
+Ons Genesis development team bestaat uit gedreven specialisten met de focus op het data domein en een gedeelde passie voor Model Driven Data Engineering ([MDDE](https://en.wikipedia.org/wiki/Model-driven_engineering)) waarmee ze schaalbare, betrouwbare en toekomstgerichte informatie-oplossingen ontwikkelen.
 
 
 ## Ina van Dijk
