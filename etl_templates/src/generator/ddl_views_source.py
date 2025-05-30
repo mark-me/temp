@@ -117,7 +117,7 @@ class DDLSourceViews(DDLViewBase):
                 )
         return identifier_mapped
 
-    def __build_x_hashkey(self, mapping: dict):
+    def __build_x_hashkey(self, mapping: dict) -> tuple:
         """
         Bouwt de X_HashKey string en retourneert deze samen met de aangepaste AttributeMapping.
 

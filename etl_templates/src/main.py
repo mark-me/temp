@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from genesis import Orchestrator
+from orchestrator import Orchestrator
 
 
 def main():

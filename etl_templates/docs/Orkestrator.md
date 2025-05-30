@@ -135,4 +135,4 @@ classDiagram
 
 ## </> API referentie
 
-### ::: src.genesis.orchestrator.Orchestrator
+### ::: src.orchestrator.orchestrator.Orchestrator

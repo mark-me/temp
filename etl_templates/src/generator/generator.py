@@ -116,12 +116,15 @@ class DDLGenerator:
 
     def _collect_identifiers(self, mappings: dict) -> dict:
         """
-        Haalt alle identifiers op uit het model ten behoeve van de aanmaken van BKeys in de entiteiten en DDL's
+        Verzamelt identifier-informatie uit de mappingconfiguratie.
+
+        Doorloopt alle mappings en attribute mappings, en genereert een dictionary met identifierdetails voor gebruik in DDL-generatie.
 
         Args:
-            models (dict): de JSON (RETW Output) geconverteerd naar een dictionary
+            mappings (dict): De mappingconfiguratie met entity- en attributemappinginformatie.
+
         Returns:
-            identifiers (dict): een dictionary met daarin alle informatie van de identifier benodigd voor het aanmaken van BKeys
+            dict: Een dictionary met identifierdetails per identifier.
         """
         # TODO: in __select_identifiers zit nu opbouw van strings die platform specifiek zijn (SSMS). Om de generator ook platform onafhankelijk te maken kijken of we dit wellicht in een template kunnen gieten.
         identifiers = {}

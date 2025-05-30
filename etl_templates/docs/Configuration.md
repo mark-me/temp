@@ -216,50 +216,50 @@ classDiagram
 
 ### Configuratie lezen
 
-#### ::: src.genesis.config_file.ConfigFile
+#### ::: src.orchestrator.config_file.ConfigFile
 
 ---
 
-#### ::: src.genesis.config_file.PowerDesignerConfig
+#### ::: src.orchestrator.config_file.PowerDesignerConfig
 
 ---
 
-#### ::: src.genesis.config_file.ExtractorConfig
+#### ::: src.orchestrator.config_file.ExtractorConfig
 
 ---
 
-#### ::: src.genesis.config_file.GeneratorConfig
+#### ::: src.orchestrator.config_file.GeneratorConfig
 
 ---
 
-#### ::: src.genesis.config_file.DeploymentMDDEConfig
+#### ::: src.orchestrator.config_file.DeploymentMDDEConfig
 
 ---
 
-#### ::: src.genesis.config_file.DevOpsConfig
+#### ::: src.orchestrator.config_file.DevOpsConfig
 
 ---
 
 ### Configuratie validatie API
 
-#### ::: src.genesis.config_definition.ConfigFileError
+#### ::: src.orchestrator.config_definition.ConfigFileError
 
 ---
 
-#### ::: src.genesis.config_definition.ConfigData
+#### ::: src.orchestrator.config_definition.ConfigData
 
 ---
 
-#### ::: src.genesis.config_definition.DevOpsConfigData
+#### ::: src.orchestrator.config_definition.DevOpsConfigData
 
 ---
 
-#### ::: src.genesis.config_definition.ExtractorConfigData
+#### ::: src.orchestrator.config_definition.ExtractorConfigData
 
 ---
 
-#### ::: src.genesis.config_definition.GeneratorConfigData
+#### ::: src.orchestrator.config_definition.GeneratorConfigData
 
 ---
 
-#### ::: src.genesis.config_definition.PowerDesignerConfigData
+#### ::: src.orchestrator.config_definition.PowerDesignerConfigData
