@@ -57,5 +57,5 @@ Ons Genesis development team bestaat uit gedreven specialisten met een focus op 
 ![Mark Zwart](images/developers/mark_zwart.jpeg){ align=left width="80" }
 
 * **Rol**: Genesis Developer, Product Owner
-* **Expertise**: Angular, TypeScript, SCSS
+* **Expertise**: Python, SQL, R
 * **[LinkedIn](https://www.linkedin.com/in/markzwart76/)**, **[Github](https://github.com/mark-me)**
