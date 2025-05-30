@@ -116,13 +116,13 @@ etl_templates
     ├───dependencies_checker   # Bepaling afhankelijkheden
     ├───deploy_mdde            # MDDE deployment code
     ├───generator              # Code DB objecten
-    ├───genesis
+    └───orchestrator
     |      ├───config_file.py  # Configuratie lezen
-    |      ├───main.py         # Start-script Genesis
     |      └───orchestrator.py # Orkestrator
     ├───logtools               # Logging en issue tracking
     ├───pd_extractor           # Power Designer extractie
-    └───repository_manager     # DevOps repository management
+    ├───repository_manager     # DevOps repository management
+    └───main.py         # Start-script Genesis
 ```
 
 ## API Referentie

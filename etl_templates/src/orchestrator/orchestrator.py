@@ -1,13 +1,14 @@
 import os
 from pathlib import Path
 
-from .config_file import ConfigFile
 from dependencies_checker import DagReporting
-from repository_manager import RepositoryManager
 from deploy_mdde import DeploymentMDDE
 from generator import DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
+from repository_manager import RepositoryManager
+
+from .config_file import ConfigFile
 
 logger = get_logger(__name__)
 
