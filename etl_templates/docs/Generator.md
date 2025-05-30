@@ -32,10 +32,10 @@ flowchart LR
 
 **Belangrijke methoden**:
 
+* `generate_ddls`: Hoofdmethode die het proces aanstuurt. Leest het model, verzamelt identifiers en start de DDL/ETL-generatie voor entiteiten en views. Roept de onderstaande functies aan.
 * `_read_model_file`: Leest en verwerkt het ingevoerde JSON-modelbestand.
 * `_get_template`: Laadt een Jinja2-template op basis van het opgegeven `TemplateType`.
-* `generate_ddls`: Hoofdmethode die het proces aanstuurt. Leest het model, verzamelt identifiers en start de DDL/ETL-generatie voor entiteiten en views.
-* `_collect_identifiers`: Extraheert identifier-informatie uit mappings in het model. Bereidt data voor die nodig is voor sleutelgeneratie in DDL’s.
+* `_collect_identifiers`: Extraheert identifier-informatie uit mappings in het model. Bereidt data voor die nodig is voor [businesssleutelgeneratie](#bepalen-van-business-keys) in tabel DDL’s.
 
 ---
 
@@ -44,6 +44,28 @@ flowchart LR
 * Maakt gebruik van helperklassen zoals `DDLEntities`, `DDLSourceViews` en `DDLSourceViewsAggr` voor het genereren van DDL-code voor entiteiten en views.
 * Gebruikt een logging utility (`get_logger`) voor gestructureerde logging.
 * Werkt met Jinja2 voor templategebaseerde codegeneratie, wat flexibele en platformgerichte output mogelijk maakt. Door gebruik te maken van Jinja2-templates wordt de SQL-/DDL-logica gescheiden van de Python-code, wat het eenvoudig maakt om scripts aan te passen aan verschillende databaseplatforms.
+
+### Klassendiagram
+
+```mermaid
+classDiagram
+    class DDLGenerator
+    class TemplateType
+    class DDLEntities
+    class DDLSourceViews
+    class DDLSourceViewsAggr
+    class DDLGeneratorBase
+    class DDLViewBase
+
+    DDLGenerator --> TemplateType
+    DDLGenerator --> DDLEntities : entities
+    DDLGenerator --> DDLSourceViews : source_views
+    DDLGenerator --> DDLSourceViewsAggr : source_views_aggr
+    DDLSourceViews <|-- DDLViewBase
+    DDLSourceViewsAggr <|-- DDLViewBase
+    DDLViewBase <|-- DDLGeneratorBase
+    DDLEntities <|-- DDLGeneratorBase
+```
 
 ## Bepalen van business-keys
 
@@ -67,10 +89,6 @@ Om wijzigingen in de tabellen tijdens het incrementeel laadproces te ondersteune
 
 ---
 
-### ::: src.generator.ddl_base.DDLGeneratorBase
-
----
-
 ### ::: src.generator.ddl_views_source.DDLSourceViews
 
 ---
@@ -80,3 +98,7 @@ Om wijzigingen in de tabellen tijdens het incrementeel laadproces te ondersteune
 ---
 
 ### ::: src.generator.ddl_views_base.DDLViewBase
+
+---
+
+### ::: src.generator.ddl_base.DDLGeneratorBase
