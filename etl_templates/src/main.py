@@ -5,7 +5,12 @@ from pathlib import Path
 from genesis import Orchestrator
 
 
-if __name__ == "__main__":
+def main():
+    """
+    Start het Genesis orkestratieproces via de command line interface.
+
+    Ontleedt command line argumenten, initialiseert de Orchestrator klasse met het opgegeven configuratiebestand en start de verwerking.
+    """
     parser = argparse.ArgumentParser(description="De Genesis workflow orkestrator")
     print(
         """\n
@@ -27,3 +32,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     genesis = Orchestrator(file_config=Path(args.config_file))
     genesis.start_processing(skip_devops=args.skip)
+
+if __name__ == "__main__":
+    main()

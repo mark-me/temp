@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from config_file import ConfigFile
+from .config_file import ConfigFile
 from dependencies_checker import DagReporting
 from repository_manager import RepositoryManager
 from deploy_mdde import DeploymentMDDE

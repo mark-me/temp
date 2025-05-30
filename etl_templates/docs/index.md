@@ -46,6 +46,12 @@ graph
     class RETW,Dependency,Generator,DeployMDDE,RepositoryHandler functional
 ```
 
+Het Python-script, [```main.py```](#src.main.main) in de directory ```src```, dient als het startpunt waarmee de "Genesis" workflow-orkestrator wordt opgestart, waarbij een [configuratiebestand](Configuration.md) kan worden gespecificeerd als parameter. De DevOps repository push kan overslagen worden door de parameter `-s` te gerbuiken
+
+```bash
+python main.py etl_templates/config.yml -s
+```
+
 ## Voor wie is Genesis?
 
 Genesis is ontwikkeld voor:
@@ -118,3 +124,7 @@ etl_templates
     ├───pd_extractor           # Power Designer extractie
     └───repository_manager     # DevOps repository management
 ```
+
+## API Referentie
+
+### ::: src.main.main

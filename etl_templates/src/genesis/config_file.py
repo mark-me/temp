@@ -8,7 +8,7 @@ import yaml
 from dacite import Config, MissingValueError, WrongTypeError, from_dict
 from logtools import get_logger
 
-from config_definition import (
+from .config_definition import (
     ConfigData,
     ConfigFileError,
     DeploymentMDDEConfigData,
