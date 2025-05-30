@@ -2,7 +2,7 @@
 
 ![Generator](images/documentation.png){ align=right width="90" }
 
-Documentatie voor Genesis wordt gegenereerd met behulp van [MkDocs](https://www.mkdocs.org/) met [MKDocs Marerial](https://squidfunk.github.io/mkdocs-material/). De statische pagina's zijn gemaakt als [MarkDown](https://www.markdownguide.org/) bestanden in de directory `etl_templates\docs` en de configuratie van de documentatie is terug te vinden in `etl_templates\mkdocs.yml`.
+Documentatie voor Genesis wordt gegenereerd met behulp van [MkDocs](https://www.mkdocs.org/) met [MKDocs Material](https://squidfunk.github.io/mkdocs-material/). De statische pagina's zijn gemaakt als [MarkDown](https://www.markdownguide.org/) bestanden in de directory `etl_templates\docs` en de configuratie van de documentatie is terug te vinden in `etl_templates\mkdocs.yml`.
 
 ## 🚀 Gebruik
 
