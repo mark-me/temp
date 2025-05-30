@@ -28,12 +28,12 @@ Voor meer informatie over de laadprocedures in de MDDE deployment kan je vinden 
 * **\_generate\_post\_deploy\_master()**: Maakt of werkt een hoofdscript bij dat alle gegenereerde post-deployment scripts achtereenvolgens uitvoert.
 * **\_get\_relative\_path()**: Berekent relatieve paden voor scriptverwijzingen in het hoofdscript, om correcte scriptinclusie te garanderen.
 
----
+**CodeListReader (Klasse):**
 
-## Integratie met Andere Modules
-
-* Gebruikt `CodeListReader` (uit een zuster-module) om codelist-data te lezen.
-* Gebruikt een logging utility (`logtools.get_logger`) voor status- en foutmeldingen.
+* Hulpmiddel voor het lezen en verwerken van codelijstbestanden uit specifieke systeemdirectories (DMS en AGS). Het hoofddoel is om codelijstgegevens te verzamelen uit Excel-bestanden (.xls) die zich bevinden in aangewezen submappen, deze te standaardiseren en terug te geven als een lijst van dictionaries voor post-deployment
+* **Initialisatie**: Slaat pad op van de inputdirectory en bereidt een interne lijst voor om codelijsten op te slaan.
+* **read()**: Hoofdmethode die codelijsten leest voor zowel DMS als AGS systemen door een interne helper aan te roepen, waarna de resultaten worden samengevoegd en geretourneerd.
+* **_read_system_list**: Helpermethode die alle .xls-bestanden in de directory van het opgegeven systeem vindt, de inhoud leest en verwerkt met behulp van Polars, kolomnamen standaardiseert en de data teruggeeft als een lijst van dictionaries.
 
 ---
 
@@ -42,6 +42,9 @@ Voor meer informatie over de laadprocedures in de MDDE deployment kan je vinden 
 * Maakt gebruik van Jinja2-templating voor flexibele scriptgeneratie.
 * Organiseert de uitvoer in een gestructureerde mapstructuur, zodat scripts vindbaar en uitvoerbaar zijn in de juiste volgorde.
 * Onderhoudt een hoofdscript om de post-deployment uitvoering te stroomlijnen.
+* Gebruikt een logging utility (`logtools.get_logger`) voor status- en foutmeldingen.
+
+---
 
 ## API referentie
 
