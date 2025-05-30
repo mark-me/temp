@@ -21,7 +21,7 @@ graph
         direction LR
             RETW[["Power Designer<br>extractie"]]
             Dependency[["Bepaling<br>afhankelijkheden"]]
-            Generator[["Code<br>DB objecten"]]
+            Generator[["Code DB & ETL<br>objecten"]]
             DeployMDDE[["MDDE<br>deployment code"]]
             RepositoryHandler[["DevOps repository<br>management"]]
         end

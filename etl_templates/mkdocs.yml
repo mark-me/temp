@@ -46,7 +46,7 @@ nav:
     - Orkestrator: Orkestrator.md
     - Power Designer extractie: Extractor.md
     - Bepaling afhankelijkheden: Dependency_checker.md
-    - Code DB objecten: Generator.md
+    - Code DB & ETL objecten: Generator.md
     - MDDE deployment code  : Deploy_MDDE.md
     - DevOps repository management: Repository_Manager.md
     - Hulp packages:
