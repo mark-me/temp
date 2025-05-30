@@ -13,7 +13,7 @@ Gecentraliseerde logging en foutregistratie. Deze package biedt een herbruikbare
 
 ### 1. Importeer de logger en issue tracker
 
-In elk module waar je wilt loggen:
+In elke module waar je wilt loggen:
 
 ```python
 from logtools import get_logger, issue_tracker

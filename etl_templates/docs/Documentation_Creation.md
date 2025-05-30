@@ -2,7 +2,7 @@
 
 ![Generator](images/documentation.png){ align=right width="90" }
 
-Documentatie voor Genesis wordt gegenereerd met behulp van [MkDocs](https://www.mkdocs.org/) met [MKDocs Material](https://squidfunk.github.io/mkdocs-material/). De statische pagina's zijn gemaakt als [MarkDown](https://www.markdownguide.org/) bestanden in de directory `etl_templates\docs` en de configuratie van de documentatie is terug te vinden in `etl_templates\mkdocs.yml`.
+Documentatie voor Genesis wordt gegenereerd met behulp van [MkDocs](https://www.mkdocs.org/) met [MKDocs Material](https://squidfunk.github.io/mkdocs-material/). De statische pagina's zijn gemaakt als [Markdown](https://www.markdownguide.org/) bestanden in de directory `etl_templates\docs` en de configuratie van de documentatie is terug te vinden in `etl_templates\mkdocs.yml`.
 
 ## 🚀 Gebruik
 
@@ -20,4 +20,4 @@ Wanneer je de documentatie wil aanpassen en direct het resultaat in de browser k
 mkdocs serve
 ```
 
-Waarna je het de browser naar[http://127.0.0.1:8000/](http://127.0.0.1:8000/) kan gaan. Elke wijziging in de documentatie wordt hier direct in bijgewerkt.
+Waarna je het de browser naar [http://127.0.0.1:8000/](http://127.0.0.1:8000/) kan gaan. Elke wijziging in de documentatie wordt hier direct in bijgewerkt.

@@ -2,13 +2,13 @@
 
 ![Generator](images/configuration.png){ align=right width="90" }
 
-De Orkestrator gebruikt een [YAML](https://www.redhat.com/en/topics/automation/what-is-yaml){target="_blank"} configuratiebestand on de workflow aan te sturen, en bevat onder andere informatie over de Power Designer LDM bestanden, technische implementatie en DevOps configuratie.
+De Orkestrator gebruikt een [YAML](https://www.redhat.com/en/topics/automation/what-is-yaml){target="_blank"} configuratiebestand om de workflow aan te sturen, en bevat onder andere informatie over de Power Designer LDM bestanden, technische implementatie en DevOps configuratie.
 
 De uitgelezen configuratie wordt opgeslagen in dataclasses die zijn afgeleid van de YAML-structuur om zeker te stellen dat alle verplichte configuratieopties zijn ingevuld en dat hiervoor de juiste datatypes zijn gebruikt.
 
 ## Voorbeeld configuratiebestand
 
-Hieronder is een voorbeeld van een configuratiebestand weergegeven, voorzien van commentaar die aangeeft wat de betekenis is van de betreffende onderdelen.
+Hieronder is een voorbeeld van een configuratiebestand weergegeven, voorzien van commentaar dat aangeeft wat de betekenis is van de betreffende onderdelen.
 
 ```yaml
 # Titel van het project of run
@@ -51,7 +51,7 @@ deployment-mdde:
 
 # DevOps-integratie-instellingen
 devops:
-  # Locale folder voor het repository
+  # Lokale folder voor het repository
   folder: "GIT_repo"
   # Naam van de Azure DevOps organisatie
   organisation: "organisatie-naam"

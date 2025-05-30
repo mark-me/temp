@@ -1,4 +1,4 @@
-# ETL laad procedures
+# ETL laadprocedures
 
 ## Master load procedure
 
@@ -60,13 +60,13 @@ Uitgangspunten:
 Stored procedure:
 
 * Truncate van tabel.
-* Insert alle data van de bron in het doeltabel.
+* Insert alle data van de bron in de doeltabel.
 * Loggen van de inserted rows.
 * Loggen van de uitkomst van de procedure.
 
-## Incrementeel procedure
+## Incrementele procedure
 
-Incrementeel laden procedure met de [Naam] heeft de volgende input parameters.
+Incrementele laden procedure met de [Naam] heeft de volgende input parameters.
 
 * RunId Azure pipeline
 * Schema- /Laag naam

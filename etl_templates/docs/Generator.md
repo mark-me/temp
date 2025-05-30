@@ -25,9 +25,9 @@ flowchart LR
 ## Afhankelijkheden
 
 * **[`Jinja2`](https://jinja.palletsprojects.com/en/stable/):** Voor het renderen van SQL-templates.
-* **([`Polars`](https://pola.rs/))** Voor het inlezen van de Excel bestanden met codelijsten (in `CodeList`).
+* **([`Polars`](https://pola.rs/))** Voor het inlezen van de Excel-bestanden met codelijsten (in `CodeList`).
 * **[`sqlparse`/`sqlfluff`](https://sqlfluff.com/):** Voor het formatteren en linten van gegenereerde SQL-scripts.
-* **[`Pathlib`](https://docs.python.org/3/library/pathlib.html):** Voor platformonafhankelijke padbeheer.
+* **[`Pathlib`](https://docs.python.org/3/library/pathlib.html):** Voor platformonafhankelijk padbeheer.
 
 ## Genereren DDL en ETL
 

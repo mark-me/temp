@@ -2,7 +2,7 @@
 
 ![Genesis](images/conductor.png){ align=right width="90" }
 
-Het Python-script, ```main.py``` in de directory ```src/genesis```, dient als het startpunt voor de "Genesis" workflow-orkestrator. Het leest een [configuratiebestand](Configuration.md) uit, waarvan de locatie wordt meegegeven als commando argument, en start het workflowproces. De voornaamste functie is het beheren en uitvoeren van de stappen die in de configuratie zijn gedefinieerd, mogelijk inclusief uitrol-stappen.
+Het Python-script, ```main.py``` in de directory ```src/genesis```, dient als het startpunt voor de "Genesis" workflow-orkestrator. Het leest een [configuratiebestand](Configuration.md) uit, waarvan de locatie wordt meegegeven als commando-argument, en start het workflowproces. De voornaamste functie is het beheren en uitvoeren van de stappen die in de configuratie zijn gedefinieerd, mogelijk inclusief uitrol-stappen.
 
 ## 🚀 Gebruik
 
@@ -61,9 +61,9 @@ sequenceDiagram
   end
 ```
 
-## Class-diagram
+## Klassendiagram
 
-In de klassediagram worden de details weergegeven van de Orchestrator klasse, meer details over de configuratieklassen zijn [hier](Documentation_Creation.md) te vinden.
+In de klassendiagram worden de details weergegeven van de Orchestrator klasse, meer details over de configuratieklassen zijn [hier](Documentation_Creation.md) te vinden.
 
 ```mermaid
 classDiagram

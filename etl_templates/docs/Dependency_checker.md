@@ -76,7 +76,7 @@ if __name__ == "__main__":
     dag.plot_etl_dag(file_html=f"{dir_output}ETL_flow.html")
 
     """Failure simulation
-    * Sets a failed object status
+    * Set a failed object status
     * Visualization of the total network of files, entities and mappings
     """
     lst_entities_failed = [
@@ -186,7 +186,7 @@ In een Power Designer-document (en het corresponderende RETW-bestand) worden all
 
 ### Belangrijke componenten
 
-* **```DagGenerator```**: Deze klasse vormt de basis van het project. Het ontleed RETW-bestanden, extraheert entiteiten en mappings, en bouwt de DAG. Belangrijke methoden zijn ```add_RETW_file``` (voegt een RETW-bestand toe), ```get_dag_total``` (geeft de totale DAG terug), ```get_dag_ETL``` (geeft de ETL-flow DAG terug), en andere methoden om specifieke sub-grafen op te halen.
+* **```DagGenerator```**: Deze klasse vormt de basis van het project. Het ontleedt RETW-bestanden, extraheert entiteiten en mappings, en bouwt de DAG. Belangrijke methoden zijn ```add_RETW_file``` (voegt een RETW-bestand toe), ```get_dag_total``` (geeft de totale DAG terug), ```get_dag_ETL``` (geeft de ETL-flow DAG terug), en andere methoden om specifieke sub-grafen op te halen.
 
 * **```DagReporting```**: Deze klasse gebruikt de DAG van ```DagGenerator``` om inzichten en visualisaties te leveren. Methoden zijn onder andere ```get_mapping_order``` (bepaalt de uitvoeringsvolgorde), ```plot_graph_total``` (visualiseert de totale DAG), ```plot_etl_dag``` (visualiseert de ETL-flow), en andere methoden om afhankelijkheden en relaties weer te geven.
 
@@ -198,7 +198,7 @@ In een Power Designer-document (en het corresponderende RETW-bestand) worden all
 
 Het project gebruikt een graaf-gebaseerde aanpak om ETL-afhankelijkheden te representeren en analyseren, en biedt waardevolle inzichten voor het begrijpen en optimaliseren van het ETL-proces. ```DagGenerator``` bouwt de DAG, ```DagReporting``` verzorgt analyse en visualisatie, en ```EtlFailure``` simuleert foutscenario's.
 
-### Klassen diagram
+### Klassendiagram
 
 In deze sectie worden de klassen beschreven, waarvoor ze gebruikt worden en hoe ze samenhangen.
 

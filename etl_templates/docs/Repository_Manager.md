@@ -2,7 +2,7 @@
 
 ![Repository](images/repository.png){ align=right width="90" }
 
-Deze documentatie beschrijft het gebruik van het Python-package datverantwoordelijk is voor het automatiseren en beheren van veelvoorkomende repository-operaties in een lokale ontwikkelomgeving, met name voor DevOps-gebaseerde repositories. De belangrijkste taken zijn het klonen van repositories, beheren van branches, committen en pushen van wijzigingen, en het synchroniseren van lokale mappen met de repository. De klasse verwerkt ook gebruikersauthenticatie en integreert met projectbestandsbeheer.
+Deze documentatie beschrijft het gebruik van het Python-package dat verantwoordelijk is voor het automatiseren en beheren van veelvoorkomende repository-operaties in een lokale ontwikkelomgeving, met name voor DevOps-gebaseerde repositories. De belangrijkste taken zijn het klonen van repositories, beheren van branches, committen en pushen van wijzigingen, en het synchroniseren van lokale mappen met de repository. De klasse verwerkt ook gebruikersauthenticatie en integreert met projectbestandsbeheer.
 
 ## Belangrijke Componenten
 

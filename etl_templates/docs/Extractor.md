@@ -248,8 +248,8 @@ MappingExtractor: doel - extraheert mapping information
 MappingExtractor: uit output TransformationExtractor
 FilterExtractor: doel - extraheert filter informatie
 FilterExtractor: uit output TransformationExtractor
-ScalerExtractor: doel - extraheert scaler informatie
-ScalerExtractor: uit output TransformationExtractor
+ScalarExtractor: doel - extraheert Scalar informatie
+ScalarExtractor: uit output TransformationExtractor
 TransformSource_Composition: doel - ophalen van bouw-
 TransformSource_Composition: blokken t.b.v. composition
 TransformTarget_Entity: doel - ophalen van bouwblokken
@@ -258,8 +258,8 @@ TransformAttribute_Mapping: doel - ophalen van bouwblokken
 TransformAttribute_Mapping: t.b.v. attribuut mapping
 TransformFilter: doel - ophalen van bouwblokken
 TransformFilter: t.b.v. filter
-TransformScaler: doel - ophalen van bouwblokken
-TransformScaler: t.b.v. scaler
+TransformScalar: doel - ophalen van bouwblokken
+TransformScalar: t.b.v. Scalar
 ObjectTransformer: doel - centrale plek voor
 ObjectTransformer: herbruikbare functions
 ModelExtractor: doel - extraheert alle blokken uit XML <br> t.b.v. model aka DDL
@@ -268,12 +268,12 @@ TransformModelInternal: doel - ophalen van bouwblokken entiteiten, attributen, d
 TransformModelsExternal: doel - ophalen van bouwblokken entiteiten en attributen van externe model
 MappingExtractor: doel - extraheert mapping information uit output TransformationExtractor
 FilterExtractor: doel - extraheert filter informatie uit output TransformationExtractor
-ScalerExtractor: doel - extraheert scaler informatie uit output TransformationExtractor
+ScalarExtractor: doel - extraheert Scalar informatie uit output TransformationExtractor
 TransformSource_Composition: doel - ophalen van bouwblokken t.b.v. composition
 TransformTarget_Entity: doel - ophalen van bouwblokken t.b.v. doelentiteit
 TransformAttribute_Mapping: doel - ophalen van bouwblokken t.b.v. attribuut mapping
 TransformFilter: doel - ophalen van bouwblokken t.b.v. filter
-TransformScaler: doel - ophalen van bouwblokken t.b.v. scaler
+TransformScalar: doel - ophalen van bouwblokken t.b.v. Scalar
 ObjectTransformer: doel - centrale plek voor herbruikbare functions
 
 
@@ -286,24 +286,24 @@ ObjectTransformer: doel - centrale plek voor herbruikbare functions
 
     PDDocument *-- MappingExtractor
     PDDocument *-- FilterExtractor
-    PDDocument *-- ScalerExtractor
+    PDDocument *-- ScalarExtractor
 
     TransformationExtractor *-- MappingExtractor
     TransformationExtractor *-- FilterExtractor
-    TransformationExtractor *-- ScalerExtractor
+    TransformationExtractor *-- ScalarExtractor
 
     MappingExtractor *-- TransformSource_Composition
     MappingExtractor *-- TransformTarget_Entity
     MappingExtractor *-- TransformAttribute_Mapping
     FilterExtractor *-- TransformFilter
-    ScalerExtractor *-- TransformScaler
+    ScalarExtractor *-- TransformScalar
     TransformModelInternal <-- ObjectTransformer
     TransformModelsExternal <-- ObjectTransformer
     TransformSource_Composition <-- ObjectTransformer
     TransformTarget_Entity <-- ObjectTransformer
     TransformAttribute_Mapping <-- ObjectTransformer
     TransformFilter <-- ObjectTransformer
-    TransformScaler <-- ObjectTransformer
+    TransformScalar <-- ObjectTransformer
 ```
 
 ## Mogelijke uitbreidingen

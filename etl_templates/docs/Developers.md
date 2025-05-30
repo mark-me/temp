@@ -58,4 +58,4 @@ Ons Genesis development team bestaat uit gedreven specialisten met een focus op 
 
 * **Rol**: Genesis Developer, Product Owner
 * **Expertise**: Python, SQL, R
-* **[LinkedIn](https://www.linkedin.com/in/markzwart76/)**, **[Github](https://github.com/mark-me)**
+* **[LinkedIn](https://www.linkedin.com/in/markzwart76/)**, **[GitHub](https://github.com/mark-me)**

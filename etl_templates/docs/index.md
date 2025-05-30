@@ -62,7 +62,7 @@ Het startpunt voor de "Genesis" is de workflow-orkestrator waar alle andere bela
 
 #### Configuratie
 
-De orchestrator flow wordt bepaald door een configuratiebestand. Meer informatie over configuratiebestanden en de methodes waarmee deze worden ingelezen en geverifieerd is te vinden op de [Configuratie-pagina](Configuration.md)
+De Orkestrator-flow wordt bepaald door een configuratiebestand. Meer informatie over configuratiebestanden en de methodes waarmee deze worden ingelezen en geverifieerd is te vinden op de [Configuratie-pagina](Configuration.md)
 
 ### Power Designer extractie
 
