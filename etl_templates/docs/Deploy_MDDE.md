@@ -19,21 +19,21 @@ Voor meer informatie over de laadprocedures in de MDDE deployment kan je vinden 
 
 * De kernklasse die verantwoordelijk is voor het coördineren van het uitrolproces.
 * **Initialisatie**: Slaat paden op voor data, schema en uitvoer, en houdt gegenereerde scripts bij.
-* **process()**: Hoofdmethode die alle benodigde post-deployment scripts genereert, databaseobjecten kopieert en het hoofdscript bijwerkt.
-* **\_copy\_db\_objects()**: Kopieert statische databaseobjectbestanden van een bronmap naar de doelmap.
-* **\_get\_template()**: Laadt het juiste Jinja2-template op basis van het scripttype.
-* **\_generate\_load\_config()**: Genereert een post-deployment script voor configuratie/mappingvolgorde via een template.
-* **\_generate\_load\_code\_list()**: Leest codelists in en genereert een overeenkomstig post-deployment script.
-* **\_generate\_load\_dates()**: Genereert een script dat een stored procedure uitvoert voor het laden van datums.
-* **\_generate\_post\_deploy\_master()**: Maakt of werkt een hoofdscript bij dat alle gegenereerde post-deployment scripts achtereenvolgens uitvoert.
-* **\_get\_relative\_path()**: Berekent relatieve paden voor scriptverwijzingen in het hoofdscript, om correcte scriptinclusie te garanderen.
+* **`process()`**: Hoofdmethode die alle benodigde post-deployment scripts genereert, databaseobjecten kopieert en het hoofdscript bijwerkt.
+* **`_copy_db_objects()`**: Kopieert statische databaseobjectbestanden van een bronmap naar de doelmap.
+* **`_get_template()`**: Laadt het juiste Jinja2-template op basis van het scripttype.
+* **`_generate_load_config()`**: Genereert een post-deployment script voor configuratie/mappingvolgorde via een template.
+* **`_generate_load_code_list()`**: Leest codelists in en genereert een overeenkomstig post-deployment script.
+* **`_generate_load_dates()`**: Genereert een script dat een stored procedure uitvoert voor het laden van datums.
+* **`_generate_post_deploy_master()`**: Maakt of werkt een hoofdscript bij dat alle gegenereerde post-deployment scripts achtereenvolgens uitvoert.
+* **`_get_relative_path()`**: Berekent relatieve paden voor scriptverwijzingen in het hoofdscript, om correcte scriptinclusie te garanderen.
 
 **CodeListReader (Klasse):**
 
 * Hulpmiddel voor het lezen en verwerken van codelijstbestanden uit specifieke systeemdirectories (DMS en AGS). Het hoofddoel is om codelijstgegevens te verzamelen uit Excel-bestanden (.xls) die zich bevinden in aangewezen submappen, deze te standaardiseren en terug te geven als een lijst van dictionaries voor post-deployment
 * **Initialisatie**: Slaat pad op van de inputdirectory en bereidt een interne lijst voor om codelijsten op te slaan.
-* **read()**: Hoofdmethode die codelijsten leest voor zowel DMS als AGS systemen door een interne helper aan te roepen, waarna de resultaten worden samengevoegd en geretourneerd.
-* **_read_system_list**: Helpermethode die alle .xls-bestanden in de directory van het opgegeven systeem vindt, de inhoud leest en verwerkt met behulp van Polars, kolomnamen standaardiseert en de data teruggeeft als een lijst van dictionaries.
+* **`read()`**: Hoofdmethode die codelijsten leest voor zowel DMS als AGS systemen door een interne helper aan te roepen, waarna de resultaten worden samengevoegd en geretourneerd.
+* **`_read_system_list()`**: Helpermethode die alle .xls-bestanden in de directory van het opgegeven systeem vindt, de inhoud leest en verwerkt met behulp van Polars, kolomnamen standaardiseert en de data teruggeeft als een lijst van dictionaries.
 
 ---
 
