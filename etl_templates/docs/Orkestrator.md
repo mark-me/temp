@@ -69,42 +69,42 @@ sequenceDiagram
 
 * De kernklasse die verantwoordelijk is voor het beheren van de ETL-workflow.
 * Behandelt het laden van configuraties, extractie, afhankelijkheidsanalyse, codegeneratie, genereren van deploy-scripts en repositorybeheer.
-* Biedt de methode start_processing als hoofdentrypoint voor de workflow, met een optie om DevOps-gerelateerde stappen over te slaan.
+* Biedt de methode `start_processing` als hoofdentrypoint voor de workflow, met een optie om DevOps-gerelateerde stappen over te slaan.
 
-**Extractieproces (`_extract`)**
+**[Extractieproces](Extractor.md) (`_extract(file_pd_ldm: Path)`)**
 
-* Extraheert logical data models en mappings uit PowerDesigner LDM-bestanden met behulp van de klasse PDDocument.
+* Extraheert logical data models en mappings uit PowerDesigner LDM-bestanden met behulp van de klasse `PDDocument`.
 * Slaat de geëxtraheerde data op als JSON-bestanden voor verdere verwerking.
 
-**Afhankelijkheidsanalyse (`_inspect_etl_dag`)**
+**[Afhankelijkheidsanalyse](Dependency_checker.md) (`_inspect_etl_dag(files_RETW: list)`)**
 
 * Gebruikt de klasse DagReporting om ETL-afhankelijkheden tussen de geëxtraheerde bestanden te analyseren.
 * Genereert een volgorde van mappings en visualiseert de ETL-flow in een HTML-rapport.
 
-**Codegeneratie (`_generate_code`)**
+**[Codegeneratie](Generator.md) (`_generate_code(files_RETW: list)`)**
 
-* Maakt gebruik van de klasse DDLGenerator om deploy-code (zoals DDL-scripts) te genereren op basis van de geëxtraheerde data en afhankelijkheden.
+* Maakt gebruik van de klasse `DDLGenerator` om deploy-code (zoals DDL-scripts) te genereren op basis van de geëxtraheerde data en afhankelijkheden.
 * Behandelt en logt eventuele fouten die tijdens de codegeneratie optreden.
 
-**Genereren van deployment-scripts (`_generate_mdde_deployment`)**
+**[Genereren van deployment-scripts](Deploy_MDDE.md) (`_generate_mdde_deployment(mapping_order: list)`)**
 
 * Roept de klasse DeploymentMDDE aan om post-deployment scripts te genereren volgens de vastgestelde mappingvolgorde.
 
-**Repositorybeheer**
+**[Repositorybeheer](Repository_Manager.md)**
 
-* Integreert met de klasse RepositoryManager om DevOps repositories te klonen, bij te werken en te beheren.
+* Integreert met de klasse [`RepositoryManager`](Repository_Manager.md) om DevOps repositories te klonen, bij te werken en te beheren.
 * Behandelt het toevoegen van gegenereerde code en deployment scripts aan de repository, met ruimte voor toekomstige uitbreidingen (zoals het pushen van wijzigingen).
 
-**Probleemafhandeling (`_handle_issues`)**
+**[Probleemafhandeling]((Logtools.md)) (`_handle_issues()`)**
 
 * Controleert op problemen die tijdens de verwerking zijn opgetreden via de issue_tracker.
 * Schrijft een rapport met gevonden issues weg naar een CSV-bestand en gooit een uitzondering om de verwerking te stoppen indien nodig.
 
-**Exceptieafhandeling**
+**Exceptieafhandeling ([`ExtractionIssuesFound`](#src.orchestrator.orchestrator.ExtractionIssuesFound))**
 
 * Definieert een eigen uitzondering ExtractionIssuesFound om aan te geven wanneer er kritieke problemen zijn gevonden tijdens extractie of verwerking.
 
-**Logging**
+**[Logging](Logtools.md)**
 
 * Maakt gebruik van een gecentraliseerde logger om informatieve berichten te tonen gedurende de hele workflow, wat helpt bij monitoring en debugging.
 
@@ -136,3 +136,5 @@ classDiagram
 ## </> API referentie
 
 ### ::: src.orchestrator.orchestrator.Orchestrator
+
+### ::: src.orchestrator.orchestrator.ExtractionIssuesFound
