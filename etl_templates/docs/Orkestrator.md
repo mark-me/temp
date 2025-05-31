@@ -110,7 +110,7 @@ sequenceDiagram
 
 ## Klassendiagram
 
-In de klassendiagram worden de details weergegeven van de Orchestrator klasse, meer details over de configuratieklassen zijn [hier](Documentation_Creation.md) te vinden.
+In de klassendiagram worden de details weergegeven van de Orchestrator klasse, meer details over de configuratieklassen zijn [hier](Configuration.md) te vinden.
 
 ```mermaid
 classDiagram
