@@ -15,7 +15,7 @@ Deze handleiding legt uit hoe je de extractor kunt gebruiken, hoe het JSON-besta
 
 ## 🚀 Gebruik
 
-De extractor-module bevindt zich in de map src/pd_extractor. Het startpunt is het bestand pd_document.py, waarin de klasse PDDocument wordt gedefinieerd. Deze klasse wordt geïnstantieerd met een bestandslocatie als parameter, waarna de functie write_result wordt gebruikt om de JSON-output te genereren.
+De extractor-package bevindt zich in de map `src/pd_extractor`. Het startpunt is het bestand `pd_document.py`, waarin de klasse `PDDocument` wordt gedefinieerd. Deze klasse wordt geïnstantieerd met een bestandslocatie als parameter, waarna de functie `write_result` wordt gebruikt om de JSON-output te genereren.
 
 ```python title="Voorbeeld gebruik:"
 from pathlib import Path

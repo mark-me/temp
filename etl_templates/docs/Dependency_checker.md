@@ -2,7 +2,7 @@
 
 ![Dependency checker](images/dependencies.png){ align=right width="90" }
 
-Dit project analyseert afhankelijkheden in een ETL-proces (Extract, Transform, Load) dat is gedefinieerd door RETW-bestanden. Het helpt bij het bepalen van de optimale uitvoeringsvolgorde van mappings, identificeert potentiële fouten en visualiseert de afhankelijkheden tussen entiteiten en bestanden. De kernfunctionaliteit draait om het bouwen van een [gerichte acyclische graaf (DAG)](https://nl.wikipedia.org/wiki/Gerichte_acyclische_graaf){target="_blank"} die de ETL-flow voorstelt.
+De package `dependency_checker` van Genesis analyseert afhankelijkheden in een ETL-proces (Extract, Transform, Load) dat is gedefinieerd door RETW-bestanden. Het helpt bij het bepalen van de optimale uitvoeringsvolgorde van mappings, identificeert potentiële fouten en visualiseert de afhankelijkheden tussen entiteiten en bestanden. De kernfunctionaliteit draait om het bouwen van een [gerichte acyclische graaf (DAG)](https://nl.wikipedia.org/wiki/Gerichte_acyclische_graaf){target="_blank"} die de ETL-flow voorstelt.
 
 Het dekt globaal het volgende:
 
@@ -264,16 +264,6 @@ classDiagram
   }
 ```
 
-## Veelgestelde vragen (FAQ)
-
-**❓ Wat als een mapping zowel bron- als doeltabellen in verschillende bestanden gebruikt?**
-
-De parser ondersteunt dit scenario zolang de gebruikte entiteiten correct geïdentificeerd en gehasht kunnen worden. Entiteiten worden over bestanden heen herkend op basis van hun `CodeModel` + `Code`.
-
-**❓ Kan het netwerk visualiseren in andere formaten dan HTML?**
-
-Momenteel is HTML de standaarduitvoer. Uitbreiding naar PDF of interactieve tools zoals Plotly kan overwogen worden in een toekomstige versie.
-
 ## Mogelijke uitbreidingen
 
 **CLI-interface**
@@ -284,12 +274,6 @@ Koppeling met live logging om visuele representatie te koppelen aan een echte ET
 
 **Modelvergelijking**
 Functionaliteit om afhankelijkheden of de DAG te vergelijken tussen twee versies van een model (bijv. veranderingen doorvoeren detecteren).
-
-**Annotaties in visualisaties**
-Mogelijkheid om extra metadata of uitleg toe te voegen aan knopen en verbindingen (zoals bronbestanden, businesslogica, etc.).
-
-**Configuratie via YAML/JSON**
-Voor projecten waarin meerdere configuratiebestanden of mapping-regels gelden, zou een YAML-config mogelijk zijn voor gebruiksgemak.
 
 ## API referentie
 
