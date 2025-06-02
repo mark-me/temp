@@ -115,7 +115,12 @@ class DDLEntities(DDLGeneratorBase):
                 )
                 # voeg de code van de identifier toe aan een controlelijst. De attributen in deze lijst worden verwijderd uit entity[Attributes]
                 mapped_identifiers.append(identifiers[identifier_id]["IdentifierName"])
-            else:
+            elif "Stereotype" not in entity:
+                """
+                We doen niks met eventuele identifiers van Aggregators. Dit moet geen error opleveren.
+                Alleen identifiers van echte entiteiten worden gebruikt en moet aanwezig zijn.
+                Deze entiteiten hebben hier geen Stereotype
+                """
                 logger.error(
                     f"Identifier voor entiteit '{entity['Code']}' niet gevonden in identifiers"
                 )

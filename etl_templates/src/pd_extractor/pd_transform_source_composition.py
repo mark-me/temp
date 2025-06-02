@@ -520,7 +520,7 @@ class TransformSourceComposition(ObjectTransformer):
         if len(dict_parent) > 0:
             if alias_parent is not None:
                 dict_parent.update({"EntityAlias": alias_parent})
-            dict_scalar_condition_attribute["SourceAttribute"] = dict_parent[ "IdEntity"] +  "." + dict_parent["Code"]
+            dict_scalar_condition_attribute["SourceAttribute"] = dict_parent[ "EntityAlias"] +  "." + dict_parent["Code"]
         if len(dict_child) > 0:
             dict_scalar_condition_attribute["AttributeChild"] = dict_child["Code"]
         return dict_scalar_condition_attribute

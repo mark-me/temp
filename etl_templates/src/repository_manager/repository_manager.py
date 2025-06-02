@@ -71,62 +71,6 @@ class RepositoryManager:
         # Relocate to org root folder
         os.chdir(dir_current)
 
-    def clone2(self) -> None:
-        """
-        Kloont de repository, maakt een feature-branch aan en schakelt hiernaar over.
-
-        Deze functie verwijdert eerst een bestaande repository, kloont vervolgens de opgegeven repository,
-        maakt een nieuwe feature-branch aan en schakelt hiernaar over. Indien nodig wordt de gebruiker gevraagd
-        om in te loggen op DevOps.
-
-        Returns:
-            None
-        """
-        logger.info(f"Kloon van repository '{self.params.url}'.")
-        dir_current = Path("./").resolve()
-        self._remove_old_repo()  # deletes a directory and all its contents.
-        time.sleep(5)
-        for i in range(2):
-            try:
-                lst_command = [
-                    "git",
-                    "clone",
-                    self._config.url,
-                    "-b",
-                    self._config.branch,
-                    str(self._path_local),
-                ]
-                logger.info(f"Executed: {' '.join(lst_command)}")
-                subprocess.run(lst_command, check=True)
-                logger.info(f"chdir to: {self._path_local}")
-                os.chdir(self._path_local)
-                lst_command = [
-                    "git",
-                    "branch",
-                    self._config.feature_branch,
-                    self._config.branch,
-                ]
-                logger.info(f"Executed: {' '.join(lst_command)}")
-                subprocess.run(lst_command, check=True)
-                lst_command = ["git", "switch", self._config.feature_branch]
-                logger.info(f"Executed: {' '.join(lst_command)}")
-                subprocess.run(lst_command, check=True)
-                i += 99
-            except OSError as e:
-                logger.error(
-                    f"Er is wat mis gegaan. Waarschijnlijk moet je eerst inloggen op Devops. Foutmelding: {e}"
-                )
-                webbrowser.open(self._config.url_check, new=0, autoraise=True)
-                logger.info(
-                    "Wacht 15 seconden, zodat de gebruiker kan inloggen op DevOps"
-                )
-                time.sleep(15)
-                continue
-            else:
-                break
-        # Relocate to org root folder
-        os.chdir(dir_current)
-
     def _remove_old_repo(self) -> None:
         """
         Verwijdert de opgegeven repository map en al zijn inhoud als deze bestaat voor een verse start.
@@ -140,67 +84,19 @@ class RepositoryManager:
         if not self._path_local.is_dir():
             return
         # change owner of file .idx, else we get an error
-        for root, dirs, files in self._path_local.walk(top_down=False):
+        for root, dirs, files in os.walk(self._path_local, topdown=False):
+            root = Path(root)
             for d in dirs:
+                d = Path(d)
                 os.chmod((root / d), 0o777)
                 (root / d).rmdir()
             for f in files:
+                f = Path(f)
                 os.chmod((root / f), 0o777)
                 (root / f).unlink()
         self._path_local.rmdir()
         logger.info(f"Delete existing folder: {self._path_local}")
 
-    def add_directory_to_repo(self, path_source: Path, paths_post_deployment: list[Path]) -> None:
-        """
-        Voegt een directory met nieuwe bestanden en post-deployment scripts toe aan de repository.
-
-        Zoekt naar nieuwe bestanden in de bronmap, werkt het projectbestand bij en kopieert alle bestanden naar de lokale repository.
-
-        Args:
-            path_source (Path): De bronmap met te publiceren bestanden.
-            paths_post_deployment (list[Path]): Lijst met paden naar post-deployment scripts die toegevoegd moeten worden.
-
-        Returns:
-            None
-        """
-        lst_files_new = self._find_files_new(path_source=path_source)
-        lst_files_build = [file for file in lst_files_new if file not in paths_post_deployment]
-        project_editor = SqlProjEditor(path_sqlproj=self.config.path_vs_project_file)
-
-        project_editor.publish()
-        # Copy all files to repository
-        copytree(src=path_source, dst=self._path_local, dirs_exist_ok=True)
-
-    def _find_files_new(self, path_source: Path) -> list[Path]:
-        """
-        Zoekt naar bestanden die wel in de bronmap staan, maar nog niet in de repository.
-
-        Deze functie vergelijkt de relatieve paden van bestanden in de bronmap met die in de repository
-        en retourneert een lijst van bestanden die nog niet aanwezig zijn in de repository.
-
-        Args:
-            path_source (Path): De bronmap waarin gezocht wordt naar nieuwe bestanden.
-
-        Returns:
-            list[Path]: Een lijst met relatieve paden van bestanden die nieuw zijn.
-        """
-        # Genereer relatieve paden van bestanden in de bronmap
-        files_in_source = {
-            file.relative_to(path_source)
-            for file in path_source.rglob("*")
-            if file.is_file()
-        }
-
-        # Genereer relatieve paden van bestanden in de repository
-        files_in_repo = {
-            file.relative_to(self._path_local)
-            for file in self._path_local.rglob("*")
-            if file.is_file()
-        }
-
-        # Bepaal welke bestanden nog niet in de repository staan
-        new_files = list(files_in_source - files_in_repo)
-        return new_files
 
     def publish(self) -> None:
         """
@@ -217,6 +113,64 @@ class RepositoryManager:
         self._git_commit()
         self._git_push()
         self._open_branch_in_browser()
+
+    def add_directory_to_repo(self, path_source: Path) -> None:
+        """
+        Voegt een directory met nieuwe bestanden en post-deployment scripts toe aan de repository.
+
+        Zoekt naar nieuwe bestanden in de bron-map, werkt het projectbestand bij en kopieert alle bestanden naar de lokale repository.
+
+        Args:
+            path_source (Path): De bron-map met te publiceren bestanden.
+            paths_post_deployment (list[Path]): Lijst met paden naar post-deployment scripts die toegevoegd moeten worden.
+
+        Returns:
+            None
+        """
+        lst_files_new = self._find_files_new(path_source=path_source)
+        #TODO: Mark, path_vs_project_file is niet compleet, dus nu even een tijdelijke fix hier gemaakt.
+        path_sqlproj = self._config.path_local / self._config.path_vs_project_file
+        project_editor = SqlProjEditor(path_sqlproj=path_sqlproj)
+        #project_editor = SqlProjEditor(path_sqlproj=self._config.path_vs_project_file)
+
+        project_editor.add_new_files(folder=path_source)
+
+        # Copy all files to repository
+        copytree(src=path_source, dst=self._path_local, dirs_exist_ok=True)
+        # project_editor._remove_missing_files()
+        project_editor.save()
+        logger.info("Added files to repository")
+
+    def _find_files_new(self, path_source: Path) -> list[Path]:
+        """
+        Zoekt naar bestanden die wel in de bron-map staan, maar nog niet in de repository.
+
+        Deze functie vergelijkt de relatieve paden van bestanden in de bron-map met die in de repository
+        en retourneert een lijst van bestanden die nog niet aanwezig zijn in de repository.
+
+        Args:
+            path_source (Path): De bron-map waarin gezocht wordt naar nieuwe bestanden.
+
+        Returns:
+            list[Path]: Een lijst met relatieve paden van bestanden die nieuw zijn.
+        """
+        # Genereer relatieve paden van bestanden in de bron-map
+        files_in_source = {
+            file.relative_to(path_source)
+            for file in path_source.rglob("*")
+            if file.is_file()
+        }
+
+        # Genereer relatieve paden van bestanden in de repository
+        files_in_repo = {
+            file.relative_to(self._path_local)
+            for file in self._path_local.rglob("*")
+            if file.is_file()
+        }
+
+        # Bepaal welke bestanden nog niet in de repository staan
+        new_files = list(files_in_source - files_in_repo)
+        return new_files
 
     def _git_add_all(self):
         """

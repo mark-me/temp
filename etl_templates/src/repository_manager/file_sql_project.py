@@ -23,8 +23,8 @@ class SqlProjEditor:
         Args:
             path_sqlproj (Path): Pad naar het SQL Server projectbestand (.sqlproj).
         """
-        self.path_sqlproj = Path(path_sqlproj)
-        self.project_dir = self.path_sqlproj.parent
+        self.path_sqlproj = path_sqlproj
+        self.path_project = self.path_sqlproj.parent
 
         parser = etree.XMLParser(remove_blank_text=True)
         self.tree = etree.parse(str(self.path_sqlproj), parser)
@@ -77,14 +77,14 @@ class SqlProjEditor:
             include_path = elem.get("Include")
             # Normalize path for cross-platform compatibility
             normalized_include_path = Path(include_path.replace("\\", "/"))
-            full_path = self.project_dir / normalized_include_path
+            full_path = self.path_project / normalized_include_path
             if not full_path.exists():
                 parent = elem.getparent()
                 parent.remove(elem)
                 qty_removed += 1
         logger.info(f"{qty_removed} verwijzingen naar niet-bestaande bestanden verwijderd.")
 
-    def add_new_files(self, folder: Path, item_type: str) -> None:
+    def add_new_files(self, folder: Path) -> None:
         """
         Voegt nieuwe .sql-bestanden uit een opgegeven map toe aan het SQL projectbestand.
 
@@ -92,7 +92,7 @@ class SqlProjEditor:
 
         Args:
             folder (Path): De map waarin gezocht wordt naar nieuwe .sql-bestanden.
-            item_type (str): Het type itemgroep waarin de bestanden moeten worden toegevoegd (bijv. 'Build' of 'None').
+            item_type (str): Het type item-groep waarin de bestanden moeten worden toegevoegd (bijv. 'Build' of 'None').
 
         Returns:
             None
@@ -107,11 +107,15 @@ class SqlProjEditor:
         qty_added = 0
 
         for file in folder.rglob("*.sql"):
-            relative_path = file.relative_to(self.project_dir).as_posix()
+
+            relative_path = file.relative_to(folder).as_posix()
+            test = "DA_MDDE/Tables/Bullshit.sql"
+            item_type = "None" if str(file.parent).lower() == 'postdeployment' else "Include"
             if relative_path in existing:
                 continue
 
             element = etree.SubElement(item_group, f"{{{self.nsmap['msbuild']}}}{item_type}")
+            logger.info(f"Toegevoegd aan SQL project file '{relative_path}'")
             element.set("Include", relative_path)
 
             if item_type == "None":

@@ -133,7 +133,7 @@ class DDLSourceViews(DDLViewBase):
             if "Expression" in attr_mapping:
                 return f"{hash_attrib}{attr_mapping['Expression']})"
             else:
-                return f"{hash_attrib}{attr_mapping['AttributesSource']['IdEntity']}.[{attr_mapping['AttributesSource']['Code']}])"
+                return f"{hash_attrib}{attr_mapping['AttributesSource']['EntityAlias']}.[{attr_mapping['AttributesSource']['Code']}])"
 
         x_hashkey = "[X_HashKey] = HASHBYTES('SHA2_256', CONCAT("
         attr_mappings = []

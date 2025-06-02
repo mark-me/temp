@@ -59,7 +59,7 @@ class Orchestrator:
         mapping_order = dag.get_mapping_order()
 
         self._generate_code(files_RETW=lst_files_RETW)
-        paths_post_deployment = self._generate_mdde_deployment(
+        self._generate_mdde_deployment(
             mapping_order=mapping_order
         )
 
@@ -70,7 +70,7 @@ class Orchestrator:
             devops_handler.clone()
             path_source = self.config.generator.path_output
             devops_handler.add_directory_to_repo(
-                path_source=path_source, paths_post_deployment=paths_post_deployment
+                path_source=path_source
             )
             # TODO: Copy code and codelist to repo and update project file
         #     devops_handler.push()

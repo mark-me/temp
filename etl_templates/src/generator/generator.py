@@ -45,7 +45,9 @@ class DDLGenerator:
         """
         logger.info("Initializing Class: 'DDLGenerator'.")
         self.dir_generator = params.path_output
-        self.dir_templates = Path(__file__).parent / "templates" / params.template_platform
+        self.dir_templates = (
+            Path(__file__).parent / "templates" / params.template_platform
+        )
         self.source_layer_prefix = "SL_"
 
         self.entities = DDLEntities(
@@ -106,13 +108,9 @@ class DDLGenerator:
         if "Mappings" in dict_RETW:
             mappings = dict_RETW["Mappings"]
             identifiers = self._collect_identifiers(mappings=mappings)
-            self.source_views.generate_ddls(
-                mappings=mappings, identifiers=identifiers
-            )
+            self.source_views.generate_ddls(mappings=mappings, identifiers=identifiers)
             self.source_views_aggr.generate_ddls(mappings=mappings)
-        self.entities.generate_ddls(
-            models=dict_RETW["Models"], identifiers=identifiers
-        )
+        self.entities.generate_ddls(models=dict_RETW["Models"], identifiers=identifiers)
 
     def _collect_identifiers(self, mappings: dict) -> dict:
         """
@@ -149,15 +147,17 @@ class DDLGenerator:
 
         for mapping in mappings:
             if "Identifiers" not in mapping["EntityTarget"]:
-                logger.error(
-                    f"Geen identifiers aanwezig voor entitytarget {mapping['EntityTarget']['Name']}"
-                )
+                if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
+                    logger.error(
+                        f"Geen identifiers aanwezig voor entitytarget {mapping['EntityTarget']['Name']}"
+                    )
                 continue
             if "AttributeMapping" not in mapping:
-                logger.error(
-                    f"Geen attribute mapping aanwezig voor entity {mapping['EntityTarget']['Name']}"
-                )
-                continue
+                    if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
+                        logger.error(
+                            f"Geen attribute mapping aanwezig voor entity {mapping['EntityTarget']['Name']}"
+                        )
+                    continue
             for identifier in mapping["EntityTarget"]["Identifiers"]:
                 for attr_map in mapping["AttributeMapping"]:
                     if (

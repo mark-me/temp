@@ -9,7 +9,7 @@ SELECT
             [{{ attributemapping.AttributeTarget.Code }}] = {{ attributemapping.Expression }},
 
             {% elif Expression not in attributemapping %}
-            [{{attributemapping.AttributeTarget.Code}}] = {{ attributemapping.AttributesSource.IdEntity }}.[{{attributemapping.AttributesSource.Code}}],
+            [{{attributemapping.AttributeTarget.Code}}] = {{ attributemapping.AttributesSource.EntityAlias }}.[{{attributemapping.AttributesSource.Code}}],
         {% endif %}
     {% endfor %}
 
@@ -26,23 +26,21 @@ SELECT
     [X_Bron] = '{{mapping.DataSource}}' {% for sourceObject in mapping.SourceComposition %}
         {% if sourceObject.JoinType != 'APPLY' %}
             {{ sourceObject.JoinType }}
-            {{ sourceObject.Entity.CodeModel }}.{{ sourceObject.Entity.Name }} AS {{ sourceObject.Entity.Id }}
+            {{ sourceObject.Entity.CodeModel }}.{{ sourceObject.Entity.Name }} AS {{ sourceObject.JoinAlias }}
         {% endif %}
 
         {% if 'JoinConditions' in sourceObject %}
             ON {% for joinCondition in sourceObject.JoinConditions %}
                 {% if CodeModel|upper  == 'DA_CENTRAL' and joinCondition.ParentLiteral != '' %}
-                    {{ sourceObject.Entity.Id }}.{{ joinCondition.JoinConditionComponents.AttributeChild.Code }} = {{ joinCondition.ParentLiteral }}
-
-                    {% elif CodeModel|upper   != 'DA_CENTRAL' and joinCondition.ParentLiteral != '' %}
-                    {{ sourceObject.Entity.Id }}.{{ joinCondition.JoinConditionComponents.AttributeChild.Name }} = {{ joinCondition.ParentLiteral }}
+                    {{ sourceObject.JoinAlias }}.{{ joinCondition.JoinConditionComponents.AttributeChild.Code }} = {{ joinCondition.ParentLiteral }}
+                {% elif CodeModel|upper   != 'DA_CENTRAL' and joinCondition.ParentLiteral != '' %}
+                    {{ sourceObject.JoinAlias }}.{{ joinCondition.JoinConditionComponents.AttributeChild.Name }} = {{ joinCondition.ParentLiteral }}
                 {% endif %}
                 {% if joinCondition.ParentLiteral == '' and joinCondition.JoinConditionComponents.AttributeChild.CodeModel|upper   == 'DA_CENTRAL' %}
-                    {{ sourceObject.Entity.Id }}.{{ joinCondition.JoinConditionComponents.AttributeChild.Code }} = {{ joinCondition.JoinConditionComponents.AttributeParent.IdEntity }}.{{ joinCondition.JoinConditionComponents.AttributeParent.Name }}
-                    {% elif joinCondition.ParentLiteral == '' and joinCondition.JoinConditionComponents.AttributeChild.CodeModel|upper   != 'DA_CENTRAL' %}
-                        {{ sourceObject.Entity.Id }}.{{ joinCondition.JoinConditionComponents.AttributeChild.Name }} = {{ joinCondition.JoinConditionComponents.AttributeParent.IdEntity }}.{{ joinCondition.JoinConditionComponents.AttributeParent.Code }}
-                 {% endif %}
-
+                    {{ sourceObject.JoinAlias }}.{{ joinCondition.JoinConditionComponents.AttributeChild.Code }} = {{ joinCondition.JoinConditionComponents.AttributeParent.EntityAlias }}.{{ joinCondition.JoinConditionComponents.AttributeParent.Name }}
+                {% elif joinCondition.ParentLiteral == '' and joinCondition.JoinConditionComponents.AttributeChild.CodeModel|upper   != 'DA_CENTRAL' %}
+                    {{ sourceObject.JoinAlias }}.{{ joinCondition.JoinConditionComponents.AttributeChild.Name }} = {{ joinCondition.JoinConditionComponents.AttributeParent.EntityAlias }}.{{ joinCondition.JoinConditionComponents.AttributeParent.Code }}
+                {% endif %}
                 {%- if not loop.last -%}
                     AND
                 {% endif %}
@@ -53,7 +51,7 @@ WHERE
     1 = 1 {% for sourceObject in mapping.SourceComposition %}
         {% if sourceObject.JoinType == 'APPLY' %}
             AND {% for sourceCondition in sourceObject.SourceConditions %}
-                {{ sourceCondition.SourceConditionVariable.SourceAttribute.IdEntity }}.{{ sourceCondition.SourceConditionVariable.SourceAttribute.Code }}
+                {{ sourceCondition.SourceConditionVariable.SourceAttribute.EntityAlias }}.{{ sourceCondition.SourceConditionVariable.SourceAttribute.Code }}
             {% endfor %}
 
             {{ sourceObject.Entity.SqlExpression }}
