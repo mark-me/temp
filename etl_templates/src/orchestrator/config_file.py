@@ -418,8 +418,8 @@ class DevOpsConfig(BaseConfigComponent):
         return f"{self.url_check}?version=GBfeature%2F{self._data.work_item}_{descr_work_item}_{user_login}"
 
     @property
-    def path_vs_project_file(self):
-        return Path(self._data.vs_project_file)
+    def path_file_sql_project(self):
+        return Path(self._data.file_sql_project)
 
 
 """

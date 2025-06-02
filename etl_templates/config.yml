@@ -27,4 +27,4 @@ devops:
   branch: "collaboration"
   work-item: "23936"
   work-item-description: "Testen automatische uitrol DDL en ETL"
-  vs-project-file: "./CentralLayer/3. Central Layer.sqlproj"
+  file-sql-project: "./CentralLayer/3. Central Layer.sqlproj"

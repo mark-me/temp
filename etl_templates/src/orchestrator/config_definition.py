@@ -100,7 +100,7 @@ class DevOpsConfigData:
     branch: str
     work_item: str
     work_item_description: str
-    vs_project_file: str
+    file_sql_project: str
     folder: str = "GIT_repo"
 
 

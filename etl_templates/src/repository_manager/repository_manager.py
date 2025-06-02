@@ -129,7 +129,7 @@ class RepositoryManager:
         """
         lst_files_new = self._find_files_new(path_source=path_source)
         #TODO: Mark, path_vs_project_file is niet compleet, dus nu even een tijdelijke fix hier gemaakt.
-        path_sqlproj = self._config.path_local / self._config.path_vs_project_file
+        path_sqlproj = self._config.path_local / self._config.path_file_sql_project
         project_editor = SqlProjEditor(path_sqlproj=path_sqlproj)
         #project_editor = SqlProjEditor(path_sqlproj=self._config.path_vs_project_file)
 
