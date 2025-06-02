@@ -14,6 +14,7 @@ class SqlProjEditor:
     Hiermee kunnen build-bestanden en post-deploy scripts aan een SQL projectbestand worden toegevoegd,
     verwijzingen naar ontbrekende bestanden worden verwijderd en het projectbestand worden opgeslagen.
     """
+
     def __init__(self, path_sqlproj: Path):
         """
         Initialiseert de SqlProjEditor met het opgegeven .sqlproj-bestand.
@@ -82,7 +83,9 @@ class SqlProjEditor:
                 parent = elem.getparent()
                 parent.remove(elem)
                 qty_removed += 1
-        logger.info(f"{qty_removed} verwijzingen naar niet-bestaande bestanden verwijderd.")
+        logger.info(
+            f"{qty_removed} verwijzingen naar niet-bestaande bestanden verwijderd."
+        )
 
     def add_new_files(self, folder: Path) -> None:
         """
@@ -102,24 +105,29 @@ class SqlProjEditor:
             logger.warning(f"Map bestaat niet: {folder}")
             return
 
-        item_group = self._find_or_create_itemgroup()
+        item_group = self._get_or_create_itemgroup_for_tag("Build")
         existing = self._collect_existing_includes()
         qty_added = 0
 
+        test = "DA_MDDE/Tables/Bullshit.sql"
         for file in folder.rglob("*.sql"):
-
             relative_path = file.relative_to(folder).as_posix()
-            test = "DA_MDDE/Tables/Bullshit.sql"
-            item_type = "None" if str(file.parent).lower() == 'postdeployment' else "Include"
+            item_type = (
+                "None" if str(file.parent).lower() == "postdeployment" else "Include"
+            )
             if relative_path in existing:
                 continue
 
-            element = etree.SubElement(item_group, f"{{{self.nsmap['msbuild']}}}{item_type}")
+            element = etree.SubElement(
+                item_group, f"{{{self.nsmap['msbuild']}}}{item_type}"
+            )
             logger.info(f"Toegevoegd aan SQL project file '{relative_path}'")
             element.set("Include", relative_path)
 
             if item_type == "None":
-                subtype = etree.SubElement(element, f"{{{self.nsmap['msbuild']}}}SubType")
+                subtype = etree.SubElement(
+                    element, f"{{{self.nsmap['msbuild']}}}SubType"
+                )
                 subtype.text = "Designer"
                 copy = etree.SubElement(
                     element, f"{{{self.nsmap['msbuild']}}}CopyToOutputDirectory"
@@ -128,9 +136,66 @@ class SqlProjEditor:
 
             qty_added += 1
 
+        self._add_missing_folders()
+
         logger.info(
             f"{qty_added} nieuwe bestanden toegevoegd aan {item_type}-sectie uit {folder}"
         )
+
+    def _add_missing_folders(self):
+        """
+        Voegt ontbrekende folder-referenties toe aan het SQL projectbestand.
+
+        Bepaalt welke folders in gebruik zijn op basis van de bestaande file-includes en voegt
+        ontbrekende folder-referenties toe aan het projectbestand.
+        """
+        folder_elements = self.root.xpath("//msbuild:Folder", namespaces=self.nsmap)
+        existing_folders = {
+            elem.get("Include").replace("\\", "/") for elem in folder_elements
+        }
+
+        # Verzamel folder paths uit alle bestaande Include-attributen
+        folders_in_use = set()
+        for elem in self.root.xpath("//msbuild:*[@Include]", namespaces=self.nsmap):
+            path = elem.get("Include").replace("\\", "/")
+            parts = Path(path).parts
+            for i in range(1, len(parts)):
+                folders_in_use.add("/".join(parts[:i]))
+
+        # Alleen nieuwe folders toevoegen
+        missing_folders = sorted(folders_in_use - existing_folders)
+        if not missing_folders:
+            print("[INFO] Geen nieuwe folders om toe te voegen.")
+            return
+
+        item_group = self._get_or_create_itemgroup_for_tag("Folder")
+        for folder in missing_folders:
+            el = etree.SubElement(item_group, f"{{{self.nsmap['msbuild']}}}Folder")
+            el.set("Include", folder)
+        logger.info(
+            f"Aantal Folder Include-vermeldingen toegevoegd: {len(missing_folders)}."
+        )
+
+    def _get_or_create_itemgroup_for_tag(self, tag_name: str) -> etree.Element:
+        """
+        Zoekt of maakt een ItemGroup voor een specifiek tagtype in het SQL projectbestand.
+
+        Doorzoekt het projectbestand naar een ItemGroup met het opgegeven tagtype en retourneert deze,
+        of maakt een nieuwe ItemGroup aan als er geen gevonden wordt.
+
+        Args:
+            tag_name (str): De naam van het tagtype waarvoor een ItemGroup gezocht of aangemaakt moet worden.
+
+        Returns:
+            Element: Het gevonden of nieuw aangemaakte ItemGroup-element.
+        """
+        # Zoek een bestaande ItemGroup met elementen van het juiste type
+        xpath_expr = f"//msbuild:ItemGroup[msbuild:{tag_name}]"
+        groups = self.root.xpath(xpath_expr, namespaces=self.nsmap)
+        if groups:
+            return groups[0]
+        # Geen gevonden: nieuwe groep maken
+        return etree.SubElement(self.root, f"{{{self.nsmap['msbuild']}}}ItemGroup")
 
     def save(self, backup=True) -> None:
         """
