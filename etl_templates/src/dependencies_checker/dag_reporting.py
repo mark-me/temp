@@ -38,10 +38,10 @@ class DagReporting(DagGenerator):
     """
 
     def __init__(self):
-        """Initializes a new instance of the DagReporting class.
+        """Initialiseert een nieuwe instantie van de DagReporting klasse.
 
-        Initializes color palettes, node shapes, and node colors for visualization.
-        It also calls the constructor of the parent class (DagGenerator).
+        Stelt de standaardkleuren, vormen en posities in voor knopen in de grafiek,
+        en roept de initialisatie van de bovenliggende klasse aan.
         """
         super().__init__()
         self.colors_discrete = [
@@ -95,8 +95,7 @@ class DagReporting(DagGenerator):
         # For each node calculate the number of mapping nodes before the current node
         dag_mappings = self.get_dag_mappings()
         lst_mapping_order = [
-            len(dag.subcomponent(dag.vs[i], mode="in")) - 1
-            for i in range(dag.vcount())
+            len(dag.subcomponent(dag.vs[i], mode="in")) - 1 for i in range(dag.vcount())
         ]
         # Assign valid run order to mappings only
         lst_run_level = []
@@ -118,14 +117,12 @@ class DagReporting(DagGenerator):
                 lst_mapping_level = []
                 entities_input = dag.neighbors(dag.vs[i], mode="in")
                 for entity_input in entities_input:
-                    for vx in dag.neighbors(dag.vs[entity_input], mode="in"):
-                        lst_mapping_level.append(dag.vs[vx]["run_level1"])
-                    if lst_mapping_level:
-                        max_level = max(lst_mapping_level)
-                    else:
-                        max_level = 0
+                    lst_mapping_level.extend(
+                        dag.vs[vx]["run_level1"]
+                        for vx in dag.neighbors(dag.vs[entity_input], mode="in")
+                    )
+                    max_level = max(lst_mapping_level, default=0)
                     lst_run_level2.append(max_level + 1)
-
 
         lst_run_level = self._make_increasing_with_duplicates(lst=lst_run_level)
         dag.vs["run_level"] = lst_run_level
@@ -146,32 +143,20 @@ class DagReporting(DagGenerator):
         )
         return dag
 
-    def _make_increasing_with_duplicates(self, lst: list) -> list:
-        result = []
-        current = lst[0] if lst else 0
-
-        for i in range(len(lst)):
-            if i == 0:
-                result.append(current)
-            else:
-                if lst[i] == lst[i - 1]:
-                    # duplicaat → zelfde waarde
-                    result.append(result[-1])
-                else:
-                    # verhoog vorige met 1
-                    result.append(result[-1] + 1)
-        return result
-
     def _dag_run_level_stages(
         self, dag: ig.Graph, deadlock_prevention: DeadlockPrevention
     ) -> ig.Graph:
-        """Determine mapping stages for each run level
+        """Bepaalt en wijst de uitvoeringsstages toe aan mappings op basis van run levels en deadlock-preventie.
+
+        Voor elke run level worden mappings gegroepeerd en conflicten bepaald, waarna een unieke stage wordt toegekend
+        aan elke mapping om gelijktijdige uitvoering zonder conflicten mogelijk te maken.
 
         Args:
-            dag (ig.Graph): DAG describing the ETL
+            dag (ig.Graph): De igraph DAG met mappings en entiteiten.
+            deadlock_prevention (DeadlockPrevention): Methode voor deadlock-preventie (SOURCE of TARGET).
 
         Returns:
-            ig.Graph: ETL stages for a level added in the mapping vertex attribute 'stage'
+            ig.Graph: De DAG met toegevoegde 'run_level_stage' attributen voor mappings.
         """
         dict_level_stages = {}
         # All mapping nodes
@@ -202,13 +187,16 @@ class DagReporting(DagGenerator):
         return dag
 
     def _dag_ETL_run_levels_conflicts_graph(self, mapping_sources: dict) -> ig.Graph:
-        """Generate a graph expressing which mappings share sources
+        """Genereert een conflictgrafiek voor mappings op basis van gedeelde entiteiten.
+
+        Maakt een niet-gerichte grafiek waarin mappings verbonden zijn als ze dezelfde entiteiten delen,
+        wat gebruikt kan worden om conflicten of afhankelijkheden tussen mappings te visualiseren.
 
         Args:
-            mapping_sources (dict): Mappings with a list of source node ids for each of them
+            mapping_sources (dict): Een lijst van dictionaries met mappingnamen en hun bijbehorende entiteiten.
 
         Returns:
-            ig.Graph: Expressing mapping sharing source entities
+            ig.Graph: Een igraph-object dat de conflicten tussen mappings weergeeft.
         """
         lst_vertices = [{"name": mapping["mapping"]} for mapping in mapping_sources]
         lst_edges = []
@@ -226,13 +214,16 @@ class DagReporting(DagGenerator):
         return graph_conflicts
 
     def _igraph_to_networkx(self, graph: ig.Graph) -> nx.DiGraph:
-        """Converts an igraph into a networkx graph
+        """Converteert een igraph.Graph naar een networkx.DiGraph.
+
+        Zet de knopen en randen van een igraph-object om naar een networkx DiGraph,
+        zodat deze gebruikt kan worden voor verdere analyse of visualisatie.
 
         Args:
-            dag (ig.Graph): igraph graph
+            graph (ig.Graph): De igraph grafiek die geconverteerd moet worden.
 
         Returns:
-            nx.DiGraph: networkx graph
+            nx.DiGraph: De geconverteerde networkx DiGraph.
         """
         dag_nx = nx.DiGraph()
         # Convert nodes
@@ -249,15 +240,16 @@ class DagReporting(DagGenerator):
         return dag_nx
 
     def _set_node_tooltip(self, node: ig.Vertex) -> None:
-        """Set the tooltip for a node in the pyvis visualization.
+        """Stelt de tooltip in voor een knoop op basis van het type en de attributen.
 
-        Constructs the HTML tooltip content for a given node based on its type and attributes.
-        The tooltip includes information such as
-        * File: file path, order in adding, creation/modification dates
-        * Entity/mapping details, such as ETL flow ordering information.
+        Genereert een tooltip-string voor de opgegeven knoop, inclusief relevante informatie zoals naam, code,
+        model, run level en aanmaak-/wijzigingsmetadata, afhankelijk van het type en de beschikbare attributen.
 
         Args:
-            node (ig.Vertex): The node to set the tooltip for.
+            node (ig.Vertex): De knoop waarvoor de tooltip wordt ingesteld.
+
+        Returns:
+            None
         """
         if node["type"] == VertexType.FILE_RETW.name:
             node["title"] = f"""FileRETW: {node["FileRETW"]}
@@ -292,16 +284,16 @@ class DagReporting(DagGenerator):
                 node["title"] = node["title"] + f"{label}: {node[attr]}\n"
 
     def _set_visual_attributes(self, dag: ig.Graph) -> ig.Graph:
-        """Set attributes for pyvis visualization.
+        """Stelt de visuele attributen in voor alle knopen in de grafiek.
 
-        Sets the shape, shadow, color, and tooltip for each node in the graph
-        based on their type and other properties. Also sets the shadow for edges.
+        Deze functie wijst vormen, kleuren en schaduwen toe aan knopen op basis van hun type,
+        en stelt de tooltip in voor elke knoop voor visualisatiedoeleinden.
 
         Args:
-            graph (ig.Graph): The igraph graph to set attributes for.
+            dag (ig.Graph): De grafiek waarvan de knopen visueel worden opgemaakt.
 
         Returns:
-            ig.Graph: The graph with attributes set for pyvis visualization.
+            ig.Graph: De grafiek met ingestelde visuele attributen.
         """
         logger.info("Setting graphical attributes of the graph")
         for node in dag.vs:
@@ -312,11 +304,17 @@ class DagReporting(DagGenerator):
         return dag
 
     def plot_graph_html(self, dag: ig.Graph, file_html: str) -> None:
-        """Create a html file with a graphical representation of a networkx graph
+        """Genereert en slaat een interactieve HTML-visualisatie van de grafiek op.
+
+        Zet de grafiek om naar een networkx-formaat, stelt de visualisatieopties in,
+        en slaat het resultaat op als een HTML-bestand.
 
         Args:
-            dag (nx.DiGraph): Networkx DAG
-            file_html (str): file path that the result should be written to
+            dag (ig.Graph): De grafiek die gevisualiseerd moet worden.
+            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+
+        Returns:
+            None
         """
         self._create_output_dir(file_path=file_html)
         net = Network("900px", "1917px", directed=True, layout=True)
@@ -332,31 +330,32 @@ class DagReporting(DagGenerator):
         net.show(file_html, notebook=False)
 
     def _dag_node_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
-        """Enrich the DAG with the level in the hierarchy where vertices should be plotted.
+        """Bepaalt en stelt de hiërarchieniveaus in voor alle knopen in de DAG.
 
-        Determines and sets the 'level' attribute for each vertex in the DAG, used for visualization.
+        Deze functie berekent het niveau van elke knoop op basis van zijn voorgangers
+        en past het maximale niveau toe op eindknopen voor een consistente visualisatie.
 
         Args:
-            dag (ig.Graph): DAG that describes entities and mappings.
+            dag (ig.Graph): De DAG waarvan de hiërarchieniveaus bepaald moeten worden.
 
         Returns:
-            ig.Graph: DAG where the vertices are enriched with the attribute 'level'.
+            ig.Graph: De DAG met ingestelde hiërarchieniveaus voor alle knopen.
         """
         dag = self._calculate_node_levels(dag)
         dag = self._set_max_end_node_level(dag)
         return dag
 
     def _calculate_node_levels(self, dag: ig.Graph) -> ig.Graph:
-        """Calculate and assign a level to each node in the DAG.
+        """Berekent het hiërarchieniveau voor elke knoop in de DAG.
 
-        Calculates the level of each node in the DAG based on its predecessors,
-        and adds a 'level' attribute to each vertex.
+        Deze functie bepaalt het niveau van elke knoop op basis van het aantal voorgangers,
+        zodat de hiërarchische structuur van de grafiek inzichtelijk wordt voor visualisatie of verdere verwerking.
 
         Args:
-            dag (ig.Graph): The DAG to process.
+            dag (ig.Graph): De DAG waarvan de knoopniveaus berekend moeten worden.
 
         Returns:
-            ig.Graph: The DAG with node levels calculated and set.
+            ig.Graph: De DAG met toegevoegde 'level' attributen voor alle knopen.
         """
         # Getting the number of preceding nodes to determine where to start
         for i in range(dag.vcount()):
@@ -376,16 +375,16 @@ class DagReporting(DagGenerator):
         return dag
 
     def _dag_node_position_category(self, dag: ig.Graph) -> ig.Graph:
-        """Determine and set the position category (start, intermediate, end) of each node in the DAG.
+        """Bepaalt de positiecategorie van elke knoop in de DAG op basis van inkomende en uitgaande verbindingen.
 
-        Determines if entities are start, intermediate, or end nodes based on their in-degree and out-degree,
-        and adds a 'position' attribute to the DAG vertices.
+        Deze functie classificeert knopen als START, INTERMEDIATE, END of UNDETERMINED,
+        afhankelijk van het aantal inkomende en uitgaande verbindingen, en voegt deze categorie toe als attribuut.
 
         Args:
-            dag (ig.Graph): The DAG to process.
+            dag (ig.Graph): De DAG waarvan de knoopposities gecategoriseerd moeten worden.
 
         Returns:
-            ig.Graph: The DAG with node positions set.
+            ig.Graph: De DAG met toegevoegde 'position' attributen voor alle knopen.
         """
         dag.vs["qty_out"] = dag.degree(dag.vs, mode="out")
         dag.vs["qty_in"] = dag.degree(dag.vs, mode="in")
@@ -404,13 +403,16 @@ class DagReporting(DagGenerator):
         return dag
 
     def _set_max_end_node_level(self, dag: ig.Graph) -> ig.Graph:
-        """Set the level of all end nodes to the maximum level.
+        """Stelt het maximale hiërarchieniveau in voor alle eindknopen in de DAG.
+
+        Deze functie zoekt alle knopen met de positie END en wijst het hoogste gevonden niveau toe aan deze knopen,
+        zodat eindknopen op hetzelfde hiërarchische niveau worden weergegeven in de visualisatie.
 
         Args:
-            dag (ig.Graph): The DAG to process.
+            dag (ig.Graph): De DAG waarvan de eindknopen het maximale niveau moeten krijgen.
 
         Returns:
-            ig.Graph: The DAG with end node levels adjusted.
+            ig.Graph: De DAG met bijgewerkte niveaus voor eindknopen.
         """
         dag = self._dag_node_position_category(dag=dag)
         end_levels = [
@@ -427,12 +429,12 @@ class DagReporting(DagGenerator):
         return dag
 
     def plot_graph_total(self, file_html: str) -> None:
-        """Plot the total graph and save it to an HTML file.
+        """Genereert en slaat een netwerkvisualisatie op van alle bestanden, entiteiten en mappings.
 
-        Builds the total graph, sets pyvis attributes, and visualizes it in an HTML file.
+        Bouwt de volledige grafiek, stelt de visuele attributen in en slaat het resultaat op als een HTML-bestand.
 
         Args:
-            file_html (str): The path to the HTML file where the plot will be saved.
+            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
 
         Returns:
             None
@@ -464,17 +466,15 @@ class DagReporting(DagGenerator):
         dag = self._set_visual_attributes(dag=dag)
         self.plot_graph_html(dag=dag, file_html=file_html)
 
-    def plot_file_dependencies(
-        self, file_html: str, include_entities: bool = True
-    ) -> None:
-        """Plot the dependencies between RETW files.
+    def plot_file_dependencies(self, file_html: str, include_entities: bool = True) -> None:
+        """Genereert en slaat een netwerkvisualisatie op van de afhankelijkheden tussen RETW-bestanden.
 
-        Generates and visualizes a graph showing dependencies between RETW files,
-        optionally including entities in the visualization.
+        Bouwt een grafiek van de RETW-bestandsafhankelijkheden, stelt de visuele attributen in,
+        en slaat het resultaat op als een HTML-bestand.
 
         Args:
-            file_html (str): Path to the output HTML file.
-            include_entities (bool, optional): Whether to include entities in the plot. Defaults to True.
+            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+            include_entities (bool, optional): Of entiteiten moeten worden opgenomen in de visualisatie. Standaard True.
 
         Returns:
             None
@@ -487,14 +487,14 @@ class DagReporting(DagGenerator):
         self.plot_graph_html(dag=dag_files, file_html=file_html)
 
     def plot_entity_journey(self, entity: EntityRef, file_html: str) -> None:
-        """Plot the journey of an entity through the DAG.
+        """Genereert en slaat een netwerkvisualisatie op van alle afhankelijkheden van een specifieke entiteit.
 
-        Generates and visualizes a graph showing the complete journey of a specific entity,
-        including all its dependencies and related mappings.
+        Bouwt een grafiek van de afhankelijkheden van de opgegeven entiteit, stelt de visuele attributen in,
+        markeert de entiteit, en slaat het resultaat op als een HTML-bestand.
 
         Args:
-            entity (EntityRef): The entity to plot the journey for.
-            file_html (str): Path to the output HTML file.
+            entity (EntityRef): De entiteit waarvan de afhankelijkheden gevisualiseerd moeten worden.
+            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
 
         Returns:
             None
@@ -511,14 +511,13 @@ class DagReporting(DagGenerator):
         self.plot_graph_html(dag=dag, file_html=file_html)
 
     def get_entities_without_definition(self) -> list:
-        """Identifies entities without a definition in the DAG.
+        """Geeft een lijst van entiteiten terug die geen definitie in een RETW-bestand hebben.
 
-        This function checks for entities that do not have any incoming connections from a RETW file,
-        indicating they lack a definition within the current scope.
+        Doorloopt alle entiteiten in de totale grafiek en selecteert die zonder inkomende RETW-bestandsknoop,
+        zodat ontbrekende definities eenvoudig opgespoord kunnen worden.
 
         Returns:
-            list: A list of dictionaries, where each dictionary represents an entity without a definition
-                  and contains its attributes.
+            list: Een lijst van attributen van entiteiten zonder definitie in een RETW-bestand.
         """
         lst_entities = []
         dag = self.get_dag_total()
@@ -530,11 +529,16 @@ class DagReporting(DagGenerator):
         return lst_entities
 
     def get_mapping_order(self, deadlock_prevention: DeadlockPrevention) -> list:
-        """Returns mappings and order of running (could be parallel,
-        in which case other sub-sorting should be implemented if needed)
+        """Geeft een gesorteerde lijst van mappings terug op basis van run level en deadlock-preventie.
+
+        Bepaalt de uitvoeringsvolgorde van mappings in de ETL-DAG, verrijkt met run level en stage,
+        en sorteert deze zodat de juiste volgorde voor uitvoering of visualisatie beschikbaar is.
+
+        Args:
+            deadlock_prevention (DeadlockPrevention): Methode voor deadlock-preventie (SOURCE of TARGET).
 
         Returns:
-            list: List of mappings with order
+            list: Een gesorteerde lijst van mappings met relevante attributen voor uitvoering.
         """
         lst_mappings = []
         try:
@@ -571,17 +575,16 @@ class DagReporting(DagGenerator):
         return lst_mappings
 
     def _dag_etl_coloring(self, dag: ig.Graph) -> ig.Graph:
-        """Helper function to color nodes in the ETL DAG based on their type and model.
+        """Kleurt de knopen in de ETL-DAG op basis van hun type en model.
 
-        Assigns colors to the nodes in the ETL DAG for visualization purposes.
-        Mappings are colored based on their type, entities are colored based on their model,
-        and other nodes are colored based on their position (start, intermediate, end).
+        Wijs kleuren toe aan mappings, entiteiten en andere knopen zodat de visualisatie
+        van de ETL-DAG duidelijk onderscheid maakt tussen verschillende typen en modellen.
 
         Args:
-            dag (ig.Graph): The ETL DAG to color.
+            dag (ig.Graph): De ETL-DAG waarvan de knopen gekleurd moeten worden.
 
         Returns:
-            ig.Graph: The colored ETL DAG.
+            ig.Graph: De ETL-DAG met gekleurde knopen.
         """
         # Build model coloring dictionary
         colors_model = {
@@ -600,16 +603,16 @@ class DagReporting(DagGenerator):
         return dag
 
     def _format_etl_dag(self, dag: ig.Graph) -> ig.Graph:
-        """Format the ETL DAG for visualization.
+        """Formatteert de ETL-DAG voor visualisatie door niveaus, hiërarchie, visuele attributen en kleuren toe te voegen.
 
-        Prepares the ETL DAG for visualization by calculating node levels, setting node hierarchy levels,
-        setting visual attributes, and coloring the nodes.
+        Deze functie verrijkt de ETL-DAG stapsgewijs zodat deze geschikt is voor grafische weergave,
+        inclusief hiërarchische niveaus, visuele kenmerken en kleurcodering.
 
         Args:
-            dag (ig.Graph): The ETL DAG to format.
+            dag (ig.Graph): De ETL-DAG die geformatteerd moet worden.
 
         Returns:
-            ig.Graph: The formatted ETL DAG.
+            ig.Graph: De geformatteerde ETL-DAG gereed voor visualisatie.
         """
         dag = self._calculate_node_levels(dag=dag)
         dag = self._dag_node_hierarchy_level(dag=dag)
@@ -618,10 +621,15 @@ class DagReporting(DagGenerator):
         return dag
 
     def plot_etl_dag(self, file_html: str) -> None:
-        """Create a html file with a graphical representation of the ETL DAG
+        """Genereert en slaat een netwerkvisualisatie op van de ETL-DAG.
+
+        Bouwt de ETL-grafiek, verrijkt deze voor visualisatie en slaat het resultaat op als een HTML-bestand.
 
         Args:
-            file_html (str): file path that the result should be written to
+            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+
+        Returns:
+            None
         """
         try:
             dag = self.get_dag_ETL()
