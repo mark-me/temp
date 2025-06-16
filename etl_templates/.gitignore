@@ -183,8 +183,7 @@ log.json*
 src/intermediate
 intermediate
 
-# Sensitive information
-input/*
+
 # Example information
 !input/ExampleDWH.ldm
 !input/ExampleSource.ldm
