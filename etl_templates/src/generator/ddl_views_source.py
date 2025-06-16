@@ -13,7 +13,7 @@ class DDLSourceViews(DDLViewBase):
     def __init__(self, dir_output: str, ddl_template: Template):
         super().__init__(dir_output=dir_output, ddl_template=ddl_template)
 
-    def generate_ddls(self, mappings: dict, identifiers: dict):
+    def generate_ddls(self, mappings: dict):
         """
         Creëert alle source views van de verschillende niet-aggregatie entiteiten die in models zijn opgenomen en schrijft deze weg naar een folder in de repository.
         De source views bevatten de ETL om de doeltabel te vullen met data.
@@ -27,7 +27,9 @@ class DDLSourceViews(DDLViewBase):
                 continue
 
             self._set_datasource_code(mapping)
+            identifiers = self.__collect_identifiers(mapping=mapping)
             mapping = self.__build_bkeys_load(identifiers=identifiers, mapping=mapping)
+            mapping = self.__remove_identifier_attributes(identifiers=identifiers, mapping=mapping)
             content = self.__render_source_view(mapping)
             dir_output, file_output, path_file_output = self.__get_source_view_paths(
                 mapping
@@ -36,7 +38,111 @@ class DDLSourceViews(DDLViewBase):
                 content=content, path_file_output=path_file_output
             )
             logger.info(f"Written Source view DDL {Path(path_file_output).resolve()}")
+            
+    def __collect_identifiers(self, mapping: dict) -> dict:
+        """
+        Verzamelt identifier-informatie uit de mappingconfiguratie.
 
+        Doorloopt alle mappings en attribute mappings, en genereert een dictionary met identifierdetails voor gebruik in DDL-generatie.
+
+        Args:
+            mappings (dict): De mappingconfiguratie met entity- en attributemappinginformatie.
+
+        Returns:
+            dict: Een dictionary met identifierdetails per identifier.
+        """
+        # TODO: in __select_identifiers zit nu opbouw van strings die platform specifiek zijn (SSMS). Om de generator ook platform onafhankelijk te maken kijken of we dit wellicht in een template kunnen gieten.
+        identifiers = {}
+
+        def get_name_business_key(identifier):
+            return (
+                identifier["EntityCode"]
+                if identifier["IsPrimary"]
+                else identifier["Code"]
+            )
+
+        def get_identifier_def(name_business_key, mapping, attr_map):
+            if "AttributesSource" in attr_map:
+                id_entity = attr_map["AttributesSource"]["EntityAlias"]
+                attribute_source = attr_map["AttributesSource"]["Code"]
+                return f"[{name_business_key}BKey] = '{mapping['DataSource']}'+ '-' + CAST({id_entity}.[{attribute_source}] AS NVARCHAR(50))"
+            else:
+                return f"[{name_business_key}BKey] = '{mapping['DataSource']}'+  '-' + {attr_map['Expression']}"
+
+
+        if "Identifiers" not in mapping["EntityTarget"]:
+            if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
+                logger.error(
+                    f"Geen identifiers aanwezig voor entitytarget {mapping['EntityTarget']['Name']}"
+                )
+        if "AttributeMapping" not in mapping:
+                if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
+                    logger.error(
+                        f"Geen attribute mapping aanwezig voor entity {mapping['EntityTarget']['Name']}"
+                    ) 
+        for identifier in mapping["EntityTarget"]["Identifiers"]:
+            for attr_map in mapping["AttributeMapping"]:
+                if (
+                    attr_map["AttributeTarget"]["IdEntity"]
+                    == identifier["EntityID"]
+                    and attr_map["AttributeTarget"]["Code"] == identifier["Name"]
+                ):
+                    name_business_key = get_name_business_key(identifier)
+                    identifier_def = get_identifier_def(
+                        name_business_key, mapping, attr_map
+                    )
+
+                    identifiers[identifier["Id"]] = {
+                        "IdentifierID": identifier["Id"],
+                        "IdentifierName": identifier["Name"],
+                        "IdentifierCode": identifier["Code"],
+                        "EntityId": identifier["EntityID"],
+                        "EntityCode": identifier["EntityCode"],
+                        "IsPrimary": identifier["IsPrimary"],
+                        "IdentifierStringSourceView": identifier_def,
+                    }
+        return identifiers
+    
+    def __remove_identifier_attributes(self, mapping: dict, identifiers: dict):
+        """
+            Verwijdert alle identifier kolommen uit de attribute mapping om alleen de bkeys over te houden
+
+        Args:
+            identifiers (dict): Alle identifiers definities
+            mapping (dict): mapping
+        """
+        mapped_identifiers = []
+        for identifier in mapping["EntityTarget"]["Identifiers"]:
+            if "Id" not in identifier:
+                logger.error("Geen identifier gevonden!")
+                continue
+            identifier_id = identifier["Id"]
+            if identifier_id in identifiers:
+                # voeg de code van de identifier toe aan een controlelijst. De attributen in deze lijst worden verwijderd uit entity[Attributes]
+                mapped_identifiers.append(identifiers[identifier_id]["IdentifierName"])
+            elif "Stereotype" not in mapping:
+                """
+                We doen niks met eventuele identifiers van Aggregators. Dit moet geen error opleveren.
+                Alleen identifiers van echte entiteiten worden gebruikt en moet aanwezig zijn.
+                Deze entiteiten hebben hier geen Stereotype
+                """
+                logger.error(
+                    f"Identifier voor entiteit '{mapping["EntityTarget"]['Code']}' niet gevonden in identifiers"
+                )
+
+        attributes = []
+        # voor alle attributen in de entity gaan we controleren of de code voorkomt als gemapte identifier. Indien dit het geval is, dan wordt het
+        # attribuut verwijderd uit Attributes. Hiermee krijgen we geen dubbelingen in de entiteit.
+        attributes.extend(
+            attribute
+            for attribute in mapping["AttributeMapping"]
+            if attribute["AttributeTarget"]["Name"] not in mapped_identifiers
+        )
+        mapping.pop("AttributeMapping")
+        mapping["AttributeMapping"] = attributes
+        return mapping
+
+            
     def __render_source_view(self, mapping: dict) -> str:
         """
         Genereert en formatteert de SQL voor een source view op basis van de mapping.
@@ -135,7 +241,7 @@ class DDLSourceViews(DDLViewBase):
             else:
                 return f"{hash_attrib}{attr_mapping['AttributesSource']['EntityAlias']}.[{attr_mapping['AttributesSource']['Code']}])"
 
-        x_hashkey = "[X_HashKey] = HASHBYTES('SHA2_256', CONCAT("
+        x_hashkey = "[X_HashKey] = CHECKSUM(CONCAT(N'',"
         attr_mappings = []
         for i, attr_mapping in enumerate(mapping["AttributeMapping"]):
             separator = "" if i == 0 else ","

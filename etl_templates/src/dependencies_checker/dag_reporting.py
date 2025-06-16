@@ -13,11 +13,20 @@ from .dag_generator import DagGenerator, EntityRef, NoFlowError, VertexType
 logger = get_logger(__name__)
 
 
+class InvalidDeadlockPrevention(Exception):
+    pass
+
+
 class ObjectPosition(Enum):
     START = auto()
     INTERMEDIATE = auto()
     END = auto()
     UNDETERMINED = auto()
+
+
+class DeadlockPrevention(Enum):
+    SOURCE = auto()
+    TARGET = auto()
 
 
 class DagReporting(DagGenerator):
@@ -70,6 +79,151 @@ class DagReporting(DagGenerator):
     def _create_output_dir(self, file_path: str) -> None:
         parent_directory = os.path.dirname(file_path)
         Path(parent_directory).mkdir(parents=True, exist_ok=True)
+
+    def _dag_ETL_run_order(
+        self, dag: ig.Graph, deadlock_prevention: DeadlockPrevention
+    ) -> ig.Graph:
+        """Verrijk de ETL DAG met de volgorder waarmee de mappings uitgevoerd moeten worden.
+
+        Args:
+            dag (ig.Graph): ETL DAG met entiteiten en mappings
+
+        Returns:
+            ig.Graph: ETL DAG waar de knopen verrijkt worden met het attribuut 'run_level',
+            entiteit knopen krijgen de waarde -1, omdat de executievolgorde niet van toepassing is op entiteiten.
+        """
+        # For each node calculate the number of mapping nodes before the current node
+        dag_mappings = self.get_dag_mappings()
+        lst_mapping_order = [
+            len(dag.subcomponent(dag.vs[i], mode="in")) - 1
+            for i in range(dag.vcount())
+        ]
+        # Assign valid run order to mappings only
+        lst_run_level = []
+        lst_run_level.extend(
+            run_level if role == VertexType.MAPPING.name else -1
+            for run_level, role in zip(lst_mapping_order, dag.vs["type"])
+        )
+        dag.vs["run_level1"] = lst_run_level
+
+        # Start traversing ETL
+        # Find first mappings
+        vs_mappings_start = [i for i, x in enumerate(lst_run_level) if x == 0]
+
+        # FIXME: Stop making lists, and start iterating through dag starting by 0 vertices and iterating through out neighbors
+
+        lst_run_level2 = []
+        for i in range(dag.vcount()):
+            if dag.vs[i]["type"] == VertexType.MAPPING.name:
+                lst_mapping_level = []
+                entities_input = dag.neighbors(dag.vs[i], mode="in")
+                for entity_input in entities_input:
+                    for vx in dag.neighbors(dag.vs[entity_input], mode="in"):
+                        lst_mapping_level.append(dag.vs[vx]["run_level1"])
+                    if lst_mapping_level:
+                        max_level = max(lst_mapping_level)
+                    else:
+                        max_level = 0
+                    lst_run_level2.append(max_level + 1)
+
+
+        lst_run_level = self._make_increasing_with_duplicates(lst=lst_run_level)
+        dag.vs["run_level"] = lst_run_level
+        df_vertices = dag.get_vertex_dataframe()
+        df_vertices = (
+            df_vertices.loc[df_vertices["type"] == "MAPPING"]
+            .loc[df_vertices["Name"].str.contains("SL_KIS_")]
+            .filter(["Name", "run_level1", "run_level"])
+        )
+
+        if deadlock_prevention not in [
+            DeadlockPrevention.SOURCE,
+            DeadlockPrevention.TARGET,
+        ]:
+            raise InvalidDeadlockPrevention("No valid Deadlock prevention selected")
+        dag = self._dag_run_level_stages(
+            dag=dag, deadlock_prevention=deadlock_prevention
+        )
+        return dag
+
+    def _make_increasing_with_duplicates(self, lst: list) -> list:
+        result = []
+        current = lst[0] if lst else 0
+
+        for i in range(len(lst)):
+            if i == 0:
+                result.append(current)
+            else:
+                if lst[i] == lst[i - 1]:
+                    # duplicaat → zelfde waarde
+                    result.append(result[-1])
+                else:
+                    # verhoog vorige met 1
+                    result.append(result[-1] + 1)
+        return result
+
+    def _dag_run_level_stages(
+        self, dag: ig.Graph, deadlock_prevention: DeadlockPrevention
+    ) -> ig.Graph:
+        """Determine mapping stages for each run level
+
+        Args:
+            dag (ig.Graph): DAG describing the ETL
+
+        Returns:
+            ig.Graph: ETL stages for a level added in the mapping vertex attribute 'stage'
+        """
+        dict_level_stages = {}
+        # All mapping nodes
+        vs_mapping = dag.vs.select(type_eq=VertexType.MAPPING.name)
+
+        # Determine run stages of mappings by run level
+        run_levels = list({node["run_level"] for node in vs_mapping})
+        for run_level in run_levels:
+            # Find run_level mappings and corresponding source entities
+            if deadlock_prevention == DeadlockPrevention.SOURCE:
+                mappings = [
+                    {"mapping": mapping["name"], "entity": dag.predecessors(mapping)}
+                    for mapping in vs_mapping.select(run_level_eq=run_level)
+                ]
+            elif deadlock_prevention == DeadlockPrevention.TARGET:
+                mappings = [
+                    {"mapping": mapping["name"], "entity": dag.successors(mapping)}
+                    for mapping in vs_mapping.select(run_level_eq=run_level)
+                ]
+            # Create graph of mapping conflicts (mappings that draw on the same sources)
+            graph_conflicts = self._dag_ETL_run_levels_conflicts_graph(mappings)
+            # Determine unique sorting for conflicts
+            order = graph_conflicts.vertex_coloring_greedy(method="colored_neighbors")
+            # Apply them back to the DAG
+            dict_level_stages |= dict(zip(graph_conflicts.vs["name"], order))
+            for k, v in dict_level_stages.items():
+                dag.vs.select(name=k)["run_level_stage"] = v
+        return dag
+
+    def _dag_ETL_run_levels_conflicts_graph(self, mapping_sources: dict) -> ig.Graph:
+        """Generate a graph expressing which mappings share sources
+
+        Args:
+            mapping_sources (dict): Mappings with a list of source node ids for each of them
+
+        Returns:
+            ig.Graph: Expressing mapping sharing source entities
+        """
+        lst_vertices = [{"name": mapping["mapping"]} for mapping in mapping_sources]
+        lst_edges = []
+        for a in mapping_sources:
+            for b in mapping_sources:
+                if a["mapping"] < b["mapping"]:
+                    qty_common = len(set(a["entity"]) & set(b["entity"]))
+                    if qty_common > 0:
+                        lst_edges.append(
+                            {"source": a["mapping"], "target": b["mapping"]}
+                        )
+        graph_conflicts = ig.Graph.DictList(
+            vertices=lst_vertices, edges=lst_edges, directed=False
+        )
+        return graph_conflicts
 
     def _igraph_to_networkx(self, graph: ig.Graph) -> nx.DiGraph:
         """Converts an igraph into a networkx graph
@@ -175,7 +329,7 @@ class DagReporting(DagGenerator):
         net.toggle_physics(True)
         for edge in net.edges:
             edge["shadow"] = True
-        net.generate_html(file_html, notebook=False)
+        net.show(file_html, notebook=False)
 
     def _dag_node_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
         """Enrich the DAG with the level in the hierarchy where vertices should be plotted.
@@ -375,7 +529,7 @@ class DagReporting(DagGenerator):
                 lst_entities.append(vx_entity.attributes())
         return lst_entities
 
-    def get_mapping_order(self) -> list:
+    def get_mapping_order(self, deadlock_prevention: DeadlockPrevention) -> list:
         """Returns mappings and order of running (could be parallel,
         in which case other sub-sorting should be implemented if needed)
 
@@ -385,6 +539,9 @@ class DagReporting(DagGenerator):
         lst_mappings = []
         try:
             dag = self.get_dag_ETL()
+            dag = self._dag_ETL_run_order(
+                dag=dag, deadlock_prevention=deadlock_prevention
+            )
         except NoFlowError:
             logger.error(
                 "There are no mappings, so there is no mapping order to generate!"
@@ -393,13 +550,17 @@ class DagReporting(DagGenerator):
         for node in dag.vs:
             if node["type"] == VertexType.MAPPING.name:
                 successors = dag.vs[dag.successors(node)[0]]
-                dict_successors = {key: successors[key] for key in successors.attribute_names()}
+                dict_successors = {
+                    key: successors[key] for key in successors.attribute_names()
+                }
                 dict_mapping = {key: node[key] for key in node.attribute_names()}
                 dict_mapping["RunLevel"] = node["run_level"]
                 dict_mapping["RunLevelStage"] = node["run_level_stage"]
-                dict_mapping['NameModel'] = dict_successors["NameModel"]
-                dict_mapping['CodeModel'] = dict_successors["CodeModel"]
-                dict_mapping["SourceViewName"] = f"vw_src_{node['Name'].replace(' ', '_')}"
+                dict_mapping["NameModel"] = dict_successors["NameModel"]
+                dict_mapping["CodeModel"] = dict_successors["CodeModel"]
+                dict_mapping["SourceViewName"] = (
+                    f"vw_src_{node['Name'].replace(' ', '_')}"
+                )
                 dict_mapping["TargetName"] = dict_successors["Code"]
                 lst_mappings.append(dict_mapping)
         # Sort the list of mappings by run level and the run level stage

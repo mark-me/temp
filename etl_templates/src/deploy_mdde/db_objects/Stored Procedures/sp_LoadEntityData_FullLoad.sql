@@ -21,6 +21,7 @@ Date(yyyy-mm-dd)    Author              Comments
 2025-04-04			Jeroen Poll			Added real column names and not select *
 2025-04-18			Avinash Kalicharan	Add debug to the procedure
 2025-05-20			Jeroen Poll			Add Config Execution proc
+2025-06-16			Jeroen Poll			Remove Truncate, Will be done in other PROC
 ***************************************************************************************************/
 BEGIN TRY
 	DECLARE @sql NVARCHAR(MAX) = ''
@@ -36,6 +37,7 @@ BEGIN TRY
 			EXEC [DA_MDDE].[sp_Logger] 'INFO', 'Debug is set to True'
 		END
 
+	/*
 	BEGIN -- Truncate target table
 		SET @LogMessage = CONCAT ('Going to truncate the table: ', '[', @par_LayerName, '].[', @par_DestinationName, ']')
 
@@ -54,6 +56,7 @@ BEGIN TRY
 				EXEC sp_executesql @sql
 			END
 	END
+	*/
 
 	BEGIN -- Loading new records for source view
 		DECLARE @sqlNewRow NVARCHAR(50) = CHAR(13) + CHAR(10)

@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from dependencies_checker import DagReporting
+from dependencies_checker import DagReporting, DeadlockPrevention
 from deploy_mdde import DeploymentMDDE
 from generator import DDLGenerator
 from logtools import get_logger, issue_tracker
@@ -56,7 +56,7 @@ class Orchestrator:
             lst_files_RETW.append(file_RETW)
 
         dag = self._inspect_etl_dag(files_RETW=lst_files_RETW)
-        mapping_order = dag.get_mapping_order()
+        mapping_order = dag.get_mapping_order(deadlock_prevention=DeadlockPrevention.TARGET)
 
         self._generate_code(files_RETW=lst_files_RETW)
         self._generate_mdde_deployment(
@@ -73,7 +73,7 @@ class Orchestrator:
                 path_source=path_source
             )
             # TODO: Copy code and codelist to repo and update project file
-        #     devops_handler.push()
+            devops_handler.publish()
 
     def _extract(self, file_pd_ldm: Path) -> str:
         """Extract data from a PowerDesigner LDM file.

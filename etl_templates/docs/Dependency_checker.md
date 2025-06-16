@@ -123,7 +123,9 @@ De klasse ```EtlFailure```, gedefinieerd in het bestand ```dag_etl_failure.py```
 De uitvoeringsvolgorde van mappings wordt bepaald door twee componenten:
 
 * Run level: waar in de Directed Acyclic Graph ([DAG](https://nl.wikipedia.org/wiki/Gerichte_acyclische_graaf){target="_blank"}) hiërarchie, gaande van bron-entiteiten naar eind-entiteiten, de mapping zich bevindt. Mappings die enkel bron-entiteiten gebruiken krijgen run level 0, de volgende run levels worden bepaald door het aantal mappings dat in de hiërarchie vóór de huidige mapping komt.
-* Run level stage: Als mappings op hetzelfde run level dezelfde entiteiten gebruiken, moeten ze een verschillende uitvoeringsvolgorde krijgen om deadlocks te voorkomen. Een [greedy coloring algoritme](https://www.youtube.com/watch?v=vGjsi8NIpSE){target="_blank"} wordt gebruikt om de uitvoeringsvolgorde binnen een run level te bepalen.
+* Run level stage: Als mappings op hetzelfde run level dezelfde entiteiten gebruiken, moeten ze een verschillende uitvoeringsvolgorde krijgen om deadlocks te voorkomen. Een [greedy coloring algoritme](https://www.youtube.com/watch?v=vGjsi8NIpSE){target="_blank"} wordt gebruikt om de uitvoeringsvolgorde binnen een run level te bepalen. Er kunnen nu twee typen dead-locks voorkomen worden met een `DeadlockPrevention` type.
+    * `SOURCE`: een brontabel kan niet door meerdere mappings tegelijkertijd worden gebruikt
+    * `TARGET`: en doeltabel kan niet door meerdere mappings tegelijkertijd worden gebruikt
 
 ```mermaid
 graph LR
@@ -284,6 +286,10 @@ Functionaliteit om afhankelijkheden of de DAG te vergelijken tussen twee versies
 ### ::: src.dependencies_checker.dag_generator.EdgeType
 
 ### ::: src.dependencies_checker.dag_generator.VertexType
+
+---
+
+### ::: src.dependencies_checker.dag_reporting.DeadlockPrevention
 
 ---
 

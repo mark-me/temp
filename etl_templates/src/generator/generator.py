@@ -104,83 +104,10 @@ class DDLGenerator:
         """
         # self.__copy_mdde_scripts()\
         dict_RETW = self._read_model_file(file_RETW=file_RETW)
-        identifiers = {}
         if "Mappings" in dict_RETW:
             mappings = dict_RETW["Mappings"]
-            identifiers = self._collect_identifiers(mappings=mappings)
-            self.source_views.generate_ddls(mappings=mappings, identifiers=identifiers)
+            self.source_views.generate_ddls(mappings=mappings)
             self.source_views_aggr.generate_ddls(mappings=mappings)
-        self.entities.generate_ddls(models=dict_RETW["Models"], identifiers=identifiers)
+        self.entities.generate_ddls(models=dict_RETW["Models"])
 
-    def _collect_identifiers(self, mappings: dict) -> dict:
-        """
-        Verzamelt identifier-informatie uit de mappingconfiguratie.
-
-        Doorloopt alle mappings en attribute mappings, en genereert een dictionary met identifierdetails voor gebruik in DDL-generatie.
-
-        Args:
-            mappings (dict): De mappingconfiguratie met entity- en attributemappinginformatie.
-
-        Returns:
-            dict: Een dictionary met identifierdetails per identifier.
-        """
-        # TODO: in __select_identifiers zit nu opbouw van strings die platform specifiek zijn (SSMS). Om de generator ook platform onafhankelijk te maken kijken of we dit wellicht in een template kunnen gieten.
-        identifiers = {}
-
-        def get_name_business_key(identifier):
-            return (
-                identifier["EntityCode"]
-                if identifier["IsPrimary"]
-                else identifier["Code"]
-            )
-
-        def get_identifier_def_primary(name_business_key):
-            return f"[{name_business_key}BKey] nvarchar(200) NOT NULL"
-
-        def get_identifier_def(name_business_key, mapping, attr_map):
-            if "AttributesSource" in attr_map:
-                id_entity = attr_map["AttributesSource"]["IdEntity"]
-                attribute_source = attr_map["AttributesSource"]["Code"]
-                return f"[{name_business_key}BKey] = '{mapping['DataSource']}'+ '-' + CAST({id_entity}.[{attribute_source}] AS NVARCHAR(50))"
-            else:
-                return f"[{name_business_key}BKey] = '{mapping['DataSource']}'+  '-' + {attr_map['Expression']}"
-
-        for mapping in mappings:
-            if "Identifiers" not in mapping["EntityTarget"]:
-                if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
-                    logger.error(
-                        f"Geen identifiers aanwezig voor entitytarget {mapping['EntityTarget']['Name']}"
-                    )
-                continue
-            if "AttributeMapping" not in mapping:
-                    if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
-                        logger.error(
-                            f"Geen attribute mapping aanwezig voor entity {mapping['EntityTarget']['Name']}"
-                        )
-                    continue
-            for identifier in mapping["EntityTarget"]["Identifiers"]:
-                for attr_map in mapping["AttributeMapping"]:
-                    if (
-                        attr_map["AttributeTarget"]["IdEntity"]
-                        == identifier["EntityID"]
-                        and attr_map["AttributeTarget"]["Code"] == identifier["Name"]
-                    ):
-                        name_business_key = get_name_business_key(identifier)
-                        identifier_def_primary = get_identifier_def_primary(
-                            name_business_key
-                        )
-                        identifier_def = get_identifier_def(
-                            name_business_key, mapping, attr_map
-                        )
-
-                        identifiers[identifier["Id"]] = {
-                            "IdentifierID": identifier["Id"],
-                            "IdentifierName": identifier["Name"],
-                            "IdentifierCode": identifier["Code"],
-                            "EntityId": identifier["EntityID"],
-                            "EntityCode": identifier["EntityCode"],
-                            "IsPrimary": identifier["IsPrimary"],
-                            "IdentifierStringEntity": identifier_def_primary,
-                            "IdentifierStringSourceView": identifier_def,
-                        }
-        return identifiers
+    

@@ -512,107 +512,6 @@ class DagGenerator:
         dag.delete_vertices(vs_delete)
         return dag
 
-    def _make_increasing_with_duplicates(self,lst: list) -> list:
-        result = []
-        current = lst[0] if lst else 0
-
-        for i in range(len(lst)):
-            if i == 0:
-                result.append(current)
-            else:
-                if lst[i] == lst[i - 1]:
-                    # duplicaat → zelfde waarde
-                    result.append(result[-1])
-                else:
-                    # verhoog vorige met 1
-                    result.append(result[-1] + 1)
-        return result 
-
-    def _dag_ETL_run_order(self, dag: ig.Graph) -> ig.Graph:
-        """Verrijk de ETL DAG met de volgorder waarmee de mappings uitgevoerd moeten worden.
-
-        Args:
-            dag (ig.Graph): ETL DAG met entiteiten en mappings
-
-        Returns:
-            ig.Graph: ETL DAG waar de knopen verrijkt worden met het attribuut 'run_level',
-            entiteit knopen krijgen de waarde -1, omdat de executievolgorde niet van toepassing is op entiteiten.
-        """
-        # For each node calculate the number of mapping nodes before the current node
-        lst_mapping_order = [
-            sum(
-                dag.vs[vs]["type"] == VertexType.MAPPING.name
-                for vs in dag.subcomponent(dag.vs[i], mode="in")
-            )
-            - 1
-            for i in range(dag.vcount())
-        ]
-        # Assign valid run order to mappings only
-        lst_run_level = []
-        lst_run_level.extend(
-            run_level if role == VertexType.MAPPING.name else -1
-            for run_level, role in zip(lst_mapping_order, dag.vs["type"])
-        )
-        lst_run_level = self._make_increasing_with_duplicates(lst=lst_run_level)
-        dag.vs["run_level"] = lst_run_level
-        dag = self._dag_ETL_run_level_stages(dag=dag)
-        return dag
-
-    def _dag_ETL_run_level_stages(self, dag: ig.Graph) -> ig.Graph:
-        """Determine mapping stages for each run level
-
-        Args:
-            dag (ig.Graph): DAG describing the ETL
-
-        Returns:
-            ig.Graph: ETL stages for a level added in the mapping vertex attribute 'stage'
-        """
-        dict_level_runs = {}
-        # All mapping nodes
-        vs_mapping = dag.vs.select(type_eq=VertexType.MAPPING.name)
-
-        # Determine run stages of mappings by run level
-        run_levels = list({node["run_level"] for node in vs_mapping})
-        for run_level in run_levels:
-            # Find run_level mappings and corresponding source entities
-            mapping_sources = [
-                {"mapping": mapping["name"], "sources": dag.predecessors(mapping)}
-                for mapping in vs_mapping.select(run_level_eq=run_level)
-            ]
-            # Create graph of mapping conflicts (mappings that draw on the same sources)
-            graph_conflicts = self._dag_ETL_run_level_conflicts_graph(mapping_sources)
-            # Determine unique sorting for conflicts
-            order = graph_conflicts.vertex_coloring_greedy(method="colored_neighbors")
-            # Apply them back to the DAG
-            dict_level_runs |= dict(zip(graph_conflicts.vs["name"], order))
-            for k, v in dict_level_runs.items():
-                dag.vs.select(name=k)["run_level_stage"] = v
-        return dag
-
-    def _dag_ETL_run_level_conflicts_graph(self, mapping_sources: dict) -> ig.Graph:
-        """Generate a graph expressing which mappings share sources
-
-        Args:
-            mapping_sources (dict): Mappings with a list of source node ids for each of them
-
-        Returns:
-            ig.Graph: Expressing mapping sharing source entities
-        """
-        lst_vertices = [{"name": mapping["mapping"]} for mapping in mapping_sources]
-        lst_edges = []
-        for a in mapping_sources:
-            for b in mapping_sources:
-                if a["mapping"] < b["mapping"]:
-                    qty_common = len(set(a["sources"]) & set(b["sources"]))
-                    if qty_common > 0:
-                        lst_edges.append(
-                            {"source": a["mapping"], "target": b["mapping"]}
-                        )
-        graph_conflicts = ig.Graph.DictList(
-            vertices=lst_vertices, edges=lst_edges, directed=False
-        )
-        return graph_conflicts
-
     def get_dag_ETL(self) -> ig.Graph:
         """Build the ETL DAG, showing the flow of data between entities and mappings.
 
@@ -630,7 +529,6 @@ class DagGenerator:
         edge_types = [EdgeType.ENTITY_SOURCE.name, EdgeType.ENTITY_TARGET.name]
         edges = [e for e in self.edges if e["type"] in edge_types]
         dag = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
-        dag = self._dag_ETL_run_order(dag=dag)
 
         # Delete entities without mappings
         vs_no_connections = []
@@ -646,3 +544,52 @@ class DagGenerator:
                 raise NoFlowError("No mappings, so no ETL flow")
         logger.info("Build graph mappings")
         return dag
+
+    def get_dag_mappings(self) -> ig.Graph:
+        """Genereert een graaf van de afhankelijkheden tussen mappings.
+
+        Args:
+            include_entities (bool, optioneel): Geeft aan of de entiteiten als knopen moeten worden opgenomen. Standaard is True.
+
+        Returns:
+            ig.Graph: Een graaf van de bestandsafhankelijkheden.
+        """
+        dict_vertices = {}
+        lst_edges = []
+        dag = self.get_dag_total()
+
+        vs_mappings = dag.vs.select(type_eq=VertexType.MAPPING.name)
+        for vx_mapping in vs_mappings:
+            dict_vertices |= {vx_mapping["name"]: vx_mapping.attributes()}
+            vs_entities_source = dag.vs(dag.neighbors(vx_mapping, mode="in"))
+
+            # Getting mappings that filled source entities
+            for vx_entity_source in vs_entities_source:
+                idx_mapping_input = dag.neighbors(vx_entity_source, mode="in")
+                if idx_mapping_input:
+                    vs_mapping_input = dag.vs(idx_mapping_input)[0]
+                    lst_edges.append(
+                        {
+                            "source": vs_mapping_input["name"],
+                            "target": vx_mapping["name"],
+                        }
+                    )
+                lst_edges
+
+            # Get mappings that depend on target entities
+            vx_entity_target = dag.vs(dag.neighbors(vx_mapping, mode="out"))[0]
+            vs_mappings_target = dag.vs(
+                dag.neighbors(vx_entity_target, mode="out")
+            )
+            for vx_mapping_target in vs_mappings_target:
+                lst_edges.append(
+                    {
+                        "source": vx_mapping["name"],
+                        "target": vx_mapping_target["name"],
+                    }
+                )
+        lst_vertices = list(dict_vertices.values())
+        dag_mappings = ig.Graph.DictList(
+            vertices=lst_vertices, edges=lst_edges, directed=True
+        )
+        return dag_mappings

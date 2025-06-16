@@ -81,7 +81,7 @@ int
 {%- if stereotypeFlag.value ==  "FALSE" -%}
 ,[X_Startdate]    date
 ,[X_EndDate]  date
-,[X_HashKey]  varbinary(8000)  
+,[X_HashKey]  int  
 ,[X_IsCurrent]    bit
 ,[X_IsReplaced]   bit
 ,[X_RunId]    int

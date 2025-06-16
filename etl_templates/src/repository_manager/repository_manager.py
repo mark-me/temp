@@ -136,7 +136,7 @@ class RepositoryManager:
         project_editor.add_new_files(folder=path_source)
 
         # Copy all files to repository
-        copytree(src=path_source, dst=self._path_local, dirs_exist_ok=True)
+        copytree(src=path_source, dst=self._path_local / "CentralLayer", dirs_exist_ok=True)
         # project_editor._remove_missing_files()
         project_editor.save()
         logger.info("Added files to repository")
@@ -202,7 +202,7 @@ class RepositoryManager:
             "git",
             "commit",
             "-m"
-            f"Commit: {self._config.work_item_description.replace(' ', '_')} #{int(self._config.work_item)}",
+            f"Commit: {self._config.work_item_description} #{int(self._config.work_item)}",
         ]
         logger.info(f"Executed: {' '.join(lst_command)}")
         subprocess.run(lst_command, check=True)

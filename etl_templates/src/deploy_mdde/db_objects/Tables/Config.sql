@@ -9,7 +9,7 @@
 	,[RunLevelStage] [int] NULL
 	,[MaxTimestamp] DATETIME2 NULL
 	,[MaxTimestamp_LastRun] DATETIME2 NULL
-	,[LoadType] BIT NOT NULL
+	,[LoadType] tinyint NULL
 	,[LoadCommand] [nvarchar](1000) NULL
 	,[LoadRunId] [nvarchar](100) NULL
 	,[LoadDateTime] [datetime2](7) NULL

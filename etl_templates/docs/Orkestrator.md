@@ -95,7 +95,7 @@ sequenceDiagram
 * Integreert met de klasse [`RepositoryManager`](Repository_Manager.md) om DevOps repositories te klonen, bij te werken en te beheren.
 * Behandelt het toevoegen van gegenereerde code en deployment scripts aan de repository, met ruimte voor toekomstige uitbreidingen (zoals het pushen van wijzigingen).
 
-**[Probleemafhandeling]((Logtools.md)) (`_handle_issues()`)**
+**[Probleemafhandeling](Logtools.md) (`_handle_issues()`)**
 
 * Controleert op problemen die tijdens de verwerking zijn opgetreden via de issue_tracker.
 * Schrijft een rapport met gevonden issues weg naar een CSV-bestand en gooit een uitzondering om de verwerking te stoppen indien nodig.

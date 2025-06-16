@@ -420,7 +420,14 @@ class DevOpsConfig(BaseConfigComponent):
     @property
     def path_file_sql_project(self):
         return Path(self._data.file_sql_project)
+    
+    @property
+    def work_item_description(self):
+        return self._data.work_item_description.replace(' ', '_')
 
+    @property
+    def work_item(self):
+        return self._data.work_item
 
 """
 devops:

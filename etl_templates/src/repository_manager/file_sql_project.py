@@ -59,7 +59,7 @@ class SqlProjEditor:
         """
         includes = set()
         for elem in self.root.xpath("//msbuild:*[@Include]", namespaces=self.nsmap):
-            path = elem.get("Include").replace("\\", "/")
+            path = elem.get("Include").lower()
             includes.add(path)
         return includes
 
@@ -109,13 +109,12 @@ class SqlProjEditor:
         existing = self._collect_existing_includes()
         qty_added = 0
 
-        test = "DA_MDDE/Tables/Bullshit.sql"
         for file in folder.rglob("*.sql"):
-            relative_path = file.relative_to(folder).as_posix()
+            relative_path = str(file.relative_to(folder).as_posix()).replace("/", "\\")
             item_type = (
-                "None" if str(file.parent).lower() == "postdeployment" else "Include"
+                "None" if str(file.parent).lower() == "postdeployment" else "Build"
             )
-            if relative_path in existing:
+            if relative_path.lower() in existing:
                 continue
 
             element = etree.SubElement(
@@ -156,7 +155,8 @@ class SqlProjEditor:
 
         # Verzamel folder paths uit alle bestaande Include-attributen
         folders_in_use = set()
-        for elem in self.root.xpath("//msbuild:*[@Include]", namespaces=self.nsmap):
+        item_group = self._get_or_create_itemgroup_for_tag("Build")
+        for elem in item_group:
             path = elem.get("Include").replace("\\", "/")
             parts = Path(path).parts
             for i in range(1, len(parts)):
@@ -165,7 +165,7 @@ class SqlProjEditor:
         # Alleen nieuwe folders toevoegen
         missing_folders = sorted(folders_in_use - existing_folders)
         if not missing_folders:
-            print("[INFO] Geen nieuwe folders om toe te voegen.")
+            logger.info("Geen nieuwe folders om toe te voegen.")
             return
 
         item_group = self._get_or_create_itemgroup_for_tag("Folder")

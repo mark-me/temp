@@ -51,6 +51,8 @@ src/deploy_mdde/db_objects
 
 ### Gebruik in het ETL-proces
 
+Het ETL proces wordt gestart middels Synapse pipeline. Voor meer informatie over ETL Synapsepipeline kan je vinden op de [ETL Synapse Pipeline](MDDE_ETL_Synapse_Pipeline.md).
+
 Tijdens een laadproces wordt de configuratie gelezen uit de `Config`-tabel. Bij de start van een run wordt een nieuwe regel toegevoegd aan `ConfigExecutions` met details over de uitvoering. De hoofdprocedure (`sp_LoadEntityData`) bepaalt op basis van deze configuratie welke specifieke laadprocedure wordt aangeroepen (full, incremental, dimensioneel). Tijdens de uitvoering wordt met `sp_Logger` gelogd wat er gebeurt en hoeveel rijen zijn verwerkt. Na afloop wordt met `sp_UpdateConfigExecution` de runstatus bijgewerkt.
 
 De `fn_GetDefaultValueForDatatype` wordt bijvoorbeeld gebruikt bij het initialiseren van dummy-dimensieregels (key = -1), zodat alle velden zinvolle, verwachte waarden bevatten bij een onbekende of ontbrekende referentie.
