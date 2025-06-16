@@ -16,9 +16,9 @@ MappingRef = namedtuple("MappingRef", ("FileRETW", "CodeMapping"))
 
 
 class VertexType(Enum):
-    """Enumerates the types of vertices in the graph.
+    """Enumeratie van de typen knopen in de graaf.
 
-    Provides distinct identifiers for each type of node in the graph, including entities, mappings, and files.
+    Biedt unieke identificaties voor elk type knoop in de graaf, waaronder entiteiten, mappings, RETW-bestanden en fouten.
     """
 
     ENTITY = auto()
@@ -28,9 +28,9 @@ class VertexType(Enum):
 
 
 class EdgeType(Enum):
-    """Enumerates the types of edges in the graph.
+    """Enumeratie van de typen randen in de graaf.
 
-    Provides distinct identifiers for each type of edge in the graph, representing relationships between files, mappings, and entities.
+    Biedt unieke identificaties voor elk type rand in de graaf, waaronder koppelingen tussen bestanden en entiteiten, bestanden en mappings, bronentiteiten en mappings, en mappings en doeleenheden.
     """
 
     FILE_ENTITY = auto()
@@ -97,12 +97,12 @@ class DagGenerator:
         try:
             with open(file_RETW) as file:
                 dict_RETW = json.load(file)
-            logger.info(f"Added RETW file '{file_RETW}'")
+            logger.info(f"RETW bestand '{file_RETW}' toegevoegd")
         except FileNotFoundError:
-            logger.error(f"Could not find file '{file_RETW}'")
+            logger.error(f"Kon RETW bestand '{file_RETW}' niet vinden.")
             return False
         except json.JSONDecodeError:
-            logger.error(f"Invalid JSON content in file '{file_RETW}'")
+            logger.error(f"Invalide JSON content in het RETW bestand '{file_RETW}'")
             return False
 
         # Add file node information
@@ -123,13 +123,13 @@ class DagGenerator:
             }
         }
 
-        logger.info(f"Adding entities 'created' in the RETW file '{file_RETW}'")
+        logger.info(f"Voegt de entiteiten die zijn 'gedefineerd' in het RETW bestand '{file_RETW}'")
         self._add_model_entities(file_RETW=file_RETW, dict_RETW=dict_RETW)
         if "Mappings" in dict_RETW:
-            logger.info(f"Adding mappings from the RETW file '{file_RETW}'")
+            logger.info(f"Mappings uit het RETW bestand '{file_RETW}' toevoegen")
             self._add_mappings(file_RETW=file_RETW, mappings=dict_RETW["Mappings"])
         else:
-            logger.warning(f"No mappings from the RETW file '{file_RETW}'")
+            logger.warning(f"Geen mappings in het RETW bestand '{file_RETW}'")
         return True
 
     def _stable_hash(self, key: str) -> int:
@@ -236,15 +236,14 @@ class DagGenerator:
             self.edges.append(edge_entity_file)
 
     def _add_mappings(self, file_RETW: str, mappings: dict) -> None:
-        """Add mappings to the graph.
+        """Voegt mappings toe aan de graaf en koppelt deze aan het RETW-bestand.
 
-        Processes each mapping extracted from the RETW dictionary, adds them as nodes to the graph,
-        and establishes edges between the file and its mappings, as well as between mappings and their
-        source and target entities.
+        Itereert over de opgegeven mappings, voegt elke mapping als knoop toe aan de graaf,
+        en maakt verbindingen met het bijbehorende RETW-bestand, de bronentiteiten en de doeleenheid.
 
         Args:
-            file_RETW (str): RETW file path.
-            mappings (dict): Dictionary containing mapping data.
+            file_RETW (str): Het pad naar het RETW-bestand.
+            mappings (dict): Een lijst van mapping dictionaries uit het RETW-bestand.
 
         Returns:
             None
@@ -281,14 +280,14 @@ class DagGenerator:
             self._add_mapping_target(id_mapping=id_mapping, mapping=mapping_RETW)
 
     def _add_mapping_sources(self, id_mapping: int, mapping: dict) -> None:
-        """Add mapping source entities to the graph.
+        """Voegt bronentiteiten van een mapping toe aan de graaf.
 
-        Iterates through the source composition of a mapping, extracts source entities,
-        and adds them as nodes to the graph. Also adds edges between the mapping and its source entities.
+        Extraheert de bronentiteiten uit de mapping, voegt deze als knopen toe aan de graaf,
+        en maakt verbindingen tussen de bronentiteiten en de mapping.
 
         Args:
-            id_mapping (int): Unique identifier of the mapping.
-            mapping (dict): Dictionary containing mapping data.
+            id_mapping (int): Unieke identifier van de mapping.
+            mapping (dict): Dictionary met mappinggegevens.
 
         Returns:
             None
@@ -329,14 +328,14 @@ class DagGenerator:
             self.edges.append(edge_entity_mapping)
 
     def _add_mapping_target(self, id_mapping: int, mapping: dict) -> None:
-        """Add mapping target entity to the graph.
+        """Voegt de doeleenheid van een mapping toe aan de graaf.
 
-        Extracts the target entity of a mapping, adds it as a node to the graph,
-        and creates an edge between the mapping and its target entity.
+        Extraheert de doeleenheid uit de mapping, voegt deze als knoop toe aan de graaf,
+        en maakt een verbinding tussen de mapping en de doeleenheid.
 
         Args:
-            id_mapping (int): Unique identifier of the mapping.
-            mapping (dict): Dictionary containing mapping data.
+            id_mapping (int): Unieke identifier van de mapping.
+            mapping (dict): Dictionary met mappinggegevens.
 
         Returns:
             None
@@ -489,7 +488,7 @@ class DagGenerator:
         )
         return dag_dependencies
 
-    def get_dag_entity(self, entity: EntityRef) -> ig.Graph:
+    def get_dag_of_entity(self, entity: EntityRef) -> ig.Graph:
         """Bouw een subgraaf voor een specifieke entiteit.
 
         Bouwt de volledige graaf en extraheert de subgraaf die gerelateerd is aan een specifieke entiteit,
@@ -546,14 +545,15 @@ class DagGenerator:
         return dag
 
     def get_dag_mappings(self) -> ig.Graph:
-        """Genereert een graaf van de afhankelijkheden tussen mappings.
+        """Genereert een graaf van mappings en hun afhankelijkheden.
 
-        Args:
-            include_entities (bool, optioneel): Geeft aan of de entiteiten als knopen moeten worden opgenomen. Standaard is True.
+        Bouwt een graaf waarin mappings als knopen zijn opgenomen en de afhankelijkheden tussen mappings via gedeelde entiteiten worden weergegeven.
+        De graaf toont de volgorde en relaties tussen mappings op basis van hun bron- en doeleenheden.
 
         Returns:
-            ig.Graph: Een graaf van de bestandsafhankelijkheden.
+            ig.Graph: Een graaf van mappings en hun afhankelijkheden.
         """
+
         dict_vertices = {}
         lst_edges = []
         dag = self.get_dag_total()
@@ -565,8 +565,7 @@ class DagGenerator:
 
             # Getting mappings that filled source entities
             for vx_entity_source in vs_entities_source:
-                idx_mapping_input = dag.neighbors(vx_entity_source, mode="in")
-                if idx_mapping_input:
+                if idx_mapping_input := dag.neighbors(vx_entity_source, mode="in"):
                     vs_mapping_input = dag.vs(idx_mapping_input)[0]
                     lst_edges.append(
                         {
@@ -581,13 +580,13 @@ class DagGenerator:
             vs_mappings_target = dag.vs(
                 dag.neighbors(vx_entity_target, mode="out")
             )
-            for vx_mapping_target in vs_mappings_target:
-                lst_edges.append(
-                    {
-                        "source": vx_mapping["name"],
-                        "target": vx_mapping_target["name"],
-                    }
-                )
+            lst_edges.extend(
+                {
+                    "source": vx_mapping["name"],
+                    "target": vx_mapping_target["name"],
+                }
+                for vx_mapping_target in vs_mappings_target
+            )
         lst_vertices = list(dict_vertices.values())
         dag_mappings = ig.Graph.DictList(
             vertices=lst_vertices, edges=lst_edges, directed=True

@@ -502,7 +502,7 @@ class DagReporting(DagGenerator):
         logger.info(
             f"Creating a network plot, '{file_html}', for all dependencies of entity '{entity[0]}.{entity[1]}'."
         )
-        dag = self.get_dag_entity(entity=entity)  # Visualization
+        dag = self.get_dag_of_entity(entity=entity)  # Visualization
         dag = self._set_visual_attributes(dag=dag)
         # Recolor requested entity
         id_entity = self.get_entity_id(entity_ref=entity)
