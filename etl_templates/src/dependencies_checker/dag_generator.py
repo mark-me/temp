@@ -123,7 +123,9 @@ class DagGenerator:
             }
         }
 
-        logger.info(f"Voegt de entiteiten die zijn 'gedefineerd' in het RETW bestand '{file_RETW}'")
+        logger.info(
+            f"Voegt de entiteiten die zijn 'gedefinieerd' in het RETW bestand '{file_RETW}'"
+        )
         self._add_model_entities(file_RETW=file_RETW, dict_RETW=dict_RETW)
         if "Mappings" in dict_RETW:
             logger.info(f"Mappings uit het RETW bestand '{file_RETW}' toevoegen")
@@ -211,22 +213,17 @@ class DagGenerator:
 
         for entity in model["Entities"]:
             id_entity = self.get_entity_id(EntityRef(model["Code"], entity["Code"]))
-            dict_entity = {
-                id_entity: {
+            entity.update(
+                {
                     "name": id_entity,
                     "type": VertexType.ENTITY.name,
-                    "Id": entity["Id"],
-                    "Name": entity["Name"],
-                    "Code": entity["Code"],
                     "IdModel": model["Id"],
                     "NameModel": model["Name"],
                     "CodeModel": model["Code"],
-                    "CreationDate": entity["CreationDate"],
-                    "Creator": entity["Creator"],
-                    "ModificationDate": entity["ModificationDate"],
-                    "Modifier": entity["Modifier"],
                 }
-            }
+            )
+            dict_entity = {id_entity: entity}
+
             self.entities.update(dict_entity)
             edge_entity_file = {
                 "source": self.get_file_id(file=file_RETW),
@@ -252,19 +249,13 @@ class DagGenerator:
             id_mapping = self.get_mapping_id(
                 MappingRef(file_RETW, mapping_RETW["Code"])
             )
-            mapping = {
-                id_mapping: {
+            mapping_RETW.update(
+                {
                     "name": id_mapping,
                     "type": VertexType.MAPPING.name,
-                    "Id": mapping_RETW["Id"],
-                    "Name": mapping_RETW["Name"],
-                    "Code": mapping_RETW["Code"],
-                    "CreationDate": mapping_RETW["CreationDate"],
-                    "Creator": mapping_RETW["Creator"],
-                    "ModificationDate": mapping_RETW["ModificationDate"],
-                    "Modifier": mapping_RETW["Modifier"],
                 }
-            }
+            )
+            mapping = {id_mapping: mapping_RETW}
             self.mappings.update(mapping)
             edge_mapping_file = {
                 "source": self.get_file_id(file=file_RETW),
@@ -308,16 +299,13 @@ class DagGenerator:
             id_entity = self.get_entity_id(
                 EntityRef(source_entity["CodeModel"], source_entity["Code"])
             )
-            entity = {
-                id_entity: {
+            source_entity.update(
+                {
                     "name": id_entity,
                     "type": VertexType.ENTITY.name,
-                    "Id": source_entity["Id"],
-                    "Name": source_entity["Name"],
-                    "Code": source_entity["Code"],
-                    "CodeModel": source_entity["CodeModel"],
                 }
-            }
+            )
+            entity = {id_entity: source_entity}
             if id_entity not in self.entities:
                 self.entities.update(entity)
             edge_entity_mapping = {
@@ -343,20 +331,17 @@ class DagGenerator:
         if "EntityTarget" not in mapping:
             logger.error(f"No target entity for mapping '{mapping['Name']}'")
             return
-        target_entity = mapping["EntityTarget"]
+        entity_target = mapping["EntityTarget"]
         id_entity = self.get_entity_id(
-            EntityRef(target_entity["CodeModel"], target_entity["Code"])
+            EntityRef(entity_target["CodeModel"], entity_target["Code"])
         )
-        entity = {
-            id_entity: {
+        entity_target.update(
+            {
                 "name": id_entity,
                 "type": VertexType.ENTITY.name,
-                "Id": target_entity["Id"],
-                "Name": target_entity["Name"],
-                "Code": target_entity["Code"],
-                "CodeModel": target_entity["CodeModel"],
             }
-        }
+        )
+        entity = {id_entity: entity_target}
         if id_entity not in self.entities:
             self.entities.update(entity)
         edge_entity_mapping = {
@@ -577,9 +562,7 @@ class DagGenerator:
 
             # Get mappings that depend on target entities
             vx_entity_target = dag.vs(dag.neighbors(vx_mapping, mode="out"))[0]
-            vs_mappings_target = dag.vs(
-                dag.neighbors(vx_entity_target, mode="out")
-            )
+            vs_mappings_target = dag.vs(dag.neighbors(vx_entity_target, mode="out"))
             lst_edges.extend(
                 {
                     "source": vx_mapping["name"],

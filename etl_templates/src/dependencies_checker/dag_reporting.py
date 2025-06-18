@@ -83,7 +83,7 @@ class DagReporting(DagGenerator):
     def _dag_ETL_run_order(
         self, dag: ig.Graph, deadlock_prevention: DeadlockPrevention
     ) -> ig.Graph:
-        """Verrijk de ETL DAG met de volgorder waarmee de mappings uitgevoerd moeten worden.
+        """Verrijk de ETL DAG met de volgorde waarmee de mappings uitgevoerd moeten worden.
 
         Args:
             dag (ig.Graph): ETL DAG met entiteiten en mappings
@@ -94,44 +94,27 @@ class DagReporting(DagGenerator):
         """
         # For each node calculate the number of mapping nodes before the current node
         dag_mappings = self.get_dag_mappings()
-        lst_mapping_order = [
-            len(dag.subcomponent(dag.vs[i], mode="in")) - 1 for i in range(dag.vcount())
+        dag_mappings.vs["qty_preceding"] = [
+            len(dag_mappings.subcomponent(dag_mappings.vs[i], mode="in")) - 1
+            for i in range(dag_mappings.vcount())
         ]
-        # Assign valid run order to mappings only
-        lst_run_level = []
-        lst_run_level.extend(
-            run_level if role == VertexType.MAPPING.name else -1
-            for run_level, role in zip(lst_mapping_order, dag.vs["type"])
-        )
-        dag.vs["run_level1"] = lst_run_level
 
-        # Start traversing ETL
-        # Find first mappings
-        vs_mappings_start = [i for i, x in enumerate(lst_run_level) if x == 0]
+        dag_mappings.vs.select(qty_preceding_eq=0)["run_level"] = int(0)
+        # Set run_levels iterating from lowest preceding number of mappings to highest
+        vs_processing = [
+            vx
+            for vx in dag_mappings.vs.select(run_level_eq=0)
+            if len(dag_mappings.neighbors(vx, mode="out")) > 0
+        ]
 
-        # FIXME: Stop making lists, and start iterating through dag starting by 0 vertices and iterating through out neighbors
+        for vx in vs_processing:
+            vs_successors = dag_mappings.neighbors(vx, mode="out")
+            dag_mappings.vs[vs_successors]["run_level"] = vx["run_level"] + 1
+            vs_processing.extend(dag_mappings.vs[vs_successors])
 
-        lst_run_level2 = []
-        for i in range(dag.vcount()):
-            if dag.vs[i]["type"] == VertexType.MAPPING.name:
-                lst_mapping_level = []
-                entities_input = dag.neighbors(dag.vs[i], mode="in")
-                for entity_input in entities_input:
-                    lst_mapping_level.extend(
-                        dag.vs[vx]["run_level1"]
-                        for vx in dag.neighbors(dag.vs[entity_input], mode="in")
-                    )
-                    max_level = max(lst_mapping_level, default=0)
-                    lst_run_level2.append(max_level + 1)
-
-        lst_run_level = self._make_increasing_with_duplicates(lst=lst_run_level)
-        dag.vs["run_level"] = lst_run_level
-        df_vertices = dag.get_vertex_dataframe()
-        df_vertices = (
-            df_vertices.loc[df_vertices["type"] == "MAPPING"]
-            .loc[df_vertices["Name"].str.contains("SL_KIS_")]
-            .filter(["Name", "run_level1", "run_level"])
-        )
+        # Adding run levels to the DAG with mappings and entities
+        for vx in dag_mappings.vs:
+            dag.vs.select(name_eq=vx["name"])["run_level"] = vx["run_level"]
 
         if deadlock_prevention not in [
             DeadlockPrevention.SOURCE,
@@ -141,6 +124,7 @@ class DagReporting(DagGenerator):
         dag = self._dag_run_level_stages(
             dag=dag, deadlock_prevention=deadlock_prevention
         )
+        lst_attrs_test = [vx.attributes() for vx in dag.vs]
         return dag
 
     def _dag_run_level_stages(
@@ -466,7 +450,9 @@ class DagReporting(DagGenerator):
         dag = self._set_visual_attributes(dag=dag)
         self.plot_graph_html(dag=dag, file_html=file_html)
 
-    def plot_file_dependencies(self, file_html: str, include_entities: bool = True) -> None:
+    def plot_file_dependencies(
+        self, file_html: str, include_entities: bool = True
+    ) -> None:
         """Genereert en slaat een netwerkvisualisatie op van de afhankelijkheden tussen RETW-bestanden.
 
         Bouwt een grafiek van de RETW-bestandsafhankelijkheden, stelt de visuele attributen in,
@@ -551,19 +537,19 @@ class DagReporting(DagGenerator):
                 "There are no mappings, so there is no mapping order to generate!"
             )
             return []
-        for node in dag.vs:
-            if node["type"] == VertexType.MAPPING.name:
-                successors = dag.vs[dag.successors(node)[0]]
+        for vx in dag.vs:
+            if vx["type"] == VertexType.MAPPING.name:
+                successors = dag.vs[dag.successors(vx)[0]]
                 dict_successors = {
                     key: successors[key] for key in successors.attribute_names()
                 }
-                dict_mapping = {key: node[key] for key in node.attribute_names()}
-                dict_mapping["RunLevel"] = node["run_level"]
-                dict_mapping["RunLevelStage"] = node["run_level_stage"]
+                dict_mapping = {key: vx[key] for key in vx.attribute_names()}
+                dict_mapping["RunLevel"] = vx["run_level"]
+                dict_mapping["RunLevelStage"] = vx["run_level_stage"]
                 dict_mapping["NameModel"] = dict_successors["NameModel"]
                 dict_mapping["CodeModel"] = dict_successors["CodeModel"]
                 dict_mapping["SourceViewName"] = (
-                    f"vw_src_{node['Name'].replace(' ', '_')}"
+                    f"vw_src_{vx['Name'].replace(' ', '_')}"
                 )
                 dict_mapping["TargetName"] = dict_successors["Code"]
                 lst_mappings.append(dict_mapping)
