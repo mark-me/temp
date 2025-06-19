@@ -15,7 +15,7 @@ if __name__ == "__main__":
     ]
     lst_files_RETW = [dir_RETW + file for file in lst_files_RETW]
     dag = DagReporting()
-    dag.add_RETW_files(files_RETW=lst_files_RETW)
+    dag.build_dag(files_RETW=lst_files_RETW)
 
     """File dependencies
     * Visualizes of the total network of files, entities and mappings
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     ]  # Set for other examples
     etl_simulator = EtlFailure()
     # Adding RETW files to generate complete ETL DAG
-    etl_simulator.add_RETW_files(files_RETW=lst_files_RETW)
+    etl_simulator._add_RETW_files(files_RETW=lst_files_RETW)
     # Set failed node
     etl_simulator.set_entities_failed(lst_entities_failed)
     # Create fallout report file

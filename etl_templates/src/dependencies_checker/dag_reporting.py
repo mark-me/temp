@@ -93,7 +93,7 @@ class DagReporting(DagGenerator):
             entiteit knopen krijgen de waarde -1, omdat de executievolgorde niet van toepassing is op entiteiten.
         """
         # For each node calculate the number of mapping nodes before the current node
-        dag_mappings = self.get_dag_mappings()
+        dag_mappings = self._get_dag_mappings()
         dag_mappings.vs["qty_preceding"] = [
             len(dag_mappings.subcomponent(dag_mappings.vs[i], mode="in")) - 1
             for i in range(dag_mappings.vcount())
@@ -124,7 +124,6 @@ class DagReporting(DagGenerator):
         dag = self._dag_run_level_stages(
             dag=dag, deadlock_prevention=deadlock_prevention
         )
-        lst_attrs_test = [vx.attributes() for vx in dag.vs]
         return dag
 
     def _dag_run_level_stages(
@@ -618,7 +617,7 @@ class DagReporting(DagGenerator):
             None
         """
         try:
-            dag = self.get_dag_ETL()
+            dag = self.get_dag_ETL2()
         except NoFlowError:
             logger.error("There are no mappings, so there is no ETL flow to plot!")
             return

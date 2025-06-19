@@ -109,7 +109,7 @@ class Orchestrator:
         """
         logger.info("Reporting on dependencies")
         dag = DagReporting()
-        dag.add_RETW_files(files_RETW=files_RETW)
+        dag.build_dag(files_RETW=files_RETW)
         # Visualization of the ETL flow for all RETW files combined
         path_output = str(self.config.extractor.path_output / "ETL_flow.html")
         dag.plot_etl_dag(file_html=path_output)

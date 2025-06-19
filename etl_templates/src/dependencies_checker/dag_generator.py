@@ -4,6 +4,8 @@ from collections import namedtuple
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
+from typing import Union
+from copy import deepcopy
 
 import igraph as ig
 
@@ -38,9 +40,16 @@ class EdgeType(Enum):
     ENTITY_SOURCE = auto()
     ENTITY_TARGET = auto()
 
+class ErrorDagNotBuilt(Exception):
+    def __init__(self):
+        self.message = "DAG nog niet opgebouwd"
+        super().__init__(self.message)
+
 
 class NoFlowError(Exception):
-    pass
+    def __init__(self, *args):
+        self.message = "DAG nog niet opgebouwd"
+        super().__init__(self.message)
 
 
 class DagGenerator:
@@ -58,12 +67,37 @@ class DagGenerator:
         Stelt de begintoestand in door lege dictionaries aan te maken voor het opslaan van RETW-bestanden, entiteiten en mappings,
         en een lijst voor het opslaan van verbindingen (edges). Deze datastructuren worden gevuld naarmate RETW-bestanden worden toegevoegd en verwerkt.
         """
-        self.files_RETW = {}
-        self.entities = {}
-        self.mappings = {}
-        self.edges = []
+        self.files_RETW: dict = {}
+        self.entities: dict = {}
+        self.mappings: dict = {}
+        self.edges: list = []
+        self.dag: ig.Graph = None
 
-    def add_RETW_files(self, files_RETW: list) -> bool:
+    def build_dag(self, files_RETW: Union[str, list]):
+        """Genereert een graaf met alle mappings, entiteiten en RETW bestanden.
+
+        Bouwt een igraph graaf met de verzamelde mappings, entiteiten en bestanden als knopen,
+        en legt de verbindingen tussen de knopen aan.
+
+        Args:
+            files_RETW (str|list): Enkel RETW bestandspad of lijst van RETW-bestandspaden met mappings.
+        """
+        if type(files_RETW) is list:
+            self._add_RETW_files(files_RETW=files_RETW)
+        elif type(files_RETW) is str:
+            self._add_RETW_file(file_RETW=files_RETW)
+        else:
+            raise TypeError
+        logger.info("Building a graph for RETW files, entities and mappings")
+        vertices = (
+            list(self.mappings.values())
+            + list(self.entities.values())
+            + list(self.files_RETW.values())
+        )
+        edges = list(self.edges)
+        self.dag = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
+
+    def _add_RETW_files(self, files_RETW: list) -> bool:
         """Verwerk meerdere RETW-bestanden.
 
         Verwerkt elk RETW-bestand in de invoerlijst.
@@ -80,12 +114,12 @@ class DagGenerator:
         # Process files
         for file_RETW in files_RETW:
             # Add file to parser
-            if not self.add_RETW_file(file_RETW=file_RETW):
+            if not self._add_RETW_file(file_RETW=file_RETW):
                 logger.error(f"Failed to add RETW file '{file_RETW}'")
                 return False
         return True
 
-    def add_RETW_file(self, file_RETW: str) -> bool:
+    def _add_RETW_file(self, file_RETW: str) -> bool:
         """Laadt een RETW json bestand
 
         Args:
@@ -352,24 +386,9 @@ class DagGenerator:
         self.edges.append(edge_entity_mapping)
 
     def get_dag_total(self) -> ig.Graph:
-        """Genereert een graaf met alle mappings, entiteiten en RETW bestanden.
-
-        Bouwt een igraph graaf met de verzamelde mappings, entiteiten en bestanden als knopen,
-        en legt de verbindingen tussen de knopen aan.
-
-        Returns:
-            ig.Graph: De gegenereerde graaf.
-        """
-        logger.info("Building a graph for RETW files, entities and mappings")
-        vertices = (
-            list(self.mappings.values())
-            + list(self.entities.values())
-            + list(self.files_RETW.values())
-        )
-        edges = list(self.edges)
-        graph = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
-        logger.info("Build graph total")
-        return graph
+        if not self.dag:
+            raise ErrorDagNotBuilt
+        return self.dag
 
     def get_dag_single_retw_file(self, file_retw: str) -> ig.Graph:
         """Genereert een subgraaf van een specifiek RETW bestand.
@@ -384,7 +403,9 @@ class DagGenerator:
         """
 
         logger.info(f"Creating a graph for the file, '{file_retw}'")
-        dag = self.get_dag_total()
+        if not self.dag:
+            raise ErrorDagNotBuilt
+        dag = self.dag.copy()
         vx_file = dag.vs.select(FileRETW_eq=file_retw)
         vx_file_graph = dag.subcomponent(vx_file[0], mode="out")
         vx_delete = [i for i in dag.vs.indices if i not in vx_file_graph]
@@ -404,7 +425,10 @@ class DagGenerator:
         Returns:
             ig.Graph: Een graaf van de bestandsafhankelijkheden.
         """
-        dag = self.get_dag_total()
+        if not self.dag:
+            raise ErrorDagNotBuilt
+        dag = self.dag.copy()
+
         vs_files = dag.vs.select(type_eq=VertexType.FILE_RETW.name)
         dict_vertices = {}
         lst_edges = []
@@ -485,7 +509,11 @@ class DagGenerator:
         Retourneert:
             ig.Graph: De subgraaf voor de opgegeven entiteit.
         """
-        dag = self.get_dag_total()
+        if not self.dag:
+            raise ErrorDagNotBuilt
+
+        dag = deepcopy(self.dag)
+
         # Extract graph for relevant entity
         id_entity = self.get_entity_id(entity)
         vx_entity = dag.vs.select(name=id_entity)[0]
@@ -529,7 +557,18 @@ class DagGenerator:
         logger.info("Build graph mappings")
         return dag
 
-    def get_dag_mappings(self) -> ig.Graph:
+    def get_dag_ETL2(self) -> ig.Graph:
+        if not self.dag:
+            raise ErrorDagNotBuilt
+
+        dag = deepcopy(self.dag)
+
+        vs_files = dag.vs.select(type_eq=VertexType.FILE_RETW.name)
+        dag.delete_vertices(vs_files)
+
+        return dag
+
+    def _get_dag_mappings(self, dag_total: ig.Graph) -> ig.Graph:
         """Genereert een graaf van mappings en hun afhankelijkheden.
 
         Bouwt een graaf waarin mappings als knopen zijn opgenomen en de afhankelijkheden tussen mappings via gedeelde entiteiten worden weergegeven.
@@ -538,10 +577,13 @@ class DagGenerator:
         Returns:
             ig.Graph: Een graaf van mappings en hun afhankelijkheden.
         """
+        if not self.dag:
+            raise ErrorDagNotBuilt
+
+        dag = deepcopy(self.dag)
 
         dict_vertices = {}
         lst_edges = []
-        dag = self.get_dag_total()
 
         vs_mappings = dag.vs.select(type_eq=VertexType.MAPPING.name)
         for vx_mapping in vs_mappings:
