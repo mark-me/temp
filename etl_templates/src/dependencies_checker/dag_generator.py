@@ -385,23 +385,77 @@ class DagGenerator:
         }
         self.edges.append(edge_entity_mapping)
 
+    def _add_dag_statistics(self):
+        self._stats_mapping_run_level()
+
+    def _stats_mapping_run_level(self):
+        """Bepaalt en wijst run-levels toe aan mappings in de graaf.
+
+        Bereken voor elke mapping het aantal voorafgaande mappings en wijs een run-level toe op basis van afhankelijkheden.
+        Dit helpt bij het bepalen van de uitvoeringsvolgorde van mappings in het ETL-proces.
+
+        Returns:
+            None
+        """
+        # For each node calculate the number of mapping nodes before the current node
+        dag_mappings = self.get_dag_mappings()
+        dag_mappings.vs["qty_preceding"] = [
+            len(dag_mappings.subcomponent(dag_mappings.vs[i], mode="in")) - 1
+            for i in range(dag_mappings.vcount())
+        ]
+
+        dag_mappings.vs.select(qty_preceding_eq=0)["run_level"] = 0
+        # Set run_levels iterating from lowest preceding number of mappings to highest
+        vs_processing = [
+            vx
+            for vx in dag_mappings.vs.select(run_level_eq=0)
+            if len(dag_mappings.neighbors(vx, mode="out")) > 0
+        ]
+
+        for vx in vs_processing:
+            vs_successors = dag_mappings.neighbors(vx, mode="out")
+            dag_mappings.vs[vs_successors]["run_level"] = vx["run_level"] + 1
+            vs_processing.extend(dag_mappings.vs[vs_successors])
+
+        # Adding run levels to the DAG with mappings and entities
+        for vx in dag_mappings.vs:
+            self.dag.vs.select(name_eq=vx["name"])["run_level"] = vx["run_level"]
+
+    def _stats_entity_level(self):
+        vs_entities = self.dag.vs.select(type_eq=VertexType.ENTITY.name)
+        # TODO: Finish function
+
     def get_dag_total(self) -> ig.Graph:
+        """Geeft de volledige gegenereerde graaf (DAG) terug.
+
+        Retourneert de volledige igraph graaf die alle mappings, entiteiten en RETW-bestanden bevat.
+        Als de graaf nog niet is opgebouwd, wordt een foutmelding opgegooid.
+
+        Returns:
+            ig.Graph: De volledige gegenereerde graaf.
+
+        Raises:
+            ErrorDagNotBuilt: Als de graaf nog niet is opgebouwd.
+        """
         if not self.dag:
             raise ErrorDagNotBuilt
         return self.dag
 
     def get_dag_single_retw_file(self, file_retw: str) -> ig.Graph:
-        """Genereert een subgraaf van een specifiek RETW bestand.
+        """Genereert een subgraaf voor een specifiek RETW-bestand.
 
-        Bouwt een totale graaf en haalt daar de subgraaf uit voor het specifiek RETW bestand.
+        Bouwt een subgraaf die alleen de knopen en verbindingen bevat die gerelateerd zijn aan het opgegeven RETW-bestand.
+        Dit is handig om de afhankelijkheden en structuur van een enkel bestand te analyseren.
 
         Args:
-            file_retw (str): De naam van het RETW bestand.
+            file_retw (str): Het pad naar het RETW-bestand.
 
         Returns:
-            ig.Graph: De subgraaf voor de gespecificeerde RETW file.
-        """
+            ig.Graph: De subgraaf voor het opgegeven RETW-bestand.
 
+        Raises:
+            ErrorDagNotBuilt: Als de graaf nog niet is opgebouwd.
+        """
         logger.info(f"Creating a graph for the file, '{file_retw}'")
         if not self.dag:
             raise ErrorDagNotBuilt
@@ -413,17 +467,19 @@ class DagGenerator:
         return dag
 
     def get_dag_file_dependencies(self, include_entities: bool = True) -> ig.Graph:
-        """Genereert een graaf van de afhankelijkheden tussen RETW bestanden, gebaseerd op entiteit gebruik.
+        """Genereert een afhankelijkheidsgraaf tussen RETW-bestanden.
 
-        Genereert een graaf die de afhankelijkheden tussen RETW bestanden expliciet maakt op gedeelde entiteiten.
-        De graaf heeft bestanden als knopen en de afhankelijkheden zijn de links tussen de knopen. Optioneel kunnen de
-        gedeelde entiteiten als knopen aan de diagram worden toegevoegd.
+        Bouwt een graaf die de afhankelijkheden tussen RETW-bestanden toont, optioneel met entiteiten als tussenliggende knopen.
+        Dit is nuttig om te visualiseren welke bestanden afhankelijk zijn van elkaar via gedeelde entiteiten en mappings.
 
         Args:
-            include_entities (bool, optioneel): Geeft aan of de entiteiten als knopen moeten worden opgenomen. Standaard is True.
+            include_entities (bool, optional): Of entiteiten als tussenliggende knopen moeten worden opgenomen. Standaard True.
 
         Returns:
-            ig.Graph: Een graaf van de bestandsafhankelijkheden.
+            ig.Graph: De afhankelijkheidsgraaf tussen RETW-bestanden.
+
+        Raises:
+            ErrorDagNotBuilt: Als de graaf nog niet is opgebouwd.
         """
         if not self.dag:
             raise ErrorDagNotBuilt
@@ -498,16 +554,19 @@ class DagGenerator:
         return dag_dependencies
 
     def get_dag_of_entity(self, entity: EntityRef) -> ig.Graph:
-        """Bouw een subgraaf voor een specifieke entiteit.
+        """Genereert een subgraaf voor een specifieke entiteit.
 
-        Bouwt de volledige graaf en extraheert de subgraaf die gerelateerd is aan een specifieke entiteit,
-        inclusief de inkomende en uitgaande verbindingen.
+        Bouwt een subgraaf die alle knopen en verbindingen bevat die direct of indirect gerelateerd zijn aan de opgegeven entiteit.
+        Dit is nuttig om de afhankelijkheden en het bereik van een enkele entiteit binnen de totale graaf te analyseren.
 
         Args:
-            entity (EntityRef): Een namedtuple die een referentie naar de entiteit bevat.
+            entity (EntityRef): De entiteit waarvoor de subgraaf wordt gegenereerd.
 
-        Retourneert:
+        Returns:
             ig.Graph: De subgraaf voor de opgegeven entiteit.
+
+        Raises:
+            ErrorDagNotBuilt: Als de graaf nog niet is opgebouwd.
         """
         if not self.dag:
             raise ErrorDagNotBuilt
@@ -525,17 +584,16 @@ class DagGenerator:
         return dag
 
     def get_dag_ETL(self) -> ig.Graph:
-        """Build the ETL DAG, showing the flow of data between entities and mappings.
+        """Genereert een graaf van alleen entiteiten en mappings voor het ETL-proces.
 
-        Constructs a directed acyclic graph (DAG) representing the ETL process,
-        including mappings and entities as vertices, and their relationships as edges.
-        The DAG is enriched with run order information and isolated entities are removed.
+        Bouwt een subgraaf waarin alle RETW-bestanden zijn verwijderd, zodat alleen de entiteiten en mappings overblijven.
+        Dit is nuttig om het ETL-proces te analyseren zonder de bestandsstructuur.
 
         Returns:
-            ig.Graph: The ETL DAG.
+            ig.Graph: De ETL-graaf zonder RETW-bestanden.
 
         Raises:
-            NoFlowError: If no mappings are found, indicating no ETL flow.
+            ErrorDagNotBuilt: Als de graaf nog niet is opgebouwd.
         """
         if not self.dag:
             raise ErrorDagNotBuilt
@@ -544,14 +602,17 @@ class DagGenerator:
         dag.delete_vertices(vs_files)
         return dag
 
-    def _get_dag_mappings(self, dag_total: ig.Graph) -> ig.Graph:
-        """Genereert een graaf van mappings en hun afhankelijkheden.
+    def get_dag_mappings(self) -> ig.Graph:
+        """Genereert een graaf van alleen mappings en hun onderlinge afhankelijkheden.
 
-        Bouwt een graaf waarin mappings als knopen zijn opgenomen en de afhankelijkheden tussen mappings via gedeelde entiteiten worden weergegeven.
-        De graaf toont de volgorde en relaties tussen mappings op basis van hun bron- en doeleenheden.
+        Bouwt een subgraaf waarin alleen de mappings en hun afhankelijkheden via entiteiten zijn opgenomen.
+        Dit is nuttig om te analyseren hoe mappings elkaar beïnvloeden binnen het ETL-proces.
 
         Returns:
-            ig.Graph: Een graaf van mappings en hun afhankelijkheden.
+            ig.Graph: De graaf met mappings en hun afhankelijkheden.
+
+        Raises:
+            ErrorDagNotBuilt: Als de graaf nog niet is opgebouwd.
         """
         if not self.dag:
             raise ErrorDagNotBuilt

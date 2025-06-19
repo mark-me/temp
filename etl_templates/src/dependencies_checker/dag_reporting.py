@@ -92,29 +92,6 @@ class DagReporting(DagGenerator):
             ig.Graph: ETL DAG waar de knopen verrijkt worden met het attribuut 'run_level',
             entiteit knopen krijgen de waarde -1, omdat de executievolgorde niet van toepassing is op entiteiten.
         """
-        # For each node calculate the number of mapping nodes before the current node
-        dag_mappings = self._get_dag_mappings()
-        dag_mappings.vs["qty_preceding"] = [
-            len(dag_mappings.subcomponent(dag_mappings.vs[i], mode="in")) - 1
-            for i in range(dag_mappings.vcount())
-        ]
-
-        dag_mappings.vs.select(qty_preceding_eq=0)["run_level"] = int(0)
-        # Set run_levels iterating from lowest preceding number of mappings to highest
-        vs_processing = [
-            vx
-            for vx in dag_mappings.vs.select(run_level_eq=0)
-            if len(dag_mappings.neighbors(vx, mode="out")) > 0
-        ]
-
-        for vx in vs_processing:
-            vs_successors = dag_mappings.neighbors(vx, mode="out")
-            dag_mappings.vs[vs_successors]["run_level"] = vx["run_level"] + 1
-            vs_processing.extend(dag_mappings.vs[vs_successors])
-
-        # Adding run levels to the DAG with mappings and entities
-        for vx in dag_mappings.vs:
-            dag.vs.select(name_eq=vx["name"])["run_level"] = vx["run_level"]
 
         if deadlock_prevention not in [
             DeadlockPrevention.SOURCE,
@@ -127,7 +104,7 @@ class DagReporting(DagGenerator):
         return dag
 
     def _dag_run_level_stages(
-        self, dag: ig.Graph, deadlock_prevention: DeadlockPrevention
+        self, deadlock_prevention: DeadlockPrevention
     ) -> ig.Graph:
         """Bepaalt en wijst de uitvoeringsstages toe aan mappings op basis van run levels en deadlock-preventie.
 
@@ -138,12 +115,10 @@ class DagReporting(DagGenerator):
             dag (ig.Graph): De igraph DAG met mappings en entiteiten.
             deadlock_prevention (DeadlockPrevention): Methode voor deadlock-preventie (SOURCE of TARGET).
 
-        Returns:
-            ig.Graph: De DAG met toegevoegde 'run_level_stage' attributen voor mappings.
         """
         dict_level_stages = {}
         # All mapping nodes
-        vs_mapping = dag.vs.select(type_eq=VertexType.MAPPING.name)
+        vs_mapping = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
 
         # Determine run stages of mappings by run level
         run_levels = list({node["run_level"] for node in vs_mapping})
@@ -151,12 +126,12 @@ class DagReporting(DagGenerator):
             # Find run_level mappings and corresponding source entities
             if deadlock_prevention == DeadlockPrevention.SOURCE:
                 mappings = [
-                    {"mapping": mapping["name"], "entity": dag.predecessors(mapping)}
+                    {"mapping": mapping["name"], "entity": self.dag.predecessors(mapping)}
                     for mapping in vs_mapping.select(run_level_eq=run_level)
                 ]
             elif deadlock_prevention == DeadlockPrevention.TARGET:
                 mappings = [
-                    {"mapping": mapping["name"], "entity": dag.successors(mapping)}
+                    {"mapping": mapping["name"], "entity": self.dag.successors(mapping)}
                     for mapping in vs_mapping.select(run_level_eq=run_level)
                 ]
             # Create graph of mapping conflicts (mappings that draw on the same sources)
@@ -166,8 +141,7 @@ class DagReporting(DagGenerator):
             # Apply them back to the DAG
             dict_level_stages |= dict(zip(graph_conflicts.vs["name"], order))
             for k, v in dict_level_stages.items():
-                dag.vs.select(name=k)["run_level_stage"] = v
-        return dag
+                self.dag.vs.select(name=k)["run_level_stage"] = v
 
     def _dag_ETL_run_levels_conflicts_graph(self, mapping_sources: dict) -> ig.Graph:
         """Genereert een conflictgrafiek voor mappings op basis van gedeelde entiteiten.
@@ -527,18 +501,22 @@ class DagReporting(DagGenerator):
         """
         lst_mappings = []
         try:
-            dag = self.get_dag_ETL()
-            dag = self._dag_ETL_run_order(
-                dag=dag, deadlock_prevention=deadlock_prevention
+            if deadlock_prevention not in [
+                DeadlockPrevention.SOURCE,
+                DeadlockPrevention.TARGET,
+            ]:
+                raise InvalidDeadlockPrevention("No valid Deadlock prevention selected")
+            self._dag_run_level_stages(
+                deadlock_prevention=deadlock_prevention
             )
         except NoFlowError:
             logger.error(
                 "There are no mappings, so there is no mapping order to generate!"
             )
             return []
-        for vx in dag.vs:
+        for vx in self.dag.vs:
             if vx["type"] == VertexType.MAPPING.name:
-                successors = dag.vs[dag.successors(vx)[0]]
+                successors = self.dag.vs[self.dag.successors(vx)[0]]
                 dict_successors = {
                     key: successors[key] for key in successors.attribute_names()
                 }
@@ -559,17 +537,11 @@ class DagReporting(DagGenerator):
         )
         return lst_mappings
 
-    def _dag_etl_coloring(self, dag: ig.Graph) -> ig.Graph:
+    def _dag_etl_coloring(self, dag: ig.Graph):
         """Kleurt de knopen in de ETL-DAG op basis van hun type en model.
 
         Wijs kleuren toe aan mappings, entiteiten en andere knopen zodat de visualisatie
         van de ETL-DAG duidelijk onderscheid maakt tussen verschillende typen en modellen.
-
-        Args:
-            dag (ig.Graph): De ETL-DAG waarvan de knopen gekleurd moeten worden.
-
-        Returns:
-            ig.Graph: De ETL-DAG met gekleurde knopen.
         """
         # Build model coloring dictionary
         colors_model = {
@@ -578,14 +550,13 @@ class DagReporting(DagGenerator):
             if model is not None
         }
         # Color vertices
-        for vx in dag.vs:
+        for vx in self.dag.vs:
             if vx["type"] == VertexType.MAPPING.name:
                 vx["color"] = self.node_type_color[vx["type"]]
             elif vx["type"] == VertexType.ENTITY.name:
                 vx["color"] = colors_model[vx["CodeModel"]]
             elif "position" in vx.attribute_names():
                 vx["color"] = self.color_node_position[vx["position"]]
-        return dag
 
     def _format_etl_dag(self, dag: ig.Graph) -> ig.Graph:
         """Formatteert de ETL-DAG voor visualisatie door niveaus, hiërarchie, visuele attributen en kleuren toe te voegen.
