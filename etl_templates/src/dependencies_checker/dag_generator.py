@@ -48,7 +48,7 @@ class ErrorDagNotBuilt(Exception):
 
 class NoFlowError(Exception):
     def __init__(self, *args):
-        self.message = "DAG nog niet opgebouwd"
+        self.message = "Geen flow in de DAG"
         super().__init__(self.message)
 
 
