@@ -617,7 +617,7 @@ class DagReporting(DagGenerator):
             None
         """
         try:
-            dag = self.get_dag_ETL2()
+            dag = self.get_dag_ETL()
         except NoFlowError:
             logger.error("There are no mappings, so there is no ETL flow to plot!")
             return

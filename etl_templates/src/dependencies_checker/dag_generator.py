@@ -525,47 +525,11 @@ class DagGenerator:
         return dag
 
     def get_dag_ETL(self) -> ig.Graph:
-        """Build the ETL DAG, showing the flow of data between entities and mappings.
-
-        Constructs a directed acyclic graph (DAG) representing the ETL process,
-        including mappings and entities as vertices, and their relationships as edges.
-        The DAG is enriched with run order information and isolated entities are removed.
-
-        Returns:
-            ig.Graph: The ETL DAG.
-
-        Raises:
-            NoFlowError: If no mappings are found, indicating no ETL flow.
-        """
-        vertices = list(self.mappings.values()) + list(self.entities.values())
-        edge_types = [EdgeType.ENTITY_SOURCE.name, EdgeType.ENTITY_TARGET.name]
-        edges = [e for e in self.edges if e["type"] in edge_types]
-        dag = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
-
-        # Delete entities without mappings
-        vs_no_connections = []
-        vs_no_connections.extend(
-            vtx.index
-            for vtx in dag.vs
-            if dag.degree(vtx, mode="in") == 0 and dag.degree(vtx, mode="out") == 0
-        )
-
-        if vs_no_connections:
-            dag.delete_vertices(vs_no_connections)
-            if len(dag.vs) == 0:
-                raise NoFlowError("No mappings, so no ETL flow")
-        logger.info("Build graph mappings")
-        return dag
-
-    def get_dag_ETL2(self) -> ig.Graph:
         if not self.dag:
             raise ErrorDagNotBuilt
-
         dag = deepcopy(self.dag)
-
         vs_files = dag.vs.select(type_eq=VertexType.FILE_RETW.name)
         dag.delete_vertices(vs_files)
-
         return dag
 
     def _get_dag_mappings(self, dag_total: ig.Graph) -> ig.Graph:
@@ -579,7 +543,6 @@ class DagGenerator:
         """
         if not self.dag:
             raise ErrorDagNotBuilt
-
         dag = deepcopy(self.dag)
 
         dict_vertices = {}
