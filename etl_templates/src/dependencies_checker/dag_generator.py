@@ -424,6 +424,14 @@ class DagGenerator:
     def _stats_entity_level(self):
         vs_entities = self.dag.vs.select(type_eq=VertexType.ENTITY.name)
         # TODO: Finish function
+        for vx in vs_entities:
+            vs_mappings = self.dag.neighbors(vx, mode="in")
+            if vs_mappings:
+                run_level_max = max(vx["run_level"] for vx in vs_mappings)
+            else:
+                run_level_max = 0
+            vx["dag_hierarchy"] = run_level_max
+        # Determine entity level on the max and of preceding
 
     def get_dag_total(self) -> ig.Graph:
         """Geeft de volledige gegenereerde graaf (DAG) terug.

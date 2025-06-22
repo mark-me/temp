@@ -537,7 +537,7 @@ class DagReporting(DagGenerator):
         )
         return lst_mappings
 
-    def _dag_etl_coloring(self, dag: ig.Graph):
+    def _dag_etl_coloring(self, dag: ig.Graph) -> ig.Graph:
         """Kleurt de knopen in de ETL-DAG op basis van hun type en model.
 
         Wijs kleuren toe aan mappings, entiteiten en andere knopen zodat de visualisatie
@@ -557,6 +557,7 @@ class DagReporting(DagGenerator):
                 vx["color"] = colors_model[vx["CodeModel"]]
             elif "position" in vx.attribute_names():
                 vx["color"] = self.color_node_position[vx["position"]]
+        return dag
 
     def _format_etl_dag(self, dag: ig.Graph) -> ig.Graph:
         """Formatteert de ETL-DAG voor visualisatie door niveaus, hiërarchie, visuele attributen en kleuren toe te voegen.
