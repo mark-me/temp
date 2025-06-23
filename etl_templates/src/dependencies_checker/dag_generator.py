@@ -425,8 +425,9 @@ class DagGenerator:
             self.dag.vs.select(name_eq=vx["name"])["run_level"] = vx["run_level"]
 
     def _stats_entity_level(self):
+        """Bepaalt de positionering van entiteiten binnen de DAG op basis van de run level van de mappings die als input van de entiteiten liggen.
+        """
         vs_entities = self.dag.vs.select(type_eq=VertexType.ENTITY.name)
-        # TODO: Finish function
         for vx in vs_entities:
             vs_mappings = [
                 self.dag.vs[idx]
@@ -438,7 +439,6 @@ class DagGenerator:
             else:
                 run_level_max = 0
             vx["etl_level"] = run_level_max
-        # Determine entity level on the max and of preceding
 
     def get_dag_total(self) -> ig.Graph:
         """Geeft de volledige gegenereerde graaf (DAG) terug.
