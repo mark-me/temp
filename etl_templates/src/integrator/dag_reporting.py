@@ -437,13 +437,14 @@ class DagReporting(DagImplementation):
             }
 
         # Color vertices
+        # Priority: position > type (MAPPING) > type (ENTITY/CodeModel)
         for vx in dag.vs:
-            if vx["type"] == VertexType.MAPPING.name:
-                vx["color"] = self.node_type_color[vx["type"]]
-            elif vx["type"] == VertexType.ENTITY.name:
-                vx["color"] = colors_model[vx["CodeModel"]]
-            elif "position" in vx.attribute_names():
+            if "position" in vx.attribute_names() and vx["position"] in self.color_node_position:
                 vx["color"] = self.color_node_position[vx["position"]]
+            elif vx["type"] == VertexType.MAPPING.name:
+                vx["color"] = self.node_type_color[vx["type"]]
+            elif vx["type"] == VertexType.ENTITY.name and vx["CodeModel"] in colors_model:
+                vx["color"] = colors_model[vx["CodeModel"]]
         return dag
 
     def plot_etl_dag(self, file_html: str) -> None:
