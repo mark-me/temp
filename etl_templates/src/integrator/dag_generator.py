@@ -53,7 +53,7 @@ class NoFlowError(Exception):
         super().__init__(self.message)
 
 
-class DagGenerator:
+class DagBuilder:
     """Genereert en beheert gerichte acyclische grafen (DAG's) die ETL-processen representeren.
 
     Deze klasse verzorgt het aanmaken, bewerken en analyseren van DAG's op basis van

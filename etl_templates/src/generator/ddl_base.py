@@ -1,4 +1,8 @@
 from jinja2 import Template
+from logtools import get_logger
+import sqlfluff
+
+logger = get_logger(__name__)
 
 class DDLGeneratorBase:
     def __init__(self, dir_output: str, ddl_template: Template):
@@ -27,5 +31,8 @@ class DDLGeneratorBase:
             content (str): De te schrijven SQL-inhoud.
             path_file_output (str): Het volledige pad waar de source view wordt opgeslagen.
         """
+        logger.warning(f"Linter is bezig met: {path_file_output}'")
+        contentFixList = sqlfluff.lint(content, dialect="tsql")
+        content = sqlfluff.fix(content, dialect="tsql", exclude_rules = ['ST06','RF06'])
         with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)

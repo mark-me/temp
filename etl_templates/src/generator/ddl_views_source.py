@@ -13,7 +13,7 @@ class DDLSourceViews(DDLViewBase):
     def __init__(self, dir_output: str, ddl_template: Template):
         super().__init__(dir_output=dir_output, ddl_template=ddl_template)
 
-    def generate_ddls(self, mappings: dict):
+    def generate_ddls(self, mappings: list):
         """
         Creëert alle source views van de verschillende niet-aggregatie entiteiten die in models zijn opgenomen en schrijft deze weg naar een folder in de repository.
         De source views bevatten de ETL om de doeltabel te vullen met data.
@@ -38,7 +38,7 @@ class DDLSourceViews(DDLViewBase):
                 content=content, path_file_output=path_file_output
             )
             logger.info(f"Written Source view DDL {Path(path_file_output).resolve()}")
-            
+
     def __collect_identifiers(self, mapping: dict) -> dict:
         """
         Verzamelt identifier-informatie uit de mappingconfiguratie.
@@ -79,7 +79,7 @@ class DDLSourceViews(DDLViewBase):
                 if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
                     logger.error(
                         f"Geen attribute mapping aanwezig voor entity {mapping['EntityTarget']['Name']}"
-                    ) 
+                    )
         for identifier in mapping["EntityTarget"]["Identifiers"]:
             for attr_map in mapping["AttributeMapping"]:
                 if (
@@ -102,7 +102,7 @@ class DDLSourceViews(DDLViewBase):
                         "IdentifierStringSourceView": identifier_def,
                     }
         return identifiers
-    
+
     def __remove_identifier_attributes(self, mapping: dict, identifiers: dict):
         """
             Verwijdert alle identifier kolommen uit de attribute mapping om alleen de bkeys over te houden
@@ -142,7 +142,7 @@ class DDLSourceViews(DDLViewBase):
         mapping["AttributeMapping"] = attributes
         return mapping
 
-            
+
     def __render_source_view(self, mapping: dict) -> str:
         """
         Genereert en formatteert de SQL voor een source view op basis van de mapping.
@@ -155,14 +155,16 @@ class DDLSourceViews(DDLViewBase):
         Returns:
             str: De geformatteerde SQL-string voor de source view.
         """
+        mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
         content = self.template.render(mapping=mapping)
-        return sqlparse.format(content, reindent=True, keyword_case="upper")
+        content = sqlparse.format(content, reindent=True, keyword_case="upper")
+        return content
 
     def __get_source_view_paths(self, mapping: dict) -> tuple:
         """
         Bepaalt de outputpaden voor het opslaan van een gegenereerde source view DDL.
 
-        Deze methode genereert het outputdirectorypad, de bestandsnaam en het volledige pad voor de source view op basis van de mapping.
+        Deze methode genereert het output directory-pad, de bestandsnaam en het volledige pad voor de source view op basis van de mapping.
 
         Args:
             mapping (dict): De mapping die gebruikt wordt om de paden te bepalen.
@@ -182,11 +184,11 @@ class DDLSourceViews(DDLViewBase):
         """
         Bouwt de business keys (BKeys) en de X_HashKey voor een mapping op basis van de identifiers en attributen.
 
-        Deze methode genereert de benodigde BKey-strings en de hashkey voor de mapping, zodat deze gebruikt kunnen worden in de DDL-templates.
+        Deze methode genereert de benodigde BKey-strings en de hash-key voor de mapping, zodat deze gebruikt kunnen worden in de DDL-templates.
 
         Args:
             identifiers (dict): Alle identifiers definities.
-            mapping (dict): De mapping waarvoor de BKeys en hashkey worden opgebouwd.
+            mapping (dict): De mapping waarvoor de BKeys en hash-key worden opgebouwd.
 
         Returns:
             dict: De aangepaste mapping met toegevoegde BKeys en X_HashKey.

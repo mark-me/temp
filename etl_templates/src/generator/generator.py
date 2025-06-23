@@ -1,7 +1,7 @@
-import json
 from enum import Enum
 from pathlib import Path
 
+from integrator import DagImplementation
 from jinja2 import Environment, FileSystemLoader, Template
 from logtools import get_logger
 
@@ -63,19 +63,6 @@ class DDLGenerator:
             ddl_template=self._get_template(TemplateType.SOURCE_VIEW_AGGR),
         )
 
-    def _read_model_file(self, file_RETW: str) -> dict:
-        """Leest het in  de config opgegeven Json-bestand in en slaat de informatie op in een dictionary
-
-        Returns:
-            dict_models (dict): De JSON (RETW Output) geconverteerd naar een dictionary
-        """
-        p = Path(file_RETW).resolve()
-        logger.info(f"Filepath MDDE Json file: {p}")
-        # Function not yet used, but candidate for reading XML file
-        with open(file_RETW) as json_file:
-            dict_model = json.load(json_file)
-        return dict_model
-
     def _get_template(self, type_template: TemplateType) -> Template:
         """
         Haal alle templates op uit de template folder. De locatie van deze folder is opgeslagen in de config.yml
@@ -91,7 +78,7 @@ class DDLGenerator:
         )
         return environment.get_template(type_template.value)
 
-    def generate_ddls(self, file_RETW: str):
+    def generate_ddls(self, dag_etl: DagImplementation):
         """
         Genereert DDL- en ETL-bestanden op basis van een RETW JSON-modelbestand en een opgegeven mappingvolgorde.
 
@@ -103,11 +90,8 @@ class DDLGenerator:
             file_RETW (str): Het pad naar het RETW JSON-modelbestand.
         """
         # self.__copy_mdde_scripts()\
-        dict_RETW = self._read_model_file(file_RETW=file_RETW)
-        if "Mappings" in dict_RETW:
-            mappings = dict_RETW["Mappings"]
-            self.source_views.generate_ddls(mappings=mappings)
-            self.source_views_aggr.generate_ddls(mappings=mappings)
+        mappings = dag_etl.get_mappings()
+        self.source_views.generate_ddls(mappings=mappings)
+        self.source_views_aggr.generate_ddls(mappings=mappings)
         self.entities.generate_ddls(models=dict_RETW["Models"])
 
-    

@@ -8,7 +8,7 @@ import networkx as nx
 from logtools import get_logger
 from pyvis.network import Network
 
-from .dag_generator import DagGenerator, EntityRef, NoFlowError, VertexType
+from .dag_generator import DagBuilder, EntityRef, NoFlowError, VertexType
 
 logger = get_logger(__name__)
 
@@ -23,7 +23,7 @@ class ObjectPosition(Enum):
 
 
 
-class DagReporting(DagGenerator):
+class DagReporting(DagBuilder):
     """Extends the DagGenerator class to provide reporting and visualization functionalities.
 
     This class inherits from DagGenerator and adds functionalities for visualizing DAGs using pyvis,

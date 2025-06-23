@@ -1,12 +1,13 @@
 import os
 from pathlib import Path
 
-from dependencies_checker import DagReporting, DeadlockPrevention
+from integrator import DagReporting, DagImplementation, DeadlockPrevention
 from deploy_mdde import DeploymentMDDE
 from generator import DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
 from repository_manager import RepositoryManager
+import igraph as ig
 
 from .config_file import ConfigFile
 
@@ -55,7 +56,10 @@ class Orchestrator:
             file_RETW = self._extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
 
-        dag = self._inspect_etl_dag(files_RETW=lst_files_RETW)
+        self._integration_reporting(files_RETW=lst_files_RETW)
+
+        dag = DagImplementation()
+        dag.build_dag(files_RETW=lst_files_RETW)
         mapping_order = dag.get_mapping_order(deadlock_prevention=DeadlockPrevention.TARGET)
 
         self._generate_code(files_RETW=lst_files_RETW)
@@ -95,7 +99,7 @@ class Orchestrator:
         )
         return file_RETW
 
-    def _inspect_etl_dag(self, files_RETW: list):
+    def _integration_reporting(self, files_RETW: list):
         """
         Inspecteert de ETL-afhankelijkheden en genereert een overzicht van de mappingvolgorde.
 
@@ -109,11 +113,12 @@ class Orchestrator:
         """
         logger.info("Reporting on dependencies")
         dag = DagReporting()
-        dag.build_dag(files_RETW=files_RETW)
+        dag.add_RETW_files(files_RETW=files_RETW)
         # Visualization of the ETL flow for all RETW files combined
         path_output = str(self.config.extractor.path_output / "ETL_flow.html")
         dag.plot_etl_dag(file_html=path_output)
-        # dag.plot_file_dependencies(f"{dir_report}/RETW_dependencies.html"=test) FIXME: Results in error
+        path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
+        dag.plot_file_dependencies(file_html=path_output)
         return dag
 
     def _generate_mdde_deployment(self, mapping_order: list) -> list:
@@ -136,7 +141,7 @@ class Orchestrator:
         )
         return deploy_mdde.process(mapping_order=mapping_order)
 
-    def _generate_code(self, files_RETW: list) -> None:
+    def _generate_code(self, dag_etl: DagImplementation) -> None:
         """Generate deployment code based on extracted data.
 
         Generates the necessary code for deployment based on the extracted data and dependencies.
@@ -149,15 +154,7 @@ class Orchestrator:
         """
         logger.info("Start generating deployment code")
         ddl_generator = DDLGenerator(params=self.config.generator)
-        errors = []
-        for file_RETW in files_RETW:
-            try:
-                ddl_generator.generate_ddls(file_RETW=file_RETW)
-            except Exception as e:
-                logger.error(f"Failed to generate DDLs for {file_RETW}: {e}", exc_info=True)
-                errors.append((file_RETW, str(e)))
-        if errors:
-            logger.warning(f"DDL generation completed with errors for {len(errors)} file(s).")
+        ddl_generator.generate_ddls(dag_etl=dag_etl)
 
     def _handle_issues(self):
         """

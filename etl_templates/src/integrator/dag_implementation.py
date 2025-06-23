@@ -3,7 +3,7 @@ from enum import Enum, auto
 from logtools import get_logger
 import igraph as ig
 
-from .dag_generator import DagGenerator, NoFlowError, VertexType
+from .dag_generator import DagBuilder, NoFlowError, VertexType
 
 logger = get_logger(__name__)
 
@@ -17,11 +17,11 @@ class DeadlockPrevention(Enum):
     TARGET = auto()
 
 
-class DagImplementation(DagGenerator):
+class DagImplementation(DagBuilder):
     def __init__(self):
         super().__init__()
 
-    def get_mapping_order(self, deadlock_prevention: DeadlockPrevention) -> list:
+    def get_run_config(self, deadlock_prevention: DeadlockPrevention) -> list:
         """Geeft een gesorteerde lijst van mappings terug op basis van run level en deadlock-preventie.
 
         Bepaalt de uitvoeringsvolgorde van mappings in de ETL-DAG, verrijkt met run level en stage,
@@ -180,3 +180,6 @@ class DagImplementation(DagGenerator):
             vertices=lst_vertices, edges=lst_edges, directed=False
         )
         return graph_conflicts
+
+    def get_mappings(self) -> list:
+        vs_mappings = [vx for vx in self.dag.vs if vx["type"] == VertexType.MAPPING.name]

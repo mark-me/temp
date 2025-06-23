@@ -129,6 +129,8 @@ BEGIN CATCH
            @ErrorSeverity = ERROR_SEVERITY(),
            @ErrorState = ERROR_STATE();
 
+	SET @LogMessage = CONCAT ('Error Message: ', @ErrorMessage)
+	EXEC [DA_MDDE].[sp_Logger] 'ERROR', @LogMessage
 	SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
     RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
 END CATCH

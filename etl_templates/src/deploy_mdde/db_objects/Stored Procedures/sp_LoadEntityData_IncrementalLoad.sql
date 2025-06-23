@@ -20,6 +20,7 @@ Date(yyyy-mm-dd)    Author              Comments
 2025-04-22			Avinash Kalicharan	Change SP name to 'Incremental'
 2025-04-22			Avinash Kalicharan 	Add debug to the procedure
 2025-05-22			Jeroen Poll			Add brackets to names and raise error in CATCH
+2025-06-19			Jeroen Poll			Fix param Runid id not correct insert statement.
 ***************************************************************************************************/
 BEGIN TRY
 	DECLARE @sql NVARCHAR(MAX) = ''
@@ -54,7 +55,7 @@ BEGIN TRY
 					, STRING_AGG(CHAR(9) + '[' + dest.[name] + ']' ,', '+ CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
 					, ')', CHAR(13),  CHAR(10)
 					, 'SELECT ', CHAR(13),  CHAR(10)
-					, STRING_AGG(CONCAT(CHAR(9),  '[' + dest.[name] + ']' , ' = ', 'source.', '[' + source.[name] + ']' ) , ', ' + CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
+					, STRING_AGG(CONCAT(CHAR(9),  '[' + dest.[name] + ']' , ' = ', CASE WHEN source.[name] = 'X_RunId' then '''' +  @par_runid + '''' else 'source.'+ '[' + source.[name] + ']' end ) , ', ' + CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
 					, CONCAT('FROM [',@par_LayerName,'].[',@par_SourceName,'] as source', CHAR(13),  CHAR(10))
 					, 'WHERE 1=1', CHAR(13),  CHAR(10)
 					, CONCAT('AND NOT EXISTS (SELECT 1 FROM [', @par_LayerName , '].[', @par_DestinationName ,'] AS destination WHERE destination.', @par_DestinationName, 'BKey =  source.', @par_DestinationName, 'BKey)')
@@ -235,6 +236,8 @@ BEGIN CATCH
            @ErrorState = ERROR_STATE();
 
 	SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+	SET @LogMessage = CONCAT ('Error Message: ', @ErrorMessage)
+	EXEC [DA_MDDE].[sp_Logger] 'ERROR', @LogMessage
 	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadOutcome', 'Error'
     RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
 END CATCH

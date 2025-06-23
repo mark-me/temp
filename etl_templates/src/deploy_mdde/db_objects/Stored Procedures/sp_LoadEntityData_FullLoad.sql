@@ -22,6 +22,7 @@ Date(yyyy-mm-dd)    Author              Comments
 2025-04-18			Avinash Kalicharan	Add debug to the procedure
 2025-05-20			Jeroen Poll			Add Config Execution proc
 2025-06-16			Jeroen Poll			Remove Truncate, Will be done in other PROC
+2025-06-19			Jeroen Poll			Fix param Runid id not correct insert statement.
 ***************************************************************************************************/
 BEGIN TRY
 	DECLARE @sql NVARCHAR(MAX) = ''
@@ -64,28 +65,24 @@ BEGIN TRY
 		DECLARE @rowcount_New BIGINT
 		DECLARE @rowcount_Update BIGINT
 
-		SELECT @sql =  sqlcode 
+		SELECT @sql = sqlcode
 		FROM (
-			SELECT CONCAT(
-					'INSERT INTO [',@par_LayerName,'].[',@par_DestinationName,']', CHAR(13),  CHAR(10)
-				, '(', CHAR(13),  CHAR(10)
-				, STRING_AGG(CHAR(9)+ '[' + dest.[name] + ']'   ,', '+ CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
-				, ')', CHAR(13),  CHAR(10)
-				, 'SELECT ', CHAR(13),  CHAR(10)
-				, STRING_AGG(CONCAT(CHAR(9), '[' + dest.[name] + ']' , ' = ', 'source.', '[' + source.[name] + ']') , ', ' + CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
-				, CONCAT('FROM [',@par_LayerName,'].[',@par_SourceName,'] as source', CHAR(13),  CHAR(10))
-				, 'WHERE 1=1', CHAR(13),  CHAR(10)
-				, CASE WHEN LOWER(left(@par_DestinationName, 4)) = 'aggr' 
-					THEN '' 
-					ELSE  CONCAT('AND NOT EXISTS (SELECT 1 FROM [', @par_LayerName , '].[', @par_DestinationName ,'] AS destination WHERE destination.', @par_DestinationName, 'BKey =  source.', @par_DestinationName, 'BKey)')
-				 END
-				) AS sqlcode
+			SELECT CONCAT (
+					'INSERT INTO [', @par_LayerName, '].[', @par_DestinationName, ']', CHAR(13), CHAR(10), '(', CHAR(13), CHAR(10), STRING_AGG(CHAR(9) + '[' + dest.[name] + ']', ', ' + CHAR(13) + CHAR(10)) WITHIN GROUP (
+							ORDER BY dest.column_id ASC
+							), CHAR(13), CHAR(10), ')', CHAR(13), CHAR(10), 'SELECT ', CHAR(13), CHAR(10), STRING_AGG(CONCAT (CHAR(9), '[' + dest.[name] + ']', ' = ', CASE WHEN source.[name] = 'X_RunId' then '''' +  @par_runid + '''' else 'source.'+ '[' + source.[name] + ']' end ), ', ' + CHAR(13) + CHAR(10)) WITHIN
+					GROUP (
+							ORDER BY dest.column_id ASC
+							), CHAR(13), CHAR(10), CONCAT ('FROM [', @par_LayerName, '].[', @par_SourceName, '] as source', CHAR(13), CHAR(10)), 'WHERE 1=1', CHAR(13), CHAR(10), CASE 
+							WHEN LOWER(left(@par_DestinationName, 4)) = 'aggr'
+								THEN ''
+							ELSE CONCAT ('AND NOT EXISTS (SELECT 1 FROM [', @par_LayerName, '].[', @par_DestinationName, '] AS destination WHERE destination.[', @par_DestinationName, 'BKey] =  source.[', @par_DestinationName, 'BKey])')
+							END
+					) AS sqlcode
 			FROM sys.columns dest
-			LEFT JOIN sys.columns source ON source.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_SourceName))) and dest.[name]  =  source.[name] 
-			WHERE 
-			dest.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_DestinationName)))
-			AND dest.is_identity = 0
-		) a;
+			LEFT JOIN sys.columns source ON source.object_id = OBJECT_ID(CONCAT (QUOTENAME(@par_LayerName), '.', QUOTENAME(@par_SourceName))) AND dest.[name] = source.[name]
+			WHERE dest.object_id = OBJECT_ID(CONCAT (QUOTENAME(@par_LayerName), '.', QUOTENAME(@par_DestinationName))) AND dest.is_identity = 0
+			) a;
 		
 		
 		SELECT @sqlRowcount =  sqlcode 
@@ -149,6 +146,8 @@ BEGIN CATCH
            @ErrorState = ERROR_STATE();
 
 	SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+	SET @LogMessage = CONCAT ('Error Message: ', @ErrorMessage)
+	EXEC [DA_MDDE].[sp_Logger] 'ERROR', @LogMessage
 	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadOutcome', 'Error'
     RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
 END CATCH

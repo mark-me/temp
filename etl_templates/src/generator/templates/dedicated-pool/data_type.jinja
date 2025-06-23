@@ -1,0 +1,69 @@
+{% macro get_data_type(Attribute) %}
+    {% if Attribute.DataType [:1] == 'N' %}
+        NUMERIC(
+            {{ Attribute.Length }},
+            {% if Attribute.Precision %}
+                {{ Attribute.Precision }}
+            {% else %}
+                0
+            {% endif %}
+        ) {% elif Attribute.DataType [:2] == 'DC' %}
+        DECIMAL(
+            {{ Attribute.Length }},
+            {% if Attribute.Precision %}
+                {{ Attribute.Precision }}
+            {% else %}
+                0
+            {% endif %}
+        ) {% elif Attribute.DataType [:1] == 'F' %}
+        FLOAT(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:2] == 'SF' %}
+        FLOAT(24) {% elif Attribute.DataType [:2] == 'LF' %}
+        FLOAT(53) {% elif Attribute.DataType [:2] == 'MN' %}
+        DECIMAL(
+            28,
+            4
+        ) {% elif Attribute.DataType [:2] == 'NO' %}
+        BIGINT {% elif Attribute.DataType [:1] == 'A' %}
+        NCHAR(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:2] == 'VA' %}
+        NVARCHAR(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:2] == 'BT' %}
+        NCHAR(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:3] == 'MBT' %}
+        NCHAR(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:4] == 'VMBT' %}
+        NVARCHAR(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:2] == 'LA': %}
+        NCHAR(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:3] == 'LVA': %}
+        NVARCHAR(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:3] == 'TXT' %}
+        NVARCHAR(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:3] == 'BIN' %}
+        BINARY(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:4] == 'VBIN' %}
+        VARBINARY(
+            {{ Attribute.Length }}
+        ) {% elif Attribute.DataType [:4] == 'LBIN' %}
+        VARBINARY(MAX) {% elif Attribute.DataType [:2] == 'DT' %}
+        DATETIME {% elif Attribute.DataType [:1] == 'D' %}
+        DATE {% elif Attribute.DataType [:2] == 'BL' %}
+        BIT {% elif Attribute.DataType [:1] == 'I' %}
+        INT {% elif Attribute.DataType [:2] == 'SI' %}
+        SMALLINT {% elif Attribute.DataType [:2] == 'LI' %}
+        INT
+    {% else %}
+        {{ Attribute.DataType }}
+    {% endif %}
+{% endmacro %}

@@ -9,7 +9,6 @@ from .ddl_views_base import DDLViewBase
 logger = get_logger(__name__)
 
 
-
 class DDLSourceViewsAggr(DDLViewBase):
     def __init__(self, dir_output: str, ddl_template: Template):
         super().__init__(dir_output=dir_output, ddl_template=ddl_template)
@@ -27,11 +26,14 @@ class DDLSourceViewsAggr(DDLViewBase):
                 continue
 
             self._set_datasource_code(mapping)
+            mapping = self.__set_source_view_aggr_derived(mapping=mapping)
             content = self.__render_source_view_aggr(mapping=mapping)
             dir_output, file_output, path_file_output = (
                 self.__get_source_view_aggr_paths(mapping=mapping)
             )
-            self.save_generated_object(content=content, path_file_output=path_file_output)
+            self.save_generated_object(
+                content=content, path_file_output=path_file_output
+            )
             logger.info(
                 f"Written Source view aggregation DDL {Path(path_file_output).resolve()}"
             )
@@ -44,6 +46,25 @@ class DDLSourceViewsAggr(DDLViewBase):
         file_output = f"vw_src_{mapping['Name']}.sql"
         path_file_output = f"{dir_output}/{file_output}"
         return dir_output, file_output, path_file_output
+
+    def __set_source_view_aggr_derived(self, mapping: dict) -> dict:
+        """Stelt afgeleiden in voor de entiteit die gebruikt worden bij de implementatie
+
+        Args:
+            entity (dict): Entiteit waarvan de implementatiespecifieke afleidingen worden toegevoegd
+
+        Returns:
+            dict: Gewijzigde entiteitsdata
+        """
+        mapping["Name"] = f"{mapping["Name"].replace(' ', '_')}"
+        dict_aggr_functions = {
+            "AVERAGE": "AVG",
+            "COUNT": "COUNT",
+            "MAXIMUM": "MAX",
+            "MINIMUM": "MIN",
+            "SUM": "SUM",
+        }
+        return mapping
 
     def __render_source_view_aggr(self, mapping: dict) -> str:
         content = self.template.render(mapping=mapping)

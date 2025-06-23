@@ -86,6 +86,7 @@ dependencies = [
     "sphinxcontrib-mermaid==1.0.0",
     "sphinxcontrib-qthelp==2.0.0",
     "sphinxcontrib-serializinghtml==2.0.0",
+    "sqlfluff==3.4.1",
     "sqlparse==0.5.0",
     "stack-data==0.6.3",
     "texttable==1.7.0",

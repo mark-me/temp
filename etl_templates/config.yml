@@ -5,7 +5,7 @@ folder-intermediate-root: "./etl_templates/intermediate"
 power-designer:
   folder: "./etl_templates/input"
   files:
-    - "UsecaseV2.17a.ldm"
+    - "UsecaseV2.21a.ldm"
 
 extractor:
   folder-output: "RETW"
