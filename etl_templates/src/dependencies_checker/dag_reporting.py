@@ -218,6 +218,13 @@ class DagReporting(DagGenerator):
                     """
         if node["type"] == VertexType.ENTITY.name:
             node["title"] = node["title"] + f"Model: {node['CodeModel']}\n\n"
+            if "dag_hierarchy" in node.attribute_names():
+                node["title"] = (
+                    node["title"]
+                    + f"""
+                        Hierarchy level: {str(node["dag_hierarchy"])}\n
+                    """
+                )
         if (
             node["type"] == VertexType.MAPPING.name
             and "run_level" in node.attribute_names()
@@ -225,10 +232,16 @@ class DagReporting(DagGenerator):
             node["title"] = (
                 node["title"]
                 + f"""
-                    Run level: {str(node["run_level"])}
-                    Run level stage: {str(node["run_level_stage"])}\n
+                    Run level: {str(node["run_level"])}\n
                 """
             )
+            if "run_level_stage" in node.attribute_names():
+                node["title"] = (
+                    node["title"]
+                    + f"""
+                        Run level stage: {str(node["run_level_stage"])}\n
+                    """
+                )
 
         lst_attr_labels = [
             ("Created", "CreationDate"),

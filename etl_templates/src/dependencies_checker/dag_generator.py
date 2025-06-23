@@ -40,6 +40,7 @@ class EdgeType(Enum):
     ENTITY_SOURCE = auto()
     ENTITY_TARGET = auto()
 
+
 class ErrorDagNotBuilt(Exception):
     def __init__(self):
         self.message = "DAG nog niet opgebouwd"
@@ -96,6 +97,7 @@ class DagGenerator:
         )
         edges = list(self.edges)
         self.dag = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
+        self._add_dag_statistics()
 
     def _add_RETW_files(self, files_RETW: list) -> bool:
         """Verwerk meerdere RETW-bestanden.
@@ -387,6 +389,7 @@ class DagGenerator:
 
     def _add_dag_statistics(self):
         self._stats_mapping_run_level()
+        self._stats_entity_level()
 
     def _stats_mapping_run_level(self):
         """Bepaalt en wijst run-levels toe aan mappings in de graaf.
@@ -425,9 +428,13 @@ class DagGenerator:
         vs_entities = self.dag.vs.select(type_eq=VertexType.ENTITY.name)
         # TODO: Finish function
         for vx in vs_entities:
-            vs_mappings = self.dag.neighbors(vx, mode="in")
+            vs_mappings = [
+                self.dag.vs[idx]
+                for idx in self.dag.neighbors(vx, mode="in")
+                if self.dag.vs[idx]["type"] == VertexType.MAPPING.name
+            ]
             if vs_mappings:
-                run_level_max = max(vx["run_level"] for vx in vs_mappings)
+                run_level_max = max(vx["run_level"] for vx in vs_mappings) + 1
             else:
                 run_level_max = 0
             vx["dag_hierarchy"] = run_level_max
