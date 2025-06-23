@@ -54,17 +54,17 @@ class Orchestrator:
                 "Geen PowerDesigner-bestanden geconfigureerd. Genesis verwerking wordt afgebroken."
             )
             return
+        # Extractie van data uit Power Designer bestanden
         for pd_file in self.config.power_designer.files:
             file_RETW = self._extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
-
+        # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
         dag_etl = self._integratie_files(files_RETW=lst_files_RETW)
-        mapping_order = dag_etl.get_run_config(
-            deadlock_prevention=DeadlockPrevention.TARGET
-        )
 
+        # Genereer code voor doelschema's en mappings
         self._generate_code(dag_etl=dag_etl)
-        self._generate_mdde_deployment(mapping_order=mapping_order)
+        # Genereer code voor ETL deployment
+        self._generate_mdde_deployment(dag_ETL=dag_etl)
 
         # Stop process if extraction and dependencies check result in issues
         # self._handle_issues()
@@ -97,6 +97,37 @@ class Orchestrator:
         return file_RETW
 
     def _integratie_files(self, files_RETW: list) -> DagImplementation:
+        """
+        Integreert de opgegeven RETW-bestanden en bouwt de ETL-DAG.
+
+        Deze functie voert eerst een rapportage uit over de afhankelijkheden en bouwt vervolgens de implementatie-DAG
+        die gebruikt wordt voor verdere verwerking en codegeneratie.
+
+        Args:
+            files_RETW (list): Lijst van paden naar de RETW-bestanden.
+
+        Returns:
+            DagImplementation: De geïmplementeerde ETL-DAG voor verdere verwerking.
+        """
+        self._report_integration(files_RETW=files_RETW)
+        logger.info("Create ETL Dag with implementation information")
+        dag = DagImplementation()
+        dag.build_dag(files_RETW=files_RETW)
+        return dag
+
+    def _report_integration(self, files_RETW: list) -> None:
+        """
+        Rapporteert en visualiseert de afhankelijkheden tussen de opgegeven RETW-bestanden.
+
+        Deze functie bouwt een rapportage-DAG en genereert een visualisatie van de ETL-flow
+        voor alle opgegeven RETW-bestanden, zodat afhankelijkheden inzichtelijk worden gemaakt.
+
+        Args:
+            files_RETW (list): Lijst van paden naar de RETW-bestanden.
+
+        Returns:
+            None
+        """
         logger.info("Reporting on dependencies")
         dag = DagReporting()
         dag.build_dag(files_RETW=files_RETW)
@@ -106,22 +137,18 @@ class Orchestrator:
         # path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
         # dag.plot_file_dependencies(file_html=path_output)
 
-        logger.info("Create ETL Dag with implementation information")
-        dag = DagImplementation()
-        dag.build_dag(files_RETW=files_RETW)
-        return dag
-
-    def _generate_mdde_deployment(self, mapping_order: list) -> list:
+    def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> list:
         """
-        Genereert MDDE post-deployment scripts op basis van de opgegeven mapping order.
+        Genereert MDDE deployment scripts op basis van de ETL-DAG.
 
-        Roept het DeploymentMDDE component aan om alle benodigde scripts te genereren en retourneert de paden naar de gegenereerde scripts.
+        Deze functie maakt gebruik van de opgegeven ETL-DAG om de juiste volgorde van mappings te bepalen
+        en genereert vervolgens de benodigde MDDE deployment scripts.
 
         Args:
-            mapping_order (list): De mapping order configuratie die in het script verwerkt moet worden.
+            dag_etl (DagImplementation): De geïmplementeerde ETL-DAG.
 
         Returns:
-            list: Een lijst met paden naar de gegenereerde post-deployment scripts.
+            list: Een lijst van resultaten van het MDDE deployment proces.
         """
         logger.info("Generating MDDE scripts")
         deploy_mdde = DeploymentMDDE(
@@ -129,15 +156,20 @@ class Orchestrator:
             schema=self.config.deploy_mdde.schema,
             path_output=self.config.deploy_mdde.path_output,
         )
+        mapping_order = dag_etl.get_run_config(
+            deadlock_prevention=DeadlockPrevention.TARGET
+        )
         return deploy_mdde.process(mapping_order=mapping_order)
 
     def _generate_code(self, dag_etl: DagImplementation) -> None:
-        """Generate deployment code based on extracted data.
+        """
+        Genereert de deployment code op basis van de opgegeven ETL-DAG.
 
-        Generates the necessary code for deployment based on the extracted data and dependencies.
+        Deze functie initialiseert de DDL-generator en genereert de benodigde DDL-bestanden
+        voor de entiteiten en mappings in de ETL-DAG.
 
         Args:
-            files_RETW (list): A list of paths to the extracted RETW files.
+            dag_etl (DagImplementation): De geïmplementeerde ETL-DAG.
 
         Returns:
             None
