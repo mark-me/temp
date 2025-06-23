@@ -437,7 +437,7 @@ class DagGenerator:
                 run_level_max = max(vx["run_level"] for vx in vs_mappings) + 1
             else:
                 run_level_max = 0
-            vx["dag_hierarchy"] = run_level_max
+            vx["etl_level"] = run_level_max
         # Determine entity level on the max and of preceding
 
     def get_dag_total(self) -> ig.Graph:

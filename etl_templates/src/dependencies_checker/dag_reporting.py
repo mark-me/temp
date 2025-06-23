@@ -218,11 +218,11 @@ class DagReporting(DagGenerator):
                     """
         if node["type"] == VertexType.ENTITY.name:
             node["title"] = node["title"] + f"Model: {node['CodeModel']}\n\n"
-            if "dag_hierarchy" in node.attribute_names():
+            if "etl_level" in node.attribute_names():
                 node["title"] = (
                     node["title"]
                     + f"""
-                        Hierarchy level: {str(node["dag_hierarchy"])}\n
+                        Hierarchy level: {str(node["etl_level"])}\n
                     """
                 )
         if (
