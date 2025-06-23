@@ -1,8 +1,8 @@
-# Mapping afhankelijkheden
+# Integreren extracten
 
-![Dependency checker](images/dependencies.png){ align=right width="90" }
+![Integrator](images/integrator.png){ align=right width="90" }
 
-De package `dependency_checker` van Genesis analyseert afhankelijkheden in een ETL-proces (Extract, Transform, Load) dat is gedefinieerd door RETW-bestanden. Het helpt bij het bepalen van de optimale uitvoeringsvolgorde van mappings, identificeert potentiële fouten en visualiseert de afhankelijkheden tussen entiteiten en bestanden. De kernfunctionaliteit draait om het bouwen van een [gerichte acyclische graaf (DAG)](https://nl.wikipedia.org/wiki/Gerichte_acyclische_graaf){target="_blank"} die de ETL-flow voorstelt.
+De package `integrator` van Genesis analyseert afhankelijkheden in een ETL-proces (Extract, Transform, Load) dat is gedefinieerd door RETW-bestanden. Het helpt bij het bepalen van de optimale uitvoeringsvolgorde van mappings, identificeert potentiële fouten en visualiseert de afhankelijkheden tussen entiteiten en bestanden. De kernfunctionaliteit draait om het bouwen van een [gerichte acyclische graaf (DAG)](https://nl.wikipedia.org/wiki/Gerichte_acyclische_graaf){target="_blank"} die de ETL-flow voorstelt.
 
 Het dekt globaal het volgende:
 
