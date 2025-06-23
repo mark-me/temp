@@ -256,6 +256,7 @@ class DagBuilder:
                     "IdModel": model["Id"],
                     "NameModel": model["Name"],
                     "CodeModel": model["Code"],
+                    "IsCreated": True,
                 }
             )
             dict_entity = {id_entity: entity}
@@ -425,7 +426,13 @@ class DagBuilder:
             self.dag.vs.select(name_eq=vx["name"])["run_level"] = vx["run_level"]
 
     def _stats_entity_level(self):
-        """Bepaalt de positionering van entiteiten binnen de DAG op basis van de run level van de mappings die als input van de entiteiten liggen.
+        """Bepaalt en wijst ETL-niveaus toe aan entiteiten in de graaf.
+
+        Voor elke entiteit wordt het hoogste run-level van de inkomende mappings bepaald en het ETL-niveau van de entiteit hierop gebaseerd.
+        Dit helpt bij het structureren van de volgorde waarin entiteiten in het ETL-proces worden verwerkt.
+
+        Returns:
+            None
         """
         vs_entities = self.dag.vs.select(type_eq=VertexType.ENTITY.name)
         for vx in vs_entities:

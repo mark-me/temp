@@ -8,7 +8,8 @@ import networkx as nx
 from logtools import get_logger
 from pyvis.network import Network
 
-from .dag_generator import DagBuilder, EntityRef, NoFlowError, VertexType
+from .dag_builder import EntityRef, NoFlowError, VertexType
+from .dag_implementation import DagImplementation
 
 logger = get_logger(__name__)
 
@@ -23,7 +24,7 @@ class ObjectPosition(Enum):
 
 
 
-class DagReporting(DagBuilder):
+class DagReporting(DagImplementation):
     """Extends the DagGenerator class to provide reporting and visualization functionalities.
 
     This class inherits from DagGenerator and adds functionalities for visualizing DAGs using pyvis,
@@ -420,6 +421,29 @@ class DagReporting(DagBuilder):
         dag = self._dag_node_hierarchy_level(dag=dag)
         dag = self._set_visual_attributes(dag=dag)
         dag = self._dag_etl_coloring(dag=dag)
+        return dag
+
+    def _dag_etl_coloring(self, dag: ig.Graph) -> ig.Graph:
+        """Kleurt de knopen in de ETL-DAG op basis van hun type en model.
+
+        Wijs kleuren toe aan mappings, entiteiten en andere knopen zodat de visualisatie
+        van de ETL-DAG duidelijk onderscheid maakt tussen verschillende typen en modellen.
+        """
+        if vs_entities := dag.vs.select(type_eq=VertexType.ENTITY.name):
+            colors_model = {
+                model: self.colors_discrete[i]
+                for i, model in enumerate(list(set(vs_entities["CodeModel"])))
+                if model is not None
+            }
+
+        # Color vertices
+        for vx in dag.vs:
+            if vx["type"] == VertexType.MAPPING.name:
+                vx["color"] = self.node_type_color[vx["type"]]
+            elif vx["type"] == VertexType.ENTITY.name:
+                vx["color"] = colors_model[vx["CodeModel"]]
+            elif "position" in vx.attribute_names():
+                vx["color"] = self.color_node_position[vx["position"]]
         return dag
 
     def plot_etl_dag(self, file_html: str) -> None:

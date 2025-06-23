@@ -7,46 +7,50 @@ from .ddl_base import DDLGeneratorBase
 
 logger = get_logger(__name__)
 
+
 class DDLEntities(DDLGeneratorBase):
     def __init__(self, dir_output: str, ddl_template: Template):
         super().__init__(dir_output=dir_output, ddl_template=ddl_template)
 
-    def generate_ddls(self, models: dict):
+    def generate_ddls(self, entities: list) -> None:
         """
-        Creëert alle DDL's van de verschillende entiteiten die in models zijn opgenomen en schrijft deze weg naar een folder in de repository
+        Genereert DDL-bestanden voor alle entiteiten die binnen een document zijn gedefinieerd.
+
+        Deze functie selecteert entiteiten die daadwerkelijk gecreëerd moeten worden en verwerkt elke entiteit afzonderlijk,
+        zodat alleen relevante entiteiten een DDL-bestand krijgen.
 
         Args:
-            identifiers (dict): Bevat alle business keys definities
-        """
-        for model in models:
-            if not model["IsDocumentModel"]:
-                continue
-            if "Entities" not in model:
-                logger.warning(f"Model '{model['Name']} heeft geen entiteiten'")
-                continue
-            for entity in model["Entities"]:
-                self.__process_entity(
-                    code_model=model["Code"], entity=entity
-                )
+            entities (list): Lijst van entiteiten waarvoor DDL-bestanden gegenereerd moeten worden.
 
-    def __process_entity(self, code_model: str, entity: dict):
+        Returns:
+            None
         """
-        Verwerkt een enkele entiteit: vult ontbrekende waarden aan, bouwt business keys, rendert de DDL en schrijft deze weg.
+        # Select entities that are defined within a document (not just derived from mappings (sources))
+        entities_create = [entity for entity in entities if entity["IsCreated"]]
+        for entity in entities_create:
+            self.__process_entity(entity=entity)
+
+    def __process_entity(self, entity: dict):
+        """
+        Verwerkt een enkele entiteit en genereert het bijbehorende DDL-bestand.
+
+        Deze functie stelt standaardwaarden in, verwerkt business keys, vertaalt datatypes,
+        rendert de DDL en slaat het resultaat op voor de opgegeven entiteit.
 
         Args:
-            entity (dict): De entiteit die verwerkt wordt.
-            model (dict): Het model waartoe de entiteit behoort.
-            dir_output (Path): De outputdirectory voor de DDL-bestanden.
-            identifiers (dict): Bevat alle business keys definities.
+            entity (dict): De entiteit die verwerkt en omgezet wordt naar een DDL-bestand.
+
+        Returns:
+            None
         """
-        self.__set_entity_defaults(entity=entity, code_model=code_model)
-        if  "Stereotype" not in entity:
+        self.__set_entity_defaults(entity=entity)
+        if "Stereotype" not in entity:
             metadata_bkeys = self.__collect_bkeys_metadata(entity=entity)
             entity = self.__replace_entity_keys_with_bkeys(
                 entity=entity, metadata_bkeys=metadata_bkeys
             )
-        elif "Stereotype" in entity:
-            logger.info(f"Geen bkeys nodig voor aggregaat {entity["Name"]}")
+        else:
+            logger.info(f"Geen bkeys nodig voor aggregaat {entity['Name']}")
             entity.pop("Identifiers")
         entity = self.__add_datatype_translations(entity=entity)
         content = self.__render_entity_ddl(entity)
@@ -54,32 +58,21 @@ class DDLEntities(DDLGeneratorBase):
         self.save_generated_object(content, path_output_file)
         logger.info(f"Entity DDL weggeschreven naar {Path(path_output_file).resolve()}")
 
-    def __set_entity_defaults(self, code_model: str, entity: dict):
+    def __set_entity_defaults(self, entity: dict):
         """
         Stelt standaardwaarden in voor een entiteit indien deze ontbreken.
 
+        Deze functie controleert of verplichte standaardwaarden aanwezig zijn in de entiteit
+        en vult deze aan indien nodig, zodat de entiteit altijd over de benodigde eigenschappen beschikt.
+
         Args:
             entity (dict): De entiteit die wordt gecontroleerd en aangevuld.
-            model (dict): Het model waartoe de entiteit behoort.
         """
         if "Number" not in entity:
             logger.warning(
                 f"Entiteit '{entity['Name']}' heeft geen property number, standaard distributie wordt gebruikt."
             )
             entity["Number"] = 0
-        entity["CodeModel"] = code_model
-
-    def __set_entity_derived(self, entity: dict) -> dict:
-        """Stelt afgeleiden in voor de entiteit die gebruikt worden bij de implementatie
-
-        Args:
-            entity (dict): Entiteit waarvan de implementatiespecifieke afleidingen worden toegevoegd
-
-        Returns:
-            dict: Gewijzigde entiteitsdata
-        """
-
-        return entity
 
     def __render_entity_ddl(self, entity: dict) -> str:
         """
@@ -96,71 +89,107 @@ class DDLEntities(DDLGeneratorBase):
 
     def __add_datatype_translations(self, entity: dict) -> dict:
         """
-        geeft dataype alternativen terug terug voor een Power Designer datatype van een Attribute in een entity
+        Vertaalt de datatypes van attributen van een entiteit naar SQL-compatibele datatypes.
+
+        Deze functie doorloopt alle attributen van de entiteit en wijst het juiste SQL-datatype toe aan elk attribuut,
+        zodat de entiteit correct kan worden weergegeven in de gegenereerde DDL.
 
         Args:
-            entity (dict): Power Designer Attribute for datatype
+            entity (dict): De entiteit waarvan de attributen vertaald worden.
 
         Returns:
-            dict:  entity
+            dict: De entiteit met toegevoegde SQL-datatypen voor elk attribuut.
         """
         for index, attribute in enumerate(entity["Attributes"]):
-            if 'Precision' in attribute:
-                Precision = attribute['Precision']
+            data_type = attribute["DataType"]
+            length = attribute.get("Length")
+            precision = attribute.get("Precision", 0)
+
+            def get_prefix(s, n):
+                return s[:n] if s else ""
+
+            prefix_1 = get_prefix(data_type, 1)
+            prefix_2 = get_prefix(data_type, 2)
+            prefix_3 = get_prefix(data_type, 3)
+            prefix_4 = get_prefix(data_type, 4)
+
+            is_numeric = prefix_1 == "N"
+            is_decimal = prefix_2 == "DC"
+            is_float = prefix_1 == "F"
+            is_sf = prefix_2 == "SF"
+            is_lf = prefix_2 == "LF"
+            is_mn = prefix_2 == "MN"
+            is_no = prefix_2 == "NO"
+            is_nchar = prefix_1 == "A"
+            is_nvarchar = prefix_2 == "VA"
+            is_bt = prefix_2 == "BT"
+            is_mbt = prefix_3 == "MBT"
+            is_vmbt = prefix_4 == "VMBT"
+            is_la = prefix_2 == "LA"
+            is_lva = prefix_3 == "LVA"
+            is_txt = prefix_3 == "TXT"
+            is_bin = prefix_3 == "BIN"
+            is_vbin = prefix_4 == "VBIN"
+            is_lbin = prefix_4 == "LBIN"
+            is_dt = prefix_2 == "DT"
+            is_date = prefix_1 == "D"
+            is_bit = prefix_2 == "BL"
+            is_int = prefix_1 == "I"
+            is_smallint = prefix_2 == "SI"
+            is_li = prefix_2 == "LI"
+
+            if is_numeric:
+                dataype = f"NUMERIC({length}, {precision})"
+            elif is_decimal:
+                dataype = f"DECIMAL({length}, {precision})"
+            elif is_float:
+                dataype = f"FLOAT({getattr(attribute, 'Length', length)})"
+            elif is_sf:
+                dataype = "FLOAT(24)"
+            elif is_lf:
+                dataype = "FLOAT(53)"
+            elif is_mn:
+                dataype = "DECIMAL(28,4)"
+            elif is_no:
+                dataype = "BIGINT"
+            elif is_nchar:
+                dataype = f"NCHAR({length})"
+            elif is_nvarchar:
+                dataype = f"NVARCHAR({length})"
+            elif is_bt:
+                dataype = f"NCHAR({length})"
+            elif is_mbt:
+                dataype = f"NCHAR({length})"
+            elif is_vmbt:
+                dataype = f"NVARCHAR({length})"
+            elif is_la:
+                dataype = f"NCHAR({length})"
+            elif is_lva:
+                dataype = f"NVARCHAR({length})"
+            elif is_txt:
+                dataype = f"NVARCHAR({length})"
+            elif is_bin:
+                dataype = f"BINARY({length})"
+            elif is_vbin:
+                dataype = f"VARBINARY({length})"
+            elif is_lbin:
+                dataype = "VARBINARY(MAX)"
+            elif is_dt:
+                dataype = "DATETIME2"
+            elif is_date:
+                dataype = "DATE"
+            elif is_bit:
+                dataype = "BIT"
+            elif is_int:
+                dataype = "INT"
+            elif is_smallint:
+                dataype = "SMALLINT"
+            elif is_li:
+                dataype = "INT"
             else:
-                Precision = 0
-            if attribute['DataType'] [:1] == 'N':
-                dataype = f'NUMERIC({attribute['Length']}, {Precision})'
-            elif attribute['DataType'] [:2] == 'DC': 
-                dataype = f'DECIMAL({attribute['Length']}, {Precision})'
-            elif attribute['DataType'] [:1] == 'F':
-                dataype = f'FLOAT({attribute.Length})' 
-            elif attribute['DataType'] [:2] == 'SF':
-                dataype = 'FLOAT(24)'
-            elif attribute['DataType'] [:2] == 'LF':
-                dataype = 'FLOAT(53)'
-            elif attribute['DataType'] [:2] == 'MN':
-                dataype = 'DECIMAL(28,4)' 
-            elif attribute['DataType'] [:2] == 'NO':
-                dataype = 'BIGINT'
-            elif attribute['DataType'] [:1] == 'A':
-                dataype = f'NCHAR({attribute['Length']})' 
-            elif attribute['DataType'] [:2] == 'VA':
-                dataype = f'NVARCHAR({ attribute['Length']})' 
-            elif attribute['DataType'] [:2] == 'BT':
-                dataype = f'NCHAR({ attribute['Length']})' 
-            elif attribute['DataType'] [:3] == 'MBT':
-                dataype = f'NCHAR({ attribute['Length'] })'
-            elif attribute['DataType'] [:4] == 'VMBT':
-                dataype = f'NVARCHAR({ attribute['Length']})' 
-            elif attribute['DataType'] [:2] == 'LA':
-                dataype = f'NCHAR({ attribute['Length']})'
-            elif attribute['DataType'] [:3] == 'LVA':
-                dataype = f'NVARCHAR({ attribute['Length']})' 
-            elif attribute['DataType'] [:3] == 'TXT':
-                dataype = f'NVARCHAR({ attribute['Length']})' 
-            elif attribute['DataType'] [:3] == 'BIN':
-                dataype = f'BINARY({ attribute['Length'] })' 
-            elif attribute['DataType'] [:4] == 'VBIN':
-                dataype = f'VARBINARY({ attribute['Length']})'
-            elif attribute['DataType'] [:4] == 'LBIN':
-                dataype = 'VARBINARY(MAX)' 
-            elif attribute['DataType'] [:2] == 'DT':
-                dataype = 'DATETIME2'
-            elif attribute['DataType'] [:1] == 'D':
-                dataype = 'DATE' 
-            elif attribute['DataType'] [:2] == 'BL':
-                dataype = 'BIT' 
-            elif attribute['DataType'] [:1] == 'I':
-                dataype = 'INT' 
-            elif attribute['DataType'] [:2] == 'SI':
-                dataype = 'SMALLINT' 
-            elif attribute['DataType'] [:2] == 'LI':
-                dataype = 'INT'
-            else:
-                dataype = attribute['DataType']
-            entity['Attributes'][index]['DataTypeSQL'] = dataype
-        return entity  
+                dataype = data_type
+            entity["Attributes"][index]["DataTypeSQL"] = dataype
+        return entity
 
     def __get_entity_ddl_paths(self, entity: dict) -> Path:
         """
@@ -173,15 +202,13 @@ class DDLEntities(DDLGeneratorBase):
         Returns:
             tuple: (path_output_file, file_output)
         """
-        dir_output = Path(
-            f"{self.dir_output}/{entity['CodeModel']}/Tables/"
-        )
+        dir_output = Path(f"{self.dir_output}/{entity['CodeModel']}/Tables/")
         dir_output.mkdir(parents=True, exist_ok=True)
         file_output = f"{entity['Code']}.sql"
         path_output_file = Path(f"{dir_output}/{file_output}")
         return path_output_file
 
-    def __collect_bkeys_metadata(self, entity:dict):
+    def __collect_bkeys_metadata(self, entity: dict):
         """
             Verzamelt identifier-informatie uit de entiteitconfiguratie.
 
@@ -231,15 +258,15 @@ class DDLEntities(DDLGeneratorBase):
         identifier_mapped = []
 
         if "Stereotype" in entity:
-                """
+            """
                 We doen niks met eventuele identifiers van Aggregators. Dit moet geen error opleveren.
                 Alleen identifiers van echte entiteiten worden gebruikt en moet aanwezig zijn.
                 Deze entiteiten hebben hier geen Stereotype
                 """
-                logger.info(
-                    f"Identifier voor entiteit '{entity['Code']}' niet nodig vanwege stereotype Aggregaat"
-                )
-                pass
+            logger.info(
+                f"Identifier voor entiteit '{entity['Code']}' niet nodig vanwege stereotype Aggregaat"
+            )
+            return
         elif "Stereotype" not in entity:
             for identifier in entity["Identifiers"]:
                 if "Id" not in identifier:
@@ -249,22 +276,17 @@ class DDLEntities(DDLGeneratorBase):
                     continue
                 identifier_id = identifier["Id"]
                 if identifier_id in metadata_bkeys:
-                    identifier_mapped.append(
-                        metadata_bkeys[identifier_id]["MetadataBkey"]
-                    )
-                    # voeg de code van de identifier toe aan een controlelijst. De attributen in deze lijst worden verwijderd uit entity[Attributes]
-                    mapped_identifiers.append(metadata_bkeys[identifier_id]["IdentifierName"])
+                    metadata_bkey = metadata_bkeys[identifier_id]["MetadataBkey"]
+                    identifier_name = metadata_bkeys[identifier_id]["IdentifierName"]
+                    identifier_mapped.append(metadata_bkey)
+                    mapped_identifiers.append(identifier_name)
 
-                    # Voeg de complete lijst van identifiers toe aan de entity
             entity["Identifiers"] = identifier_mapped
-            attributes = []
-            # voor alle attributen in de entity gaan we controleren of de code voorkomt als gemapte identifier. Indien dit het geval is, dan wordt het
-            # attribuut verwijderd uit Attributes. Hiermee krijgen we geen dubbelingen in de entiteit.
-            attributes.extend(
-                attribute
-                for attribute in entity["Attributes"]
-                if attribute["Code"] not in mapped_identifiers
-            )
+
+            def is_not_mapped_identifier(attribute):
+                return attribute["Code"] not in mapped_identifiers
+
+            attributes = [attribute for attribute in entity["Attributes"] if is_not_mapped_identifier(attribute)]
             entity.pop("Attributes")
             entity["Attributes"] = attributes
         return entity

@@ -50,22 +50,21 @@ class Orchestrator:
         logger.info("Start Genesis verwerking")
         lst_files_RETW = []
         if not self.config.power_designer.files:
-            logger.warning("Geen PowerDesigner-bestanden geconfigureerd. Genesis verwerking wordt afgebroken.")
+            logger.warning(
+                "Geen PowerDesigner-bestanden geconfigureerd. Genesis verwerking wordt afgebroken."
+            )
             return
         for pd_file in self.config.power_designer.files:
             file_RETW = self._extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
 
-        self._integration_reporting(files_RETW=lst_files_RETW)
-
-        dag = DagImplementation()
-        dag.build_dag(files_RETW=lst_files_RETW)
-        mapping_order = dag.get_mapping_order(deadlock_prevention=DeadlockPrevention.TARGET)
-
-        self._generate_code(files_RETW=lst_files_RETW)
-        self._generate_mdde_deployment(
-            mapping_order=mapping_order
+        dag_etl = self._integratie_files(files_RETW=lst_files_RETW)
+        mapping_order = dag_etl.get_run_config(
+            deadlock_prevention=DeadlockPrevention.TARGET
         )
+
+        self._generate_code(dag_etl=dag_etl)
+        self._generate_mdde_deployment(mapping_order=mapping_order)
 
         # Stop process if extraction and dependencies check result in issues
         # self._handle_issues()
@@ -73,9 +72,7 @@ class Orchestrator:
             devops_handler = RepositoryManager(config=self.config.devops)
             devops_handler.clone()
             path_source = self.config.generator.path_output
-            devops_handler.add_directory_to_repo(
-                path_source=path_source
-            )
+            devops_handler.add_directory_to_repo(path_source=path_source)
             # TODO: Copy code and codelist to repo and update project file
             devops_handler.publish()
 
@@ -99,26 +96,19 @@ class Orchestrator:
         )
         return file_RETW
 
-    def _integration_reporting(self, files_RETW: list):
-        """
-        Inspecteert de ETL-afhankelijkheden en genereert een overzicht van de mappingvolgorde.
-
-        Deze functie analyseert de opgegeven RETW-bestanden, schrijft de mappingvolgorde naar een JSON-bestand en visualiseert de ETL-flow.
-
-        Args:
-            files_RETW (list): Een lijst met paden naar de geëxtraheerde RETW-bestanden.
-
-        Returns:
-            DagReporting: Een object met informatie over de ETL-afhankelijkheden.
-        """
+    def _integratie_files(self, files_RETW: list) -> DagImplementation:
         logger.info("Reporting on dependencies")
         dag = DagReporting()
-        dag.add_RETW_files(files_RETW=files_RETW)
+        dag.build_dag(files_RETW=files_RETW)
         # Visualization of the ETL flow for all RETW files combined
         path_output = str(self.config.extractor.path_output / "ETL_flow.html")
         dag.plot_etl_dag(file_html=path_output)
-        path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
-        dag.plot_file_dependencies(file_html=path_output)
+        # path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
+        # dag.plot_file_dependencies(file_html=path_output)
+
+        logger.info("Create ETL Dag with implementation information")
+        dag = DagImplementation()
+        dag.build_dag(files_RETW=files_RETW)
         return dag
 
     def _generate_mdde_deployment(self, mapping_order: list) -> list:

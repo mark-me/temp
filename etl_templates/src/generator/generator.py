@@ -93,5 +93,6 @@ class DDLGenerator:
         mappings = dag_etl.get_mappings()
         self.source_views.generate_ddls(mappings=mappings)
         self.source_views_aggr.generate_ddls(mappings=mappings)
-        self.entities.generate_ddls(models=dict_RETW["Models"])
+        entities = dag_etl.get_entities()
+        self.entities.generate_ddls(entities=entities)
 

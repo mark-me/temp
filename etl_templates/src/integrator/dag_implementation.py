@@ -3,7 +3,7 @@ from enum import Enum, auto
 from logtools import get_logger
 import igraph as ig
 
-from .dag_generator import DagBuilder, NoFlowError, VertexType
+from .dag_builder import DagBuilder, NoFlowError, VertexType
 
 logger = get_logger(__name__)
 
@@ -20,6 +20,24 @@ class DeadlockPrevention(Enum):
 class DagImplementation(DagBuilder):
     def __init__(self):
         super().__init__()
+
+    def build_dag(self, files_RETW):
+        super().build_dag(files_RETW)
+        self._add_dag_derived()
+
+    def _add_dag_derived(self):
+        self._add_model_to_mapping()
+
+    def _add_model_to_mapping(self):
+        vs_mappings = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
+        for vx in vs_mappings:
+            if vs_target_entity := [
+                self.dag.vs[idx]
+                for idx in self.dag.neighbors(vx, mode="out")
+                if self.dag.vs[idx]["type"] == VertexType.ENTITY.name
+            ]:
+                vx["CodeModel"] = vs_target_entity[0]["CodeModel"]
+                vx["NameModel"] = vs_target_entity[0]["NameModel"]
 
     def get_run_config(self, deadlock_prevention: DeadlockPrevention) -> list:
         """Geeft een gesorteerde lijst van mappings terug op basis van run level en deadlock-preventie.
@@ -69,28 +87,6 @@ class DagImplementation(DagBuilder):
         )
         return lst_mappings
 
-    def _dag_etl_coloring(self, dag: ig.Graph) -> ig.Graph:
-        """Kleurt de knopen in de ETL-DAG op basis van hun type en model.
-
-        Wijs kleuren toe aan mappings, entiteiten en andere knopen zodat de visualisatie
-        van de ETL-DAG duidelijk onderscheid maakt tussen verschillende typen en modellen.
-        """
-        # Build model coloring dictionary
-        colors_model = {
-            model: self.colors_discrete[i]
-            for i, model in enumerate(list(set(dag.vs["CodeModel"])))
-            if model is not None
-        }
-        # Color vertices
-        for vx in self.dag.vs:
-            if vx["type"] == VertexType.MAPPING.name:
-                vx["color"] = self.node_type_color[vx["type"]]
-            elif vx["type"] == VertexType.ENTITY.name:
-                vx["color"] = colors_model[vx["CodeModel"]]
-            elif "position" in vx.attribute_names():
-                vx["color"] = self.color_node_position[vx["position"]]
-        return dag
-
     def _dag_ETL_run_order(
         self, dag: ig.Graph, deadlock_prevention: DeadlockPrevention
     ) -> ig.Graph:
@@ -137,7 +133,10 @@ class DagImplementation(DagBuilder):
             # Find run_level mappings and corresponding source entities
             if deadlock_prevention == DeadlockPrevention.SOURCE:
                 mappings = [
-                    {"mapping": mapping["name"], "entity": self.dag.predecessors(mapping)}
+                    {
+                        "mapping": mapping["name"],
+                        "entity": self.dag.predecessors(mapping),
+                    }
                     for mapping in vs_mapping.select(run_level_eq=run_level)
                 ]
             elif deadlock_prevention == DeadlockPrevention.TARGET:
@@ -182,4 +181,33 @@ class DagImplementation(DagBuilder):
         return graph_conflicts
 
     def get_mappings(self) -> list:
-        vs_mappings = [vx for vx in self.dag.vs if vx["type"] == VertexType.MAPPING.name]
+        """Geeft een lijst terug van alle mapping-knopen in de huidige DAG.
+
+        Deze functie selecteert en retourneert alle knopen van het type MAPPING,
+        zodat deze eenvoudig kunnen worden geraadpleegd of verwerkt.
+
+        Returns:
+            list: Een lijst van mapping-knopen in de DAG.
+        """
+        vs_mappings = [
+            vx.attributes()
+            for vx in self.dag.vs
+            if vx["type"] == VertexType.MAPPING.name
+        ]
+        return vs_mappings
+
+    def get_entities(self) -> list:
+        """Geeft een lijst terug van alle entiteit-knopen in de huidige DAG.
+
+        Deze functie selecteert en retourneert alle knopen van het type ENTITY,
+        zodat deze eenvoudig kunnen worden geraadpleegd of verwerkt.
+
+        Returns:
+            list: Een lijst van entiteit-knopen in de DAG.
+        """
+        vs_entities = [
+            vx.attributes()
+            for vx in self.dag.vs
+            if vx["type"] == VertexType.ENTITY.name
+        ]
+        return vs_entities
