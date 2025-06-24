@@ -9,10 +9,18 @@ logger = get_logger(__name__)
 
 
 class InvalidDeadlockPrevention(Exception):
+    """Exception raised when an invalid deadlock prevention method is selected.
+
+    This exception is used to indicate that the provided deadlock prevention strategy is not supported or recognized.
+    """
     pass
 
 
 class DeadlockPrevention(Enum):
+    """Enumeration for deadlock prevention strategies in ETL DAG execution.
+
+    This enum defines the available methods for preventing deadlocks, such as by source or target.
+    """
     SOURCE = auto()
     TARGET = auto()
 
@@ -27,6 +35,10 @@ class DagImplementation(DagBuilder):
 
     def _add_dag_derived(self):
         self._add_model_to_mapping()
+        vs_entity_source = self.dag.vs.select(etl_level_eq=0)
+        for vx_entity in vs_entity_source:
+            self._create_source_bkeys(vx_entity=vx_entity)
+        pass
 
     def _add_model_to_mapping(self):
         vs_mappings = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
@@ -38,6 +50,46 @@ class DagImplementation(DagBuilder):
             ]:
                 vx["CodeModel"] = vs_target_entity[0]["CodeModel"]
                 vx["NameModel"] = vs_target_entity[0]["NameModel"]
+
+    def _create_source_bkeys(self, vx_entity: ig.Vertex):
+        """
+            Verzamelt identifier-informatie uit de entiteitconfiguratie.
+
+            Doorloopt per entiteit alle identifiers, en genereert een dictionary met metadatastring per identifier voor gebruik in DDL-generatie.
+
+        Args:
+            entity (dict): Entiteit
+
+        Returns:
+            dict: Een dictionary met een metadata string van de businesskey per identifier
+        """
+        metadata_bkeys = {}
+
+        def get_name_business_key(identifier):
+            return (
+                identifier["EntityCode"]
+                if identifier["IsPrimary"]
+                else identifier["Code"]
+            )
+
+        def get_identifier_def_primary(name_business_key):
+            return f"[{name_business_key}BKey] nvarchar(200) NOT NULL"
+
+        lst_attrs = vx_entity.attributes()
+        for identifier in vx_entity["Identifiers"]:
+            name_business_key = get_name_business_key(identifier)
+            metadata_bkey = get_identifier_def_primary(name_business_key)
+
+            metadata_bkeys[identifier["Id"]] = {
+                "IdentifierID": identifier["Id"],
+                "IdentifierName": identifier["Name"],
+                "IdentifierCode": identifier["Code"],
+                "EntityId": identifier["EntityID"],
+                "EntityCode": identifier["EntityCode"],
+                "IsPrimary": identifier["IsPrimary"],
+                "MetadataBkey": metadata_bkey,
+            }
+        return metadata_bkeys
 
     def get_run_config(self, deadlock_prevention: DeadlockPrevention) -> list:
         """Geeft een gesorteerde lijst van mappings terug op basis van run level en deadlock-preventie.
