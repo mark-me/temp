@@ -13,6 +13,7 @@ class InvalidDeadlockPrevention(Exception):
 
     This exception is used to indicate that the provided deadlock prevention strategy is not supported or recognized.
     """
+
     pass
 
 
@@ -21,6 +22,7 @@ class DeadlockPrevention(Enum):
 
     This enum defines the available methods for preventing deadlocks, such as by source or target.
     """
+
     SOURCE = auto()
     TARGET = auto()
 
@@ -35,9 +37,24 @@ class DagImplementation(DagBuilder):
 
     def _add_dag_derived(self):
         self._add_model_to_mapping()
-        vs_entity_source = self.dag.vs.select(etl_level_eq=0)
+
+        # Create BKeys on first derived level
+        vs_entity_source = self.dag.vs.select(etl_level_eq=1)
+        lst_attrs_before = [
+            vx.attributes()
+            for vx in self.dag.vs.select(etl_level_eq=1)
+            if vx["type"] == VertexType.ENTITY.name and vx["CodeModel"] == "DA_Central"
+        ]
         for vx_entity in vs_entity_source:
-            self._create_source_bkeys(vx_entity=vx_entity)
+            metadata_bkeys = self._create_source_bkeys(vx_entity=vx_entity)
+            self._replace_entity_keys_with_bkeys(
+                vx_entity=vx_entity, metadata_bkeys=metadata_bkeys
+            )
+        lst_attrs_after = [
+            vx.attributes()
+            for vx in self.dag.vs.select(etl_level_eq=1)
+            if vx["type"] == VertexType.ENTITY.name and vx["CodeModel"] == "DA_Central"
+        ]
         pass
 
     def _add_model_to_mapping(self):
@@ -75,7 +92,6 @@ class DagImplementation(DagBuilder):
         def get_identifier_def_primary(name_business_key):
             return f"[{name_business_key}BKey] nvarchar(200) NOT NULL"
 
-        lst_attrs = vx_entity.attributes()
         for identifier in vx_entity["Identifiers"]:
             name_business_key = get_name_business_key(identifier)
             metadata_bkey = get_identifier_def_primary(name_business_key)
@@ -90,6 +106,56 @@ class DagImplementation(DagBuilder):
                 "MetadataBkey": metadata_bkey,
             }
         return metadata_bkeys
+
+    def _replace_entity_keys_with_bkeys(
+        self, vx_entity: ig.Vertex, metadata_bkeys: dict
+    ):
+        """Vervangt alle key kolommen met business key kolommen.
+
+        Args:
+            metadata_bkeys (dict): Alle bkey metadata definities
+            entity (dict): Entiteit
+        """
+        mapped_identifiers = []
+        identifier_mapped = []
+
+        if vx_entity["Stereotype"] is None:
+            """
+                We doen niks met eventuele identifiers van Aggregators. Dit moet geen error opleveren.
+                Alleen identifiers van echte entiteiten worden gebruikt en moet aanwezig zijn.
+                Deze entiteiten hebben hier geen Stereotype
+                """
+            logger.info(
+                f"Identifier voor entiteit '{vx_entity['Code']}' niet nodig vanwege stereotype Aggregaat"
+            )
+            return
+        elif vx_entity["Stereotype"] is not None:
+            for identifier in vx_entity["Identifiers"]:
+                if "Id" not in identifier:
+                    logger.error(
+                        f"Identifier voor entiteit '{vx_entity['Code']}' niet gevonden in identifiers"
+                    )
+                    continue
+                identifier_id = identifier["Id"]
+                if identifier_id in metadata_bkeys:
+                    metadata_bkey = metadata_bkeys[identifier_id]["MetadataBkey"]
+                    identifier_name = metadata_bkeys[identifier_id]["IdentifierName"]
+                    identifier_mapped.append(metadata_bkey)
+                    mapped_identifiers.append(identifier_name)
+
+            vx_entity["Identifiers"] = identifier_mapped
+
+            def is_not_mapped_identifier(attribute):
+                return attribute["Code"] not in mapped_identifiers
+
+            attributes = [
+                attribute
+                for attribute in vx_entity["Attributes"]
+                if is_not_mapped_identifier(attribute)
+            ]
+            #vx_entity.pop("Attributes")
+            vx_entity["Attributes"] = None
+            vx_entity["Attributes"] = attributes
 
     def get_run_config(self, deadlock_prevention: DeadlockPrevention) -> list:
         """Geeft een gesorteerde lijst van mappings terug op basis van run level en deadlock-preventie.
