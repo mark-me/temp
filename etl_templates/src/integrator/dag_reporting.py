@@ -14,14 +14,11 @@ from .dag_implementation import DagImplementation
 logger = get_logger(__name__)
 
 
-
-
 class ObjectPosition(Enum):
     START = auto()
     INTERMEDIATE = auto()
     END = auto()
     UNDETERMINED = auto()
-
 
 
 class DagReporting(DagImplementation):
@@ -40,16 +37,17 @@ class DagReporting(DagImplementation):
         """
         super().__init__()
         self.colors_discrete = [
-            "#ff595e",
-            "#ff924c",
-            "#ffca3a",
-            "#c5ca30",
-            "#8ac926",
-            "#52a675",
-            "#1982c4",
-            "#4267ac",
-            "#6a4c93",
-            "#b5a6c9",
+            "#008cf9",
+            "#00bbad",
+            "#ebac23",
+            "#d163e6",
+            "#c44542",
+            "#ff9287",
+            "#00c6f8",
+            "#878500",
+            "#00a76c",
+            "#bdbdbd",
+            "#264653",
         ]
         self.color_node_position = {
             ObjectPosition.START.name: "gold",
@@ -74,7 +72,6 @@ class DagReporting(DagImplementation):
     def _create_output_dir(self, file_path: str) -> None:
         parent_directory = os.path.dirname(file_path)
         Path(parent_directory).mkdir(parents=True, exist_ok=True)
-
 
     def _igraph_to_networkx(self, graph: ig.Graph) -> nx.DiGraph:
         """Converteert een igraph.Graph naar een networkx.DiGraph.
@@ -439,12 +436,12 @@ class DagReporting(DagImplementation):
         # Color vertices
         # Priority: position > type (MAPPING) > type (ENTITY/CodeModel)
         for vx in dag.vs:
-            if "position" in vx.attribute_names() and vx["position"] in self.color_node_position:
-                vx["color"] = self.color_node_position[vx["position"]]
-            elif vx["type"] == VertexType.MAPPING.name:
+            if vx["type"] == VertexType.MAPPING.name:
                 vx["color"] = self.node_type_color[vx["type"]]
-            elif vx["type"] == VertexType.ENTITY.name and vx["CodeModel"] in colors_model:
+            elif vx["type"] == VertexType.ENTITY.name:
                 vx["color"] = colors_model[vx["CodeModel"]]
+            elif "position" in vx.attribute_names():
+                vx["color"] = self.color_node_position[vx["position"]]
         return dag
 
     def plot_etl_dag(self, file_html: str) -> None:

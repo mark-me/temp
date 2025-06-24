@@ -7,7 +7,6 @@ from generator import DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
 from repository_manager import RepositoryManager
-import igraph as ig
 
 from .config_file import ConfigFile
 
@@ -59,12 +58,12 @@ class Orchestrator:
             file_RETW = self._extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
-        dag_etl = self._integratie_files(files_RETW=lst_files_RETW)
+        dag_etl = self._integrate_files(files_RETW=lst_files_RETW)
 
         # Genereer code voor doelschema's en mappings
         self._generate_code(dag_etl=dag_etl)
         # Genereer code voor ETL deployment
-        self._generate_mdde_deployment(dag_ETL=dag_etl)
+        self._generate_mdde_deployment(dag_etl=dag_etl)
 
         # Stop process if extraction and dependencies check result in issues
         # self._handle_issues()
@@ -96,7 +95,7 @@ class Orchestrator:
         )
         return file_RETW
 
-    def _integratie_files(self, files_RETW: list) -> DagImplementation:
+    def _integrate_files(self, files_RETW: list) -> DagImplementation:
         """
         Integreert de opgegeven RETW-bestanden en bouwt de ETL-DAG.
 

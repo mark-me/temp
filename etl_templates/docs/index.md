@@ -76,13 +76,13 @@ De Extractor neemt een Power Designer-logisch datamodeldocument (herkenbaar aan 
 
 ### Bepaling afhankelijkheden
 
-Deze component biedt inzicht in het netwerk van entiteiten en mappings, op basis van RETW-outputbestanden, om te bepalen:
+De **`integrator`**-package biedt een modulaire en uitbreidbare set Python-componenten voor het modelleren, analyseren, implementeren en visualiseren van **ETL-workflows** op basis van **Directed Acyclic Graphs (DAG’s)**. Deze workflows worden gedefinieerd aan de hand van RETW JSON-bestanden. Deze package
 
-* wat de juiste volgorde is van mappings in de ETL-flow en of de ETL-flow geen gesloten lussen bevat (ETL-flows moeten [acyclisch](https://nl.wikipedia.org/wiki/Gerichte_acyclische_graaf) zijn),
-* wat de gevolgen zijn van een mislukte stap in het ETL-proces en
-* wat de afhankelijkheden zijn tussen RETW-bestanden voor entiteiten.
+- Bouwt de structuur van de ETL-DAG.
+- Breidt deze structuur uit met uitvoeringslogica, zoals run-levels en deadlock-preventie.
+- Visualiseert- en voegt rapportagemogelijkheden toe.
 
-Meer informatie is te vinden op de pagina [Afhankelijkheidscontrole](Dependency_checker.md).
+Meer informatie is te vinden op de pagina [Integreren extracten](Integrator.md).
 
 ### Generator code DB objecten
 
@@ -100,8 +100,8 @@ De Repository Handler plaatst de gegenereerde code automatisch in een DevOps-rep
 
 Genesis bevat daarnaast handige tools voor Data Modellers en Data Engineers om:
 
-* de [impact van wijzigingen](Dependency_checker.md) te bepalen;
-* [afhankelijkheden tussen Power Designer-documenten](Dependency_checker.md) te analyseren;
+* de [impact van wijzigingen](Integrator.md) te bepalen;
+* [afhankelijkheden tussen Power Designer-documenten](Integrator.md) te analyseren;
 * met behulp van de [Logger](Logtools.md) automatisch issues vast te leggen in modellen en mappings;
 * met [Documentatie generatie](Documentation_Creation.md) Markdown-bestanden en docstrings om te zetten in leesbare documentatiepagina’s.
 

@@ -87,7 +87,7 @@ class DDLGenerator:
         beschikbare templates.
 
         Args:
-            file_RETW (str): Het pad naar het RETW JSON-modelbestand.
+            dag_etl (DagImplementation): Een DAG waar implementatie details aan zijn toegevoegd
         """
         # self.__copy_mdde_scripts()\
         mappings = dag_etl.get_mappings()

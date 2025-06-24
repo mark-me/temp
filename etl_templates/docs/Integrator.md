@@ -2,14 +2,78 @@
 
 ![Integrator](images/integrator.png){ align=right width="90" }
 
-De package `integrator` van Genesis analyseert afhankelijkheden in een ETL-proces (Extract, Transform, Load) dat is gedefinieerd door RETW-bestanden. Het helpt bij het bepalen van de optimale uitvoeringsvolgorde van mappings, identificeert potentiële fouten en visualiseert de afhankelijkheden tussen entiteiten en bestanden. De kernfunctionaliteit draait om het bouwen van een [gerichte acyclische graaf (DAG)](https://nl.wikipedia.org/wiki/Gerichte_acyclische_graaf){target="_blank"} die de ETL-flow voorstelt.
+De **`integrator`**-package biedt een modulaire en uitbreidbare set Python-componenten voor het modelleren, analyseren, implementeren en visualiseren van **ETL-workflows** op basis van **Directed Acyclic Graphs (DAG’s)**. Deze workflows worden gedefinieerd aan de hand van RETW JSON-bestanden, waarin de afhankelijkheden tussen databronnen, mappings en modellen beschreven zijn.
 
-Het dekt globaal het volgende:
+De kernfunctionaliteit van de package is verdeeld over drie klassen:
 
-* wat de [volgorde van mappings](#bepalen-van-mapping-volgorde) zou moeten zijn in de ETL-flow, en of de ETL-flow geen gesloten lussen bevat (ETL-flows moeten acyclisch zijn),
-* het vinden van verwijzingen naar entiteiten die niet gedefinieerd zijn in de verwerkte RETW-bestanden,
-* de gevolgen van een fout in een stap van het ETL-proces en
-* de afhankelijkheden tussen RETW-bestanden voor entiteiten.
+- **`DagBuilder`**: Verantwoordelijk voor het bouwen van de structuur van de ETL-DAG.
+- **`DagImplementation`**: Breidt deze structuur uit met uitvoeringslogica, zoals run-levels en deadlock-preventie.
+- **`DagReporting`**: Voegt visualisatie- en rapportagemogelijkheden toe.
+
+Deze modulaire opbouw maakt het mogelijk om de componenten afzonderlijk of in combinatie te gebruiken binnen grotere data-integratiesystemen of CI/CD pipelines.
+
+---
+
+## Belangrijkste Klassen en Functionaliteiten
+
+### `DagBuilder`
+
+- **Doel**: Opbouwen en beheren van de ruwe DAG op basis van inputbestanden.
+- **Functionaliteiten**:
+  - Inlezen van één of meerdere RETW-bestanden.
+  - Parseren van modellen, mappings en entiteiten.
+  - Genereren van een `igraph.Graph` met knopen en randen die respectievelijk objecten en afhankelijkheden representeren.
+  - Genereert unieke en stabiele knoop-ID’s op basis van MD5-hashing.
+  - Ondersteuning voor subgraaf-extractie:
+    - Per bestand
+    - Per entiteit
+    - Op basis van mappings
+  - Annotatie van knopen met statistieken zoals ETL-levels en run-levels.
+  - Detectie van inconsistente of onvolledige flows via foutmeldingen en logging.
+
+### `DagImplementation`
+
+- **Doel**: Toevoegen van uitvoeringslogica aan de basis-DAG.
+- **Functionaliteiten**:
+  - Bepalen van de juiste uitvoeringsvolgorde van mappings, afhankelijk van gekozen deadlock-preventiestrategie (`SOURCE` of `TARGET`).
+      * Run level: waar in de Directed Acyclic Graph ([DAG](https://nl.wikipedia.org/wiki/Gerichte_acyclische_graaf){target="_blank"}) hiërarchie, gaande van bron-entiteiten naar eind-entiteiten, de mapping zich bevindt. Mappings die enkel bron-entiteiten gebruiken krijgen run level 0, de volgende run levels worden bepaald door het aantal mappings dat in de hiërarchie vóór de huidige mapping komt.
+      * Run level stage: Als mappings op hetzelfde run level dezelfde entiteiten gebruiken, moeten ze een verschillende uitvoeringsvolgorde krijgen om deadlocks te voorkomen. Een [greedy coloring algoritme](https://www.youtube.com/watch?v=vGjsi8NIpSE){target="_blank"} wordt gebruikt om de uitvoeringsvolgorde binnen een run level te bepalen. Er kunnen nu twee typen dead-locks voorkomen worden met een `DeadlockPrevention` type.
+    * `SOURCE`: een brontabel kan niet door meerdere mappings tegelijkertijd worden gebruikt
+    * `TARGET`: en doeltabel kan niet door meerdere mappings tegelijkertijd worden gebruikt
+
+  - Groeperen van mappings in stages voor veilige en efficiënte parallelle uitvoering.
+  - Detecteren van conflicten tussen mappings op basis van gedeelde entiteiten.
+  - Bieden van een gesorteerde `run config` die klaar is voor deployment of schedulers.
+  - Mogelijkheid tot uitbreiden met aangepaste strategieën voor conflictoplossing.
+
+### `DagReporting`
+
+- **Doel**: Verhogen van inzicht en traceerbaarheid door middel van visualisatie.
+- **Functionaliteiten**:
+  - Instellen van visuele attributen per knoop: kleur, vorm, hiërarchie, tooltip.
+  - Classificatie van knopen op basis van positie in de flow (`START`, `INTERMEDIATE`, `END`).
+  - Conversie van `igraph.Graph` naar `networkx.DiGraph` en export naar HTML via `pyvis`.
+  - Vooraf gedefinieerde visualisaties:
+    - Volledige DAG (alle objecten)
+    - Per bestand
+    - Afhankelijkheden tussen bestanden
+    - Entiteitstrajecten (de volledige stroom voor een bepaalde entiteit)
+    - De pure ETL-flow (entiteiten en mappings zonder bestandseenheden)
+  - Detectie van ontbrekende entiteitsdefinities in bestanden.
+
+---
+
+## Visualisatie
+
+De visualisatiecomponent maakt gebruik van `pyvis` in combinatie met `networkx` om interactieve HTML-bestanden te genereren. Visualisaties bieden:
+- **Zoom & pan-functionaliteit**
+- **Klikbare knopen met tooltips**
+- **Hiërarchische lay-out op basis van uitvoeringsvolgorde**
+- **Visuele onderscheidingen tussen types (bestand, entiteit, mapping)**
+
+Deze bestanden kunnen lokaal of via een webserver geopend worden en zijn geschikt voor analyses, presentaties of documentatie.
+
+---
 
 ## 🚀 Gebruik
 
@@ -97,35 +161,7 @@ if __name__ == "__main__":
 ```
 </details>
 
-## Belangrijke componenten
-
-Er wordt gebruik gemaakt van de klasse ```DagReporting```, gedefinieerd in het bestand ```dag_reporting.py```, om visualisaties te maken van:
-
-* het totale netwerk van bestanden, entiteiten en mappings,
-* het netwerk van verbonden bestanden, entiteiten en mappings van een specifieke entiteit,
-* afhankelijkheden tussen bestanden, gebaseerd op gedeelde entiteiten, en
-* een visualisatie van de ETL-flow voor alle gecombineerde RETW-bestanden.
-
-Daarnaast worden bestanden gegenereerd met:
-
-* de volgorde van mappings in een ETL-flow en
-* de entiteiten die gebruikt worden in mappings, maar geen definitie hebben in één van de bestanden.
-
-De klasse ```EtlFailure```, gedefinieerd in het bestand ```dag_etl_failure.py```, wordt gebruikt om:
-
-* een visualisatie te maken van de gevolgen van een falend ETL-flow object en
-* een rapportage te maken van de falende ETL-flow objecten.
-
-## Implementatiedocumentatie
-
-### Bepalen van mapping volgorde
-
-De uitvoeringsvolgorde van mappings wordt bepaald door twee componenten:
-
-* Run level: waar in de Directed Acyclic Graph ([DAG](https://nl.wikipedia.org/wiki/Gerichte_acyclische_graaf){target="_blank"}) hiërarchie, gaande van bron-entiteiten naar eind-entiteiten, de mapping zich bevindt. Mappings die enkel bron-entiteiten gebruiken krijgen run level 0, de volgende run levels worden bepaald door het aantal mappings dat in de hiërarchie vóór de huidige mapping komt.
-* Run level stage: Als mappings op hetzelfde run level dezelfde entiteiten gebruiken, moeten ze een verschillende uitvoeringsvolgorde krijgen om deadlocks te voorkomen. Een [greedy coloring algoritme](https://www.youtube.com/watch?v=vGjsi8NIpSE){target="_blank"} wordt gebruikt om de uitvoeringsvolgorde binnen een run level te bepalen. Er kunnen nu twee typen dead-locks voorkomen worden met een `DeadlockPrevention` type.
-    * `SOURCE`: een brontabel kan niet door meerdere mappings tegelijkertijd worden gebruikt
-    * `TARGET`: en doeltabel kan niet door meerdere mappings tegelijkertijd worden gebruikt
+## Klassenstructuur
 
 ```mermaid
 graph LR
@@ -243,8 +279,7 @@ classDiagram
     ENTITY_TARGET
   }
   class DagGenerator{
-    +add_RETW_files(list files_RETW)
-    +add_RETW_file(str file_RETW)
+    +build_dag(list|str files_RETW)
     +get_dag_total()
     +get_dag_single_retw_file(str file_RETW)
     +get_dag_file_dependencies(bool include_entities)
@@ -279,22 +314,26 @@ Functionaliteit om afhankelijkheden of de DAG te vergelijken tussen twee versies
 
 ## API referentie
 
-### ::: src.dependencies_checker.dag_generator.DagGenerator
+### ::: src.integrator.dag_builder.DagBuilder
 
 ---
 
-### ::: src.dependencies_checker.dag_generator.EdgeType
+### ::: src.integrator.dag_builder.EdgeType
 
-### ::: src.dependencies_checker.dag_generator.VertexType
-
----
-
-### ::: src.dependencies_checker.dag_reporting.DeadlockPrevention
+### ::: src.integrator.dag_builder.VertexType
 
 ---
 
-### ::: src.dependencies_checker.dag_reporting.DagReporting
+### ::: src.integrator.dag_implementation.DagImplementation
 
 ---
 
-### ::: src.dependencies_checker.dag_etl_failure.EtlFailure
+### ::: src.integrator.dag_implementation.DeadlockPrevention
+
+---
+
+### ::: src.integrator.dag_reporting.DagReporting
+
+---
+
+### ::: src.integrator.dag_etl_failure.EtlFailure
