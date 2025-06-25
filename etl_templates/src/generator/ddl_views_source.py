@@ -29,7 +29,9 @@ class DDLSourceViews(DDLViewBase):
             self._set_datasource_code(mapping)
             identifiers = self.__collect_identifiers(mapping=mapping)
             mapping = self.__build_bkeys_load(identifiers=identifiers, mapping=mapping)
-            mapping = self.__remove_identifier_attributes(identifiers=identifiers, mapping=mapping)
+            mapping = self.__remove_identifier_attributes(
+                identifiers=identifiers, mapping=mapping
+            )
             content = self.__render_source_view(mapping)
             dir_output, file_output, path_file_output = self.__get_source_view_paths(
                 mapping
@@ -69,22 +71,24 @@ class DDLSourceViews(DDLViewBase):
             else:
                 return f"[{name_business_key}BKey] = '{mapping['DataSource']}'+  '-' + {attr_map['Expression']}"
 
-
-        if "Identifiers" not in mapping["EntityTarget"]:
-            if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
-                logger.error(
-                    f"Geen identifiers aanwezig voor entitytarget {mapping['EntityTarget']['Name']}"
-                )
-        if "AttributeMapping" not in mapping:
-                if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
-                    logger.error(
-                        f"Geen attribute mapping aanwezig voor entity {mapping['EntityTarget']['Name']}"
-                    )
+        if (
+            "Identifiers" not in mapping["EntityTarget"]
+            and mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule"
+        ):
+            logger.error(
+                f"Geen identifiers aanwezig voor doel entiteit '{mapping['EntityTarget']['Name']}'"
+            )
+        if (
+            "AttributeMapping" not in mapping
+            and mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule"
+        ):
+            logger.error(
+                f"Geen attribute mapping aanwezig voor entity '{mapping['EntityTarget']['Name']}'"
+            )
         for identifier in mapping["EntityTarget"]["Identifiers"]:
             for attr_map in mapping["AttributeMapping"]:
                 if (
-                    attr_map["AttributeTarget"]["IdEntity"]
-                    == identifier["EntityID"]
+                    attr_map["AttributeTarget"]["IdEntity"] == identifier["EntityID"]
                     and attr_map["AttributeTarget"]["Code"] == identifier["Name"]
                 ):
                     name_business_key = get_name_business_key(identifier)
@@ -127,7 +131,7 @@ class DDLSourceViews(DDLViewBase):
                 Deze entiteiten hebben hier geen Stereotype
                 """
                 logger.error(
-                    f"Identifier voor entiteit '{mapping["EntityTarget"]['Code']}' niet gevonden in identifiers"
+                    f"Identifier voor entiteit '{mapping['EntityTarget']['Code']}' niet gevonden in identifiers"
                 )
 
         attributes = []
@@ -142,7 +146,6 @@ class DDLSourceViews(DDLViewBase):
         mapping["AttributeMapping"] = attributes
         return mapping
 
-
     def __render_source_view(self, mapping: dict) -> str:
         """
         Genereert en formatteert de SQL voor een source view op basis van de mapping.
@@ -155,7 +158,7 @@ class DDLSourceViews(DDLViewBase):
         Returns:
             str: De geformatteerde SQL-string voor de source view.
         """
-        mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
+        mapping["Name"] = f"{mapping['Name'].replace(' ', '_')}"
         content = self.template.render(mapping=mapping)
         content = sqlparse.format(content, reindent=True, keyword_case="upper")
         return content

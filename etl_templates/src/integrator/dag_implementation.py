@@ -184,19 +184,15 @@ class DagImplementation(DagBuilder):
             return []
         for vx in self.dag.vs:
             if vx["type"] == VertexType.MAPPING.name:
-                successors = self.dag.vs[self.dag.successors(vx)[0]]
-                dict_successors = {
-                    key: successors[key] for key in successors.attribute_names()
-                }
                 dict_mapping = {key: vx[key] for key in vx.attribute_names()}
                 dict_mapping["RunLevel"] = vx["run_level"]
                 dict_mapping["RunLevelStage"] = vx["run_level_stage"]
-                dict_mapping["NameModel"] = dict_successors["NameModel"]
-                dict_mapping["CodeModel"] = dict_successors["CodeModel"]
+                dict_mapping["NameModel"] = vx["NameModel"]
+                dict_mapping["CodeModel"] = vx["CodeModel"]
                 dict_mapping["SourceViewName"] = (
                     f"vw_src_{vx['Name'].replace(' ', '_')}"
                 )
-                dict_mapping["TargetName"] = dict_successors["Code"]
+                dict_mapping["TargetName"] = vx["Code"]
                 lst_mappings.append(dict_mapping)
         # Sort the list of mappings by run level and the run level stage
         lst_mappings = sorted(
