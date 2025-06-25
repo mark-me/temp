@@ -61,7 +61,7 @@ class Orchestrator:
         dag_etl = self._integrate_files(files_RETW=lst_files_RETW)
 
         # Genereer code voor doelschema's en mappings
-        self._generate_code(dag_etl=dag_etl)
+        #self._generate_code(dag_etl=dag_etl)
         # Genereer code voor ETL deployment
         self._generate_mdde_deployment(dag_etl=dag_etl)
 

@@ -36,37 +36,78 @@ class DagImplementation(DagBuilder):
         self._add_dag_derived()
 
     def _add_dag_derived(self):
-        self._add_model_to_mapping()
+        """Voegt afgeleide gegevens toe aan de DAG, zoals modelinformatie, hashkeys en business keys.
 
-        # Create BKeys on first derived level
+        Deze functie verrijkt mappings met modelinformatie en hashkeys, en vervangt entity keys door business keys
+        op het eerste afgeleide niveau.
+        """
+        # Add data to mappings
+        vs_mappings = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
+        for vx_mapping in vs_mappings:
+            self._mappings_add_model(vx_mapping=vx_mapping)
+            self._mappings_add_hashkey(vx_mapping=vx_mapping)
+
+        # Create BKeys on first derived level entities
         vs_entity_source = self.dag.vs.select(etl_level_eq=1)
-        lst_attrs_before = [
-            vx.attributes()
-            for vx in self.dag.vs.select(etl_level_eq=1)
-            if vx["type"] == VertexType.ENTITY.name and vx["CodeModel"] == "DA_Central"
-        ]
         for vx_entity in vs_entity_source:
             metadata_bkeys = self._create_source_bkeys(vx_entity=vx_entity)
             self._replace_entity_keys_with_bkeys(
                 vx_entity=vx_entity, metadata_bkeys=metadata_bkeys
             )
-        lst_attrs_after = [
-            vx.attributes()
-            for vx in self.dag.vs.select(etl_level_eq=1)
-            if vx["type"] == VertexType.ENTITY.name and vx["CodeModel"] == "DA_Central"
-        ]
-        pass
 
-    def _add_model_to_mapping(self):
-        vs_mappings = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
-        for vx in vs_mappings:
-            if vs_target_entity := [
-                self.dag.vs[idx]
-                for idx in self.dag.neighbors(vx, mode="out")
-                if self.dag.vs[idx]["type"] == VertexType.ENTITY.name
-            ]:
-                vx["CodeModel"] = vs_target_entity[0]["CodeModel"]
-                vx["NameModel"] = vs_target_entity[0]["NameModel"]
+    def _mappings_add_model(self, vx_mapping: ig.Vertex):
+        """Voegt modelinformatie toe aan een mapping op basis van de doelentiteit.
+
+        Deze functie zoekt de doelentiteit van een mapping en vult de mapping aan met de bijbehorende CodeModel en NameModel attributen.
+
+        Args:
+            vx_mapping (ig.Vertex): De mapping waarvoor modelinformatie wordt toegevoegd.
+        """
+        if vs_target_entity := [
+            self.dag.vs[idx]
+            for idx in self.dag.neighbors(vx_mapping, mode="out")
+            if self.dag.vs[idx]["type"] == VertexType.ENTITY.name
+        ]:
+            vx_mapping["CodeModel"] = vs_target_entity[0]["CodeModel"]
+            vx_mapping["NameModel"] = vs_target_entity[0]["NameModel"]
+
+    def _mappings_add_hashkey(self, vx_mapping: ig.Vertex):
+        """Voegt een hashkey toe aan een mapping op basis van de attributenmapping ten behoeve van delta bepaling
+
+        Deze functie genereert een hashkey-expressie voor de mapping, gebaseerd op de opgegeven attributen en datasources.
+
+        Args:
+            vx_mapping (ig.Vertex): De mapping waarvoor de hashkey wordt toegevoegd.
+        """
+
+        def build_hash_attrib(attr_mapping: list, separator: str) -> str:
+            """Bouwt een hash-attribuutstring op basis van de attributenmapping en een scheidingsteken.
+
+            Deze functie genereert een stringrepresentatie van een attribuut voor opname in een hashkey-expressie.
+
+            Args:
+                attr_mapping (list): De mapping van het attribuut.
+                separator (str): Het scheidingsteken voor concatenatie.
+
+            Returns:
+                str: De stringrepresentatie van het attribuut voor de hashkey.
+            """
+            hash_attrib = f"{separator}DA_MDDE.fn_IsNull("
+            if "Expression" in attr_mapping:
+                return f"{hash_attrib}{attr_mapping['Expression']})"
+            entity_alias = attr_mapping['AttributesSource']['EntityAlias']
+            attr_source = attr_mapping['AttributesSource']['Code']
+            return f"{hash_attrib}{entity_alias}.[{attr_source}])"
+
+        x_hashkey = "[X_HashKey] = CHECKSUM(CONCAT(N'',"
+        for i, attr_mapping in enumerate(vx_mapping["AttributeMapping"]):
+            separator = "" if i == 0 else ","
+            hash_attrib = build_hash_attrib(
+                attr_mapping=attr_mapping, separator=separator
+            )
+            x_hashkey = x_hashkey + hash_attrib
+        vx_mapping["X_Hashkey"] = f"{x_hashkey},'{vx_mapping['DataSource']}'))"
+
 
     def _create_source_bkeys(self, vx_entity: ig.Vertex):
         """
@@ -184,15 +225,15 @@ class DagImplementation(DagBuilder):
             return []
         for vx in self.dag.vs:
             if vx["type"] == VertexType.MAPPING.name:
-                dict_mapping = {key: vx[key] for key in vx.attribute_names()}
-                dict_mapping["RunLevel"] = vx["run_level"]
-                dict_mapping["RunLevelStage"] = vx["run_level_stage"]
-                dict_mapping["NameModel"] = vx["NameModel"]
-                dict_mapping["CodeModel"] = vx["CodeModel"]
-                dict_mapping["SourceViewName"] = (
-                    f"vw_src_{vx['Name'].replace(' ', '_')}"
-                )
-                dict_mapping["TargetName"] = vx["Code"]
+                # dict_mapping = {key: vx[key] for key in vx.attribute_names()}
+                dict_mapping = {
+                    "RunLevel": vx["run_level"],
+                    "RunLevelStage": vx["run_level_stage"],
+                    "NameModel": vx["NameModel"],
+                    "CodeModel": vx["CodeModel"],
+                    "SourceViewName": f"vw_src_{vx['Name'].replace(' ', '_')}",
+                    "TargetName": vx["Code"]
+                }
                 lst_mappings.append(dict_mapping)
         # Sort the list of mappings by run level and the run level stage
         lst_mappings = sorted(

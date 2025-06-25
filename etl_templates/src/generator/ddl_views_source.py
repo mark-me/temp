@@ -197,7 +197,7 @@ class DDLSourceViews(DDLViewBase):
             dict: De aangepaste mapping met toegevoegde BKeys en X_HashKey.
         """
         mapping["Identifiers"] = self.__get_identifier_mapped(identifiers, mapping)
-        mapping["AttributeMapping"], mapping["X_Hashkey"] = self.__build_x_hashkey(
+        mapping["AttributeMapping"], mapping["X_Hashkey"] = self._build_x_hashkey(
             mapping
         )
         return mapping
@@ -228,7 +228,7 @@ class DDLSourceViews(DDLViewBase):
                 )
         return identifier_mapped
 
-    def __build_x_hashkey(self, mapping: dict) -> tuple:
+    def _build_x_hashkey(self, mapping: dict) -> tuple:
         """
         Bouwt de X_HashKey string en retourneert deze samen met de aangepaste AttributeMapping.
 
@@ -243,8 +243,9 @@ class DDLSourceViews(DDLViewBase):
             hash_attrib = f"{separator}DA_MDDE.fn_IsNull("
             if "Expression" in attr_mapping:
                 return f"{hash_attrib}{attr_mapping['Expression']})"
-            else:
-                return f"{hash_attrib}{attr_mapping['AttributesSource']['EntityAlias']}.[{attr_mapping['AttributesSource']['Code']}])"
+            entity_alias = attr_mapping['AttributesSource']['EntityAlias']
+            attr_source = attr_mapping['AttributesSource']['Code']
+            return f"{hash_attrib}{entity_alias}.[{attr_source}])"
 
         x_hashkey = "[X_HashKey] = CHECKSUM(CONCAT(N'',"
         attr_mappings = []
