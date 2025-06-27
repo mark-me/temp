@@ -14,6 +14,7 @@ from logtools import get_logger
 logger = get_logger(__name__)
 
 EntityRef = namedtuple("EntityRef", ("CodeModel", "CodeEntity"))
+AttributeRef = namedtuple("AttributeRef", ("CodeModel", "CodeEntity", "CodeAttribute"))
 MappingRef = namedtuple("MappingRef", ("FileRETW", "CodeMapping"))
 
 
@@ -24,6 +25,7 @@ class VertexType(Enum):
     """
 
     ENTITY = auto()
+    ATTRIBUTE = auto()
     MAPPING = auto()
     FILE_RETW = auto()
     ERROR = auto()
@@ -39,6 +41,9 @@ class EdgeType(Enum):
     FILE_MAPPING = auto()
     ENTITY_SOURCE = auto()
     ENTITY_TARGET = auto()
+    ENTITY_ATTRIBUTE = auto()
+    MAPPING_ATTRIBUTE_SOURCE = auto()
+    MAPPING_ATTRIBUTE_TARGET = auto()
 
 
 class ErrorDagNotBuilt(Exception):
@@ -71,6 +76,7 @@ class DagBuilder:
         self.files_RETW: dict = {}
         self.entities: dict = {}
         self.mappings: dict = {}
+        self.attributes: dict = {}
         self.edges: list = []
         self.dag: ig.Graph = None
 
@@ -210,6 +216,10 @@ class DagBuilder:
         """
         code_model, code_entity = entity_ref
         return self._stable_hash(key=code_model + code_entity)
+
+    def get_attribute_id(self, attribute_ref: AttributeRef) -> int:
+        code_model, code_entity, code_attribute = attribute_ref
+        return self._stable_hash(key=code_model+code_entity+code_attribute)
 
     def get_mapping_id(self, mapping_ref: MappingRef) -> int:
         """Genereer een stabiele hash-ID voor een mapping.
@@ -622,6 +632,8 @@ class DagBuilder:
         dag = deepcopy(self.dag)
         vs_files = dag.vs.select(type_eq=VertexType.FILE_RETW.name)
         dag.delete_vertices(vs_files)
+        vs_attributes = dag.vs.select(type_eq=VertexType.ATTRIBUTE.name)
+        dag.delete_vertices(vs_attributes)
         return dag
 
     def get_dag_mappings(self) -> ig.Graph:
