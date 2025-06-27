@@ -219,7 +219,7 @@ class DagBuilder:
 
     def get_attribute_id(self, attribute_ref: AttributeRef) -> int:
         code_model, code_entity, code_attribute = attribute_ref
-        return self._stable_hash(key=code_model+code_entity+code_attribute)
+        return self._stable_hash(key=code_model + code_entity + code_attribute)
 
     def get_mapping_id(self, mapping_ref: MappingRef) -> int:
         """Genereer een stabiele hash-ID voor een mapping.
@@ -278,6 +278,39 @@ class DagBuilder:
                 "type": EdgeType.FILE_ENTITY.name,
             }
             self.edges.append(edge_entity_file)
+            self._add_entity_attributes(entity=entity)
+
+    def _add_entity_attributes(self, entity: dict) -> None:
+        """Voegt attributen van een entiteit toe aan de graaf als knopen en koppelt deze aan de entiteit.
+
+        Itereert over alle attributen van de opgegeven entiteit, voegt elk attribuut als knoop toe aan de graaf,
+        en maakt een verbinding tussen de entiteit en het attribuut.
+
+        Args:
+            entity (dict): De entiteit waarvan de attributen worden toegevoegd.
+        """
+        for attribute in entity["Attributes"]:
+            id_attribute = self.get_attribute_id(
+                AttributeRef(entity["CodeModel"], entity["Code"], attribute["Code"])
+            )
+            attribute.update(
+                {
+                    "name": id_attribute,
+                    "type": VertexType.ATTRIBUTE.name,
+                    "CodeModel": entity["CodeModel"],
+                    "CodeEntity": entity["Code"],
+                }
+            )
+            dict_attribute = {id_attribute: attribute}
+            self.attributes.update(dict_attribute)
+            edge_entity_attribute = {
+                "source": self.get_entity_id(
+                    EntityRef(entity["CodeModel"], entity["Code"])
+                ),
+                "target": id_attribute,
+                "type": EdgeType.ENTITY_ATTRIBUTE.name,
+            }
+            self.edges.append(edge_entity_attribute)
 
     def _add_mappings(self, file_RETW: str, mappings: dict) -> None:
         """Voegt mappings toe aan de graaf en koppelt deze aan het RETW-bestand.
@@ -314,10 +347,13 @@ class DagBuilder:
                 "Modifier": mapping_RETW["Modifier"],
             }
             self.edges.append(edge_mapping_file)
-            self._add_mapping_sources(id_mapping=id_mapping, mapping=mapping_RETW)
-            self._add_mapping_target(id_mapping=id_mapping, mapping=mapping_RETW)
+            self._add_mapping_entity_sources(
+                id_mapping=id_mapping, mapping=mapping_RETW
+            )
+            self._add_mapping_entity_target(id_mapping=id_mapping, mapping=mapping_RETW)
 
-    def _add_mapping_sources(self, id_mapping: int, mapping: dict) -> None:
+
+    def _add_mapping_entity_sources(self, id_mapping: int, mapping: dict) -> None:
         """Voegt bronentiteiten van een mapping toe aan de graaf.
 
         Extraheert de bronentiteiten uit de mapping, voegt deze als knopen toe aan de graaf,
@@ -362,7 +398,11 @@ class DagBuilder:
             }
             self.edges.append(edge_entity_mapping)
 
-    def _add_mapping_target(self, id_mapping: int, mapping: dict) -> None:
+    def _add_mapping_attributes(self, id_mapping: int, entity: dict) -> None:
+        for attribute in entity["Attributes"]:
+            pass
+
+    def _add_mapping_entity_target(self, id_mapping: int, mapping: dict) -> None:
         """Voegt de doeleenheid van een mapping toe aan de graaf.
 
         Extraheert de doeleenheid uit de mapping, voegt deze als knoop toe aan de graaf,

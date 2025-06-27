@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from integrator import DagReporting, DagImplementation, DeadlockPrevention
+from integrator import DagReporting, DagImplementation, DagBuilder,DeadlockPrevention
 from deploy_mdde import DeploymentMDDE
 from generator import DDLGenerator
 from logtools import get_logger, issue_tracker
@@ -108,10 +108,12 @@ class Orchestrator:
         Returns:
             DagImplementation: De geïmplementeerde ETL-DAG voor verdere verwerking.
         """
-        self._report_integration(files_RETW=files_RETW)
-        logger.info("Create ETL Dag with implementation information")
-        dag = DagImplementation()
+        # self._report_integration(files_RETW=files_RETW)
+        # logger.info("Create ETL Dag with implementation information")
+        # dag = DagImplementation()
+        dag = DagBuilder()
         dag.build_dag(files_RETW=files_RETW)
+
         return dag
 
     def _report_integration(self, files_RETW: list) -> None:
