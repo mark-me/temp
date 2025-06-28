@@ -42,8 +42,7 @@ class EdgeType(Enum):
     ENTITY_SOURCE = auto()
     ENTITY_TARGET = auto()
     ENTITY_ATTRIBUTE = auto()
-    MAPPING_ATTRIBUTE_SOURCE = auto()
-    MAPPING_ATTRIBUTE_TARGET = auto()
+    ATTRIBUTE_MAPPING = auto()
 
 
 class ErrorDagNotBuilt(Exception):
@@ -101,7 +100,17 @@ class DagBuilder:
             + list(self.entities.values())
             + list(self.files_RETW.values())
         )
-        edges = list(self.edges)
+        edges = [
+            edge
+            for edge in self.edges
+            if edge["type"]
+            in [
+                EdgeType.FILE_ENTITY.name,
+                EdgeType.FILE_MAPPING.name,
+                EdgeType.ENTITY_SOURCE.name,
+                EdgeType.ENTITY_TARGET.name,
+            ]
+        ]
         self.dag = ig.Graph.DictList(vertices=vertices, edges=edges, directed=True)
         self._add_dag_statistics()
 
@@ -351,7 +360,10 @@ class DagBuilder:
                 id_mapping=id_mapping, mapping=mapping_RETW
             )
             self._add_mapping_entity_target(id_mapping=id_mapping, mapping=mapping_RETW)
-
+            self._add_mapping_attributes(
+                id_mapping=id_mapping,
+                mapping_attributes=mapping_RETW["AttributeMapping"],
+            )
 
     def _add_mapping_entity_sources(self, id_mapping: int, mapping: dict) -> None:
         """Voegt bronentiteiten van een mapping toe aan de graaf.
@@ -398,8 +410,39 @@ class DagBuilder:
             }
             self.edges.append(edge_entity_mapping)
 
-    def _add_mapping_attributes(self, id_mapping: int, entity: dict) -> None:
-        for attribute in entity["Attributes"]:
+    def _add_mapping_attributes(
+        self, id_mapping: int, mapping_attributes: dict
+    ) -> None:
+        def add_attribute(attribute: dict) -> int:
+            id_attribute = self.get_attribute_id(
+                AttributeRef(
+                    attribute["CodeModel"], attribute["CodeEntity"], attribute["Code"]
+                )
+            )
+            attribute.update(
+                {
+                    "name": id_attribute,
+                    "type": VertexType.ATTRIBUTE.name,
+                    "CodeModel": attribute["CodeModel"],
+                    "CodeEntity": attribute["CodeEntity"],
+                }
+            )
+            dict_attribute = {id_attribute: attribute}
+            if id_attribute not in self.attributes:
+                self.attributes.update(dict_attribute)
+            return id_attribute
+
+        for mapping in mapping_attributes:
+            attr_source = mapping["AttributesSource"]
+            id_attr_source = add_attribute(attribute=attr_source)
+            attr_target = mapping["AttributeTarget"]
+            id_attr_target = add_attribute(attribute=attr_target)
+            edge_attr_mapping = {
+                "source": id_attr_source,
+                "target": id_attr_target,
+                "type": EdgeType.ATTRIBUTE_MAPPING.name,
+            }
+            self.edges.append(edge_attr_mapping)
             pass
 
     def _add_mapping_entity_target(self, id_mapping: int, mapping: dict) -> None:
