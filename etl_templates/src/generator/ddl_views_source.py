@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import sqlparse
 from jinja2 import Template
 from logtools import get_logger
 from tqdm import tqdm
