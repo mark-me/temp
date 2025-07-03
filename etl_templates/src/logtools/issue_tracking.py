@@ -32,8 +32,8 @@ class IssueTrackingHandler(logging.Handler):
                 }
             )
 
-    def _max_severity_level(self) -> str:
-        return min(self.issues, key=lambda x: x["severity"])
+    def max_severity_level(self) -> str:
+        return min(self.issues, key=lambda x: x["severity"])["severity"]
 
     def has_errors(self) -> bool:
         """Controleer of er errors zijn gelogd.
@@ -41,7 +41,7 @@ class IssueTrackingHandler(logging.Handler):
         Retourneert:
             True als er errors zijn, anders False.
         """
-        return self._max_severity_level() == "ERROR"
+        return self.max_severity_level() == "ERROR"
 
     def get_issues(self) -> list:
         """Haalt een lijst met gelogde issues op.

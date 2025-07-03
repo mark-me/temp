@@ -47,16 +47,8 @@ class Orchestrator:
             None
         """
         logger.info("Start Genesis verwerking")
-        lst_files_RETW = []
-        if not self.config.power_designer.files:
-            logger.warning(
-                "Geen PowerDesigner-bestanden geconfigureerd. Genesis verwerking wordt afgebroken."
-            )
-            return
-        # Extractie van data uit Power Designer bestanden
-        for pd_file in self.config.power_designer.files:
-            file_RETW = self._extract(file_pd_ldm=pd_file)
-            lst_files_RETW.append(file_RETW)
+
+        lst_files_RETW = self._extract()
 
         self._handle_issues()
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
@@ -70,35 +62,63 @@ class Orchestrator:
         # Stop process if extraction and dependencies check result in issues
         self._handle_issues()
         if not skip_devops:
-            devops_handler = RepositoryManager(config=self.config.devops)
-            devops_handler.clone()
-            path_source = self.config.generator.path_output
-            devops_handler.clean_directory_in_repo()
-            devops_handler.add_directory_to_repo(
-                path_source=path_source
-            )
-            # TODO: Copy code and codelist to repo and update project file
-            devops_handler.publish()
+            self._add_to_repository()
 
-    def _extract(self, file_pd_ldm: Path) -> str:
-        """Extract data from a PowerDesigner LDM file.
+        # Write issues to file
+        file_issues = os.path.join(self.config.path_intermediate, "extraction_issues.csv")
+        issue_tracker.write_csv(file_csv=file_issues)
 
-        Extracts the logical data model and mappings from the specified file and saves them as a JSON file.
+    def _extract(self) -> list:
+        """
+        Extraheert data uit Power Designer bestanden en schrijft deze naar JSON-bestanden.
 
-        Args:
-            file_pd_ldm (Path): Locatie Power Designer ldm bestand
+        Deze functie verwerkt de opgegeven Power Designer bestanden, extraheert het logisch datamodel en mappings,
+        en slaat de resultaten op als JSON-bestanden in de opgegeven output directory.
 
         Returns:
-            None
+            list: Lijst van paden naar de geëxtraheerde JSON-bestanden.
         """
-        logger.info(f"Start extraction for '{file_pd_ldm}'")
-        document = PDDocument(file_pd_ldm=file_pd_ldm)
-        file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
-        document.write_result(file_output=file_RETW)
-        logger.info(
-            f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
-        )
-        return file_RETW
+
+        lst_files_RETW = []
+        # Extractie van data uit Power Designer bestanden
+        if not self.config.power_designer.files:
+            logger.warning(
+                "Geen PowerDesigner-bestanden geconfigureerd. Genesis verwerking wordt afgebroken."
+            )
+            return []
+        for file_pd_ldm in self.config.power_designer.files:
+            file_RETW = self._extract(file_pd_ldm=file_pd_ldm)
+            logger.info(f"Start extractie van Power Designer bestand '{file_pd_ldm}'")
+            document = PDDocument(file_pd_ldm=file_pd_ldm)
+            file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
+            document.write_result(file_output=file_RETW)
+            logger.info(
+                f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
+            )
+            lst_files_RETW.append(file_RETW)
+        return lst_files_RETW
+
+    def _handle_issues(self):
+        """
+        Controleert op gevonden issues en onderbreekt de verwerking indien nodig.
+
+        Deze functie bekijkt het hoogste gevonden severity-niveau en vraagt bij waarschuwingen om bevestiging om door te gaan.
+        Bij fouten of als de gebruiker niet doorgaat, wordt het proces gestopt en een rapportbestand aangemaakt.
+        """
+        error = False
+        max_severity_level = issue_tracker.max_severity_level()
+        if max_severity_level == "WARNING":
+            answer = input("Waarschuwingen gevonden, wil je doorgaan? (J/n):")
+            if answer.upper() in ["", "J", "JA", "Y", "YES"]:
+                return
+            else:
+                error = True
+        if max_severity_level == "ERROR" or error:
+            file_issues = os.path.join(self.config.path_intermediate, "extraction_issues.csv")
+            issue_tracker.write_csv(file_csv=file_issues)
+            raise ExtractionIssuesFound(
+                f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}"
+            )
 
     def _integrate_files(self, files_RETW: list) -> DagImplementation:
         """
@@ -182,18 +202,18 @@ class Orchestrator:
         ddl_generator = DDLGenerator(params=self.config.generator)
         ddl_generator.generate_ddls(dag_etl=dag_etl)
 
-    def _handle_issues(self):
-        """
-        Controleert of er issues zijn gevonden tijdens de verwerking en handelt deze af.
 
-        Schrijft een rapport van de gevonden issues naar een CSV-bestand en stopt de verwerking indien nodig.
+    def _add_to_repository(self):
+        """Voegt de gegenereerde code toe aan de DevOps repository.
 
-        Returns:
-            None
+        Deze functie beheert het klonen, opschonen, toevoegen en publiceren van de gegenereerde code naar de DevOps repository.
         """
-        if issue_tracker.has_errors():
-            file_issues = os.path.join(self.config.path_intermediate, "extraction_issues.csv")
-            issue_tracker.write_csv(file_csv=file_issues)
-            raise ExtractionIssuesFound(
-                f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}"
+        devops_handler = RepositoryManager(config=self.config.devops)
+        devops_handler.clone()
+        path_source = self.config.generator.path_output
+        devops_handler.clean_directory_in_repo()
+        devops_handler.add_directory_to_repo(
+                path_source=path_source
             )
+            # TODO: Copy code and codelist to repo and update project file
+        devops_handler.publish()
