@@ -39,6 +39,7 @@ class ConfigFile:
         data = self._read_file()
         self.folder_intermediate_root = data.folder_intermediate_root
         self.title = data.title
+        self.ignore_warnings = data.ignore_warnings
         self._version = self._determine_version()
         self.power_designer = PowerDesignerConfig(data.power_designer)
         self.extractor = ExtractorConfig(
@@ -227,6 +228,7 @@ class ConfigFile:
         field_comments = {
             "title": "De naam van de huidige uitvoering (bijv. 'dry-run')",
             "folder_intermediate_root": "Basis-map waar tussenresultaten worden opgeslagen",
+            "ignore-warnings": "Negeert waarschuwingen voor non-interactieve runs",
             "power_designer": "Instellingen voor PowerDesigner LDM-bestanden",
             "folder": "Submap binnen de root waar PowerDesigner bestanden staan",
             "files": "Lijst van PowerDesigner .ldm-bestanden",
@@ -420,7 +422,7 @@ class DevOpsConfig(BaseConfigComponent):
     @property
     def path_file_sql_project(self):
         return Path(self._data.file_sql_project)
-    
+
     @property
     def work_item_description(self):
         return self._data.work_item_description.replace(' ', '_')

@@ -47,20 +47,19 @@ class Orchestrator:
             None
         """
         logger.info("Start Genesis verwerking")
-
+        # TODO: Handler van issues resetten na elke stap
         lst_files_RETW = self._extract()
-
-        self._handle_issues()
+        self._handle_issues() # Stop process if extraction results in issues
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
         dag_etl = self._integrate_files(files_RETW=lst_files_RETW)
+        self._handle_issues() # Stop process if integration results in issues
 
         # Genereer code voor doelschema's en mappings
         self._generate_code(dag_etl=dag_etl)
         # Genereer code voor ETL deployment
         self._generate_mdde_deployment(dag_etl=dag_etl)
+        self._handle_issues() # Stop process when generating code result in issues
 
-        # Stop process if extraction and dependencies check result in issues
-        self._handle_issues()
         if not skip_devops:
             self._add_to_repository()
 
@@ -87,7 +86,6 @@ class Orchestrator:
             )
             return []
         for file_pd_ldm in self.config.power_designer.files:
-            file_RETW = self._extract(file_pd_ldm=file_pd_ldm)
             logger.info(f"Start extractie van Power Designer bestand '{file_pd_ldm}'")
             document = PDDocument(file_pd_ldm=file_pd_ldm)
             file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
@@ -108,6 +106,8 @@ class Orchestrator:
         error = False
         max_severity_level = issue_tracker.max_severity_level()
         if max_severity_level == "WARNING":
+            if self.config.ignore_warnings:
+                return
             answer = input("Waarschuwingen gevonden, wil je doorgaan? (J/n):")
             if answer.upper() in ["", "J", "JA", "Y", "YES"]:
                 return

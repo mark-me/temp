@@ -113,6 +113,7 @@ class ConfigData:
 
     title: str
     folder_intermediate_root: str
+    ignore_warnings: bool = False
     power_designer: PowerDesignerConfigData = field(default_factory=PowerDesignerConfigData)
     extractor: ExtractorConfigData = field(default_factory=ExtractorConfigData)
     generator: GeneratorConfigData = field(default_factory=GeneratorConfigData)
