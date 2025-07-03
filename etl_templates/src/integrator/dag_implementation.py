@@ -106,6 +106,14 @@ class DagImplementation(DagBuilder):
         vx_mapping["X_Hashkey"] = f"{x_hashkey},'{vx_mapping['DataSource']}'))"
 
     def _set_entity_type(self, vx_entity: ig.Vertex) -> None:
+        """
+        Bepaalt en stelt het entiteittype in op basis van het 'Stereotype' attribuut.
+
+        Deze functie wijst het type 'Regular' toe als er geen stereotype is, anders 'Aggregate'.
+
+        Args:
+            vx_entity (ig.Vertex): De entiteit waarvoor het type wordt bepaald.
+        """
         if "Stereotype" not in vx_entity.attributes() or vx_entity["Stereotype"] is None:
             vx_entity["type_entity"] = "Regular"
         else:
