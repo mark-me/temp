@@ -1,0 +1,5 @@
+﻿CREATE TABLE [DA_MDDE].[Dates] ([Date] [date] NOT NULL)
+	WITH (
+			DISTRIBUTION = ROUND_ROBIN
+			,HEAP
+			)

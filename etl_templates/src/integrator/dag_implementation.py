@@ -41,19 +41,16 @@ class DagImplementation(DagBuilder):
         Deze functie verrijkt mappings met modelinformatie en hashkeys, en vervangt entity keys door business keys
         op het eerste afgeleide niveau.
         """
+        # Add data to entities
+        vs_entities = [vx for vx in self.dag.vs if vx["type"] == VertexType.ENTITY.name]
+        for vx_entity in vs_entities:
+            self._set_entity_type(vx_entity=vx_entity)
+            self._split_entity_identifiers(vx_entity=vx_entity)
         # Add data to mappings
         vs_mappings = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
         for vx_mapping in vs_mappings:
             self._mappings_add_model(vx_mapping=vx_mapping)
             self._mappings_add_hashkey(vx_mapping=vx_mapping)
-
-        # Create BKeys on first derived level entities
-        vs_entity_source = self.dag.vs.select(etl_level_eq=1)
-        for vx_entity in vs_entity_source:
-            metadata_bkeys = self._create_source_bkeys(vx_entity=vx_entity)
-            self._replace_entity_keys_with_bkeys(
-                vx_entity=vx_entity, metadata_bkeys=metadata_bkeys
-            )
 
     def _mappings_add_model(self, vx_mapping: ig.Vertex):
         """Voegt modelinformatie toe aan een mapping op basis van de doelentiteit.
@@ -108,95 +105,29 @@ class DagImplementation(DagBuilder):
             x_hashkey = x_hashkey + hash_attrib
         vx_mapping["X_Hashkey"] = f"{x_hashkey},'{vx_mapping['DataSource']}'))"
 
+    def _set_entity_type(self, vx_entity: ig.Vertex) -> None:
+        if "Stereotype" not in vx_entity.attributes() or vx_entity["Stereotype"] is None:
+            vx_entity["type_entity"] = "Regular"
+        else:
+            vx_entity["type_entity"] = "Aggregate"
 
-    def _create_source_bkeys(self, vx_entity: ig.Vertex):
-        """
-            Verzamelt identifier-informatie uit de entiteitconfiguratie.
-
-            Doorloopt per entiteit alle identifiers, en genereert een dictionary met metadatastring per identifier voor gebruik in DDL-generatie.
-
-        Args:
-            entity (dict): Entiteit
-
-        Returns:
-            dict: Een dictionary met een metadata string van de businesskey per identifier
-        """
-        metadata_bkeys = {}
-
-        def get_name_business_key(identifier):
-            return (
-                identifier["EntityCode"]
-                if identifier["IsPrimary"]
-                else identifier["Code"]
-            )
-
-        def get_identifier_def_primary(name_business_key):
-            return f"[{name_business_key}BKey] nvarchar(200) NOT NULL"
-
-        for identifier in vx_entity["Identifiers"]:
-            name_business_key = get_name_business_key(identifier)
-            metadata_bkey = get_identifier_def_primary(name_business_key)
-
-            metadata_bkeys[identifier["Id"]] = {
-                "IdentifierID": identifier["Id"],
-                "IdentifierName": identifier["Name"],
-                "IdentifierCode": identifier["Code"],
-                "EntityId": identifier["EntityID"],
-                "EntityCode": identifier["EntityCode"],
-                "IsPrimary": identifier["IsPrimary"],
-                "MetadataBkey": metadata_bkey,
-            }
-        return metadata_bkeys
-
-    def _replace_entity_keys_with_bkeys(
-        self, vx_entity: ig.Vertex, metadata_bkeys: dict
-    ):
-        """Vervangt alle key kolommen met business key kolommen.
-
-        Args:
-            metadata_bkeys (dict): Alle bkey metadata definities
-            entity (dict): Entiteit
-        """
-        mapped_identifiers = []
-        identifier_mapped = []
-
-        if vx_entity["Stereotype"] is None:
-            """
-                We doen niks met eventuele identifiers van Aggregators. Dit moet geen error opleveren.
-                Alleen identifiers van echte entiteiten worden gebruikt en moet aanwezig zijn.
-                Deze entiteiten hebben hier geen Stereotype
-                """
-            logger.info(
-                f"Identifier voor entiteit '{vx_entity['Code']}' niet nodig vanwege stereotype Aggregaat"
-            )
-            return
-        elif vx_entity["Stereotype"] is not None:
+    def _split_entity_identifiers(self, vx_entity: ig.Vertex) -> None:
+        #? Move to extractor
+        if "Identifiers" in vx_entity.attributes():
+            primary_key = None
+            lst_foreign_keys = []
             for identifier in vx_entity["Identifiers"]:
-                if "Id" not in identifier:
-                    logger.error(
-                        f"Identifier voor entiteit '{vx_entity['Code']}' niet gevonden in identifiers"
-                    )
-                    continue
-                identifier_id = identifier["Id"]
-                if identifier_id in metadata_bkeys:
-                    metadata_bkey = metadata_bkeys[identifier_id]["MetadataBkey"]
-                    identifier_name = metadata_bkeys[identifier_id]["IdentifierName"]
-                    identifier_mapped.append(metadata_bkey)
-                    mapped_identifiers.append(identifier_name)
-
-            vx_entity["Identifiers"] = identifier_mapped
-
-            def is_not_mapped_identifier(attribute):
-                return attribute["Code"] not in mapped_identifiers
-
-            attributes = [
-                attribute
-                for attribute in vx_entity["Attributes"]
-                if is_not_mapped_identifier(attribute)
-            ]
-            #vx_entity.pop("Attributes")
-            vx_entity["Attributes"] = None
-            vx_entity["Attributes"] = attributes
+                if identifier["IsPrimary"]:
+                    if primary_key is not None:
+                        logger.error(f"Meerdere primary keys aangetroffen voor entiteit '{vx_entity["Name"]}'")
+                    else:
+                        primary_key = identifier
+                else:
+                    lst_foreign_keys.append(identifier)
+            vx_entity["KeyPrimary"] = primary_key
+            vx_entity["KeysForeign"] = lst_foreign_keys
+        else:
+            logger.warning(f"Geen identifiers gevonden voor entiteit '{vx_entity["Name"]}'")
 
     def get_run_config(self, deadlock_prevention: DeadlockPrevention) -> list:
         """Geeft een gesorteerde lijst van mappings terug op basis van run level en deadlock-preventie.
@@ -225,14 +156,13 @@ class DagImplementation(DagBuilder):
             return []
         for vx in self.dag.vs:
             if vx["type"] == VertexType.MAPPING.name:
-                # dict_mapping = {key: vx[key] for key in vx.attribute_names()}
                 dict_mapping = {
                     "RunLevel": vx["run_level"],
                     "RunLevelStage": vx["run_level_stage"],
                     "NameModel": vx["NameModel"],
                     "CodeModel": vx["CodeModel"],
                     "SourceViewName": f"vw_src_{vx['Name'].replace(' ', '_')}",
-                    "TargetName": vx["Code"]
+                    "TargetName": vx["EntityTarget"]["Code"]
                 }
                 lst_mappings.append(dict_mapping)
         # Sort the list of mappings by run level and the run level stage

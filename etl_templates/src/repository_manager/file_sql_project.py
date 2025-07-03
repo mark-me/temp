@@ -112,7 +112,7 @@ class SqlProjEditor:
         for file in folder.rglob("*.sql"):
             relative_path = str(file.relative_to(folder).as_posix()).replace("/", "\\")
             item_type = (
-                "None" if str(file.parent).lower() == "postdeployment" else "Build"
+                "None" if str(file.parent.name).lower() == "postdeployment" else "Build"
             )
             if relative_path.lower() in existing:
                 continue

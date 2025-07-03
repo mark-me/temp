@@ -447,26 +447,25 @@ class TransformSourceComposition(ObjectTransformer):
             lst_conditions[i] = condition
         composition[ "ScalarConditions"] = lst_conditions
         sql_expression = composition["Entity"]["SqlExpression"]
-        lst_sqlexpressionvariables = composition["Entity"]["SqlExpressionVariables"]
-        dict_scalarconditions = {}
-        lst_scalarconditions = composition["ScalarConditions"]
-        for scalarcondition in lst_scalarconditions:
-            dict_scalarconditions[scalarcondition["Id"]] = {
-                "Id": scalarcondition["Id"],
-                "TargetVariable":scalarcondition["ScalarConditionVariable"]["AttributeChild"],
-                "SourceVariable":scalarcondition["ScalarConditionVariable"]["SourceAttribute"]
+        lst_sql_expression_variables = composition["Entity"]["SqlExpressionVariables"]
+        dict_scalar_conditions = {}
+        lst_scalar_conditions = composition["ScalarConditions"]
+        for scalar_condition in lst_scalar_conditions:
+            dict_scalar_conditions[scalar_condition["Id"]] = {
+                "Id": scalar_condition["Id"],
+                "TargetVariable":scalar_condition["ScalarConditionVariable"]["AttributeChild"],
+                "SourceVariable":scalar_condition["ScalarConditionVariable"]["SourceAttribute"]
                 }
-        for condition in dict_scalarconditions:
-            targetvariable =  dict_scalarconditions[condition]["TargetVariable"].upper()
-            for variable in lst_sqlexpressionvariables:
+        for condition in dict_scalar_conditions:
+            target_variable =  dict_scalar_conditions[condition]["TargetVariable"].upper()
+            for variable in lst_sql_expression_variables:
                 variable_compare = variable[1:len(variable)]
-                if targetvariable == variable_compare:
-                    sourcevariable = dict_scalarconditions[condition]["SourceVariable"]
+                if target_variable == variable_compare:
+                    source_variable = dict_scalar_conditions[condition]["SourceVariable"]
                     pattern = r''+ variable + r'\b'
-                    sql_expression = re.sub(pattern, sourcevariable, sql_expression)
+                    sql_expression = re.sub(pattern, source_variable, sql_expression)
                 else:
-                    pass
-                    logger.warning("Er is geen sql_expression gevonden")
+                    logger.info("Er is geen sql_expression gevonden")
         if sql_expression is not None:
             composition["Expression"] = sql_expression
         composition.pop("ScalarConditions")
@@ -591,6 +590,6 @@ class TransformSourceComposition(ObjectTransformer):
             idx_start = value.find("=") + 1
             value = value[idx_start:].upper()
         else:
-            logger.warning(f"no values found in extended_attrs_text using: '{preceded_by}'")
+            logger.info(f"no values found in extended_attrs_text using: '{preceded_by}'")
             value = ""
         return value

@@ -10,6 +10,7 @@ class IssueTrackingHandler(logging.Handler):
     om te controleren of er issues zijn, de lijst met issues op te halen en
     deze issues te exporteren naar een CSV-bestand.
     """
+
     def __init__(self):
         super().__init__()
         self.issues = []
@@ -31,13 +32,16 @@ class IssueTrackingHandler(logging.Handler):
                 }
             )
 
-    def has_issues(self) -> bool:
-        """Controleer of er issues zijn gelogd.
+    def _max_severity_level(self) -> str:
+        return min(self.issues, key=lambda x: x["severity"])
+
+    def has_errors(self) -> bool:
+        """Controleer of er errors zijn gelogd.
 
         Retourneert:
-            True als er issues zijn, anders False.
+            True als er errors zijn, anders False.
         """
-        return bool(self.issues)
+        return self._max_severity_level() == "ERROR"
 
     def get_issues(self) -> list:
         """Haalt een lijst met gelogde issues op.

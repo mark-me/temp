@@ -24,7 +24,7 @@ class DDLSourceViewsAggr(DDLViewBase):
         for mapping in mappings:
             if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
                 continue
-
+            mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
             self._set_datasource_code(mapping)
             mapping = self.__set_source_view_aggr_derived(mapping=mapping)
             content = self.__render_source_view_aggr(mapping=mapping)
@@ -43,6 +43,7 @@ class DDLSourceViewsAggr(DDLViewBase):
             f"{self.dir_output}/{mapping['EntityTarget']['CodeModel']}/Views/"
         )
         dir_output.mkdir(parents=True, exist_ok=True)
+        mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
         file_output = f"vw_src_{mapping['Name']}.sql"
         path_file_output = f"{dir_output}/{file_output}"
         return dir_output, file_output, path_file_output

@@ -1,9 +1,5 @@
-CREATE VIEW [{{mapping.EntityTarget.CodeModel}}].[{{mapping.Name}}] AS
+CREATE VIEW [{{mapping.EntityTarget.CodeModel}}].[vw_src_{{mapping.Name}}] AS
 SELECT
-    {% for identifier in mapping.Identifiers %}
-        {{ identifier }},
-    {% endfor %}
-
     {% for attributemapping in mapping.AttributeMapping %}
         {% if 'Expression' in attributemapping %}
             [{{ attributemapping.AttributeTarget.Code }}] = {{ attributemapping.Expression }},

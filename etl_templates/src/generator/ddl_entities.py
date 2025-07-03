@@ -28,9 +28,9 @@ class DDLEntities(DDLGeneratorBase):
         # Select entities that are defined within a document (not just derived from mappings (sources))
         entities_create = [entity for entity in entities if entity["IsCreated"]]
         for entity in entities_create:
-            self.__process_entity(entity=entity)
+            self._process_entity(entity=entity)
 
-    def __process_entity(self, entity: dict):
+    def _process_entity(self, entity: dict):
         """
         Verwerkt een enkele entiteit en genereert het bijbehorende DDL-bestand.
 
@@ -43,22 +43,14 @@ class DDLEntities(DDLGeneratorBase):
         Returns:
             None
         """
-        self.__set_entity_defaults(entity=entity)
-        if "Stereotype" not in entity:
-            metadata_bkeys = self.__collect_bkeys_metadata(entity=entity)
-            entity = self.__replace_entity_keys_with_bkeys(
-                entity=entity, metadata_bkeys=metadata_bkeys
-            )
-        else:
-            logger.info(f"Geen bkeys nodig voor aggregaat {entity['Name']}")
-            entity.pop("Identifiers")
-        entity = self.__add_datatype_translations(entity=entity)
-        content = self.__render_entity_ddl(entity)
-        path_output_file = self.__get_entity_ddl_paths(entity)
+        self._set_entity_defaults(entity=entity)
+        entity = self._add_datatype_translations(entity=entity)
+        content = self._render_entity_ddl(entity)
+        path_output_file = self._get_entity_ddl_paths(entity)
         self.save_generated_object(content, path_output_file)
         logger.info(f"Entity DDL weggeschreven naar {Path(path_output_file).resolve()}")
 
-    def __set_entity_defaults(self, entity: dict):
+    def _set_entity_defaults(self, entity: dict):
         """
         Stelt standaardwaarden in voor een entiteit indien deze ontbreken.
 
@@ -68,13 +60,14 @@ class DDLEntities(DDLGeneratorBase):
         Args:
             entity (dict): De entiteit die wordt gecontroleerd en aangevuld.
         """
+        entity["Name"] =f"{entity["Name"].replace(' ','_')}"
         if "Number" not in entity:
             logger.warning(
                 f"Entiteit '{entity['Name']}' heeft geen property number, standaard distributie wordt gebruikt."
             )
             entity["Number"] = 0
 
-    def __render_entity_ddl(self, entity: dict) -> str:
+    def _render_entity_ddl(self, entity: dict) -> str:
         """
         Rendert de DDL voor een entiteit met behulp van de Jinja2 template.
 
@@ -87,7 +80,7 @@ class DDLEntities(DDLGeneratorBase):
         content = self.template.render(entity=entity)
         return content  # sqlparse.format(content, reindent=True, keyword_case="upper")
 
-    def __add_datatype_translations(self, entity: dict) -> dict:
+    def _add_datatype_translations(self, entity: dict) -> dict:
         """
         Vertaalt de datatypes van attributen van een entiteit naar SQL-compatibele datatypes.
 
@@ -191,7 +184,7 @@ class DDLEntities(DDLGeneratorBase):
             entity["Attributes"][index]["DataTypeSQL"] = dataype
         return entity
 
-    def __get_entity_ddl_paths(self, entity: dict) -> Path:
+    def _get_entity_ddl_paths(self, entity: dict) -> Path:
         """
         Bepaalt het outputpad en de bestandsnaam voor de DDL van een entiteit.
 
@@ -208,85 +201,3 @@ class DDLEntities(DDLGeneratorBase):
         path_output_file = Path(f"{dir_output}/{file_output}")
         return path_output_file
 
-    def __collect_bkeys_metadata(self, entity: dict):
-        """
-            Verzamelt identifier-informatie uit de entiteitconfiguratie.
-
-            Doorloopt per entiteit alle identifiers, en genereert een dictionary met metadatastring per identifier voor gebruik in DDL-generatie.
-
-        Args:
-            entity (dict): Entiteit
-
-        Returns:
-            dict: Een dictionary met een metadata string van de businesskey per identifier
-        """
-        metadata_bkeys = {}
-
-        def get_name_business_key(identifier):
-            return (
-                identifier["EntityCode"]
-                if identifier["IsPrimary"]
-                else identifier["Code"]
-            )
-
-        def get_identifier_def_primary(name_business_key):
-            return f"[{name_business_key}BKey] nvarchar(200) NOT NULL"
-
-        for identifier in entity["Identifiers"]:
-            name_business_key = get_name_business_key(identifier)
-            metadata_bkey = get_identifier_def_primary(name_business_key)
-
-            metadata_bkeys[identifier["Id"]] = {
-                "IdentifierID": identifier["Id"],
-                "IdentifierName": identifier["Name"],
-                "IdentifierCode": identifier["Code"],
-                "EntityId": identifier["EntityID"],
-                "EntityCode": identifier["EntityCode"],
-                "IsPrimary": identifier["IsPrimary"],
-                "MetadataBkey": metadata_bkey,
-            }
-        return metadata_bkeys
-
-    def __replace_entity_keys_with_bkeys(self, entity: dict, metadata_bkeys: dict):
-        """Vervangt alle key kolommen met business key kolommen.
-
-        Args:
-            metadata_bkeys (dict): Alle bkey metadata definities
-            entity (dict): Entiteit
-        """
-        mapped_identifiers = []
-        identifier_mapped = []
-
-        if "Stereotype" in entity:
-            """
-                We doen niks met eventuele identifiers van Aggregators. Dit moet geen error opleveren.
-                Alleen identifiers van echte entiteiten worden gebruikt en moet aanwezig zijn.
-                Deze entiteiten hebben hier geen Stereotype
-                """
-            logger.info(
-                f"Identifier voor entiteit '{entity['Code']}' niet nodig vanwege stereotype Aggregaat"
-            )
-            return
-        elif "Stereotype" not in entity:
-            for identifier in entity["Identifiers"]:
-                if "Id" not in identifier:
-                    logger.error(
-                        f"Identifier voor entiteit '{entity['Code']}' niet gevonden in identifiers"
-                    )
-                    continue
-                identifier_id = identifier["Id"]
-                if identifier_id in metadata_bkeys:
-                    metadata_bkey = metadata_bkeys[identifier_id]["MetadataBkey"]
-                    identifier_name = metadata_bkeys[identifier_id]["IdentifierName"]
-                    identifier_mapped.append(metadata_bkey)
-                    mapped_identifiers.append(identifier_name)
-
-            entity["Identifiers"] = identifier_mapped
-
-            def is_not_mapped_identifier(attribute):
-                return attribute["Code"] not in mapped_identifiers
-
-            attributes = [attribute for attribute in entity["Attributes"] if is_not_mapped_identifier(attribute)]
-            entity.pop("Attributes")
-            entity["Attributes"] = attributes
-        return entity

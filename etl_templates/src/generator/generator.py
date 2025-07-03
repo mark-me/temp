@@ -89,6 +89,7 @@ class DDLGenerator:
         Args:
             dag_etl (DagImplementation): Een DAG waar implementatie details aan zijn toegevoegd
         """
+        # self.__copy_mdde_scripts()\
         mappings = dag_etl.get_mappings()
         self.source_views.generate_ddls(mappings=mappings)
         self.source_views_aggr.generate_ddls(mappings=mappings)

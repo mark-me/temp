@@ -1,5 +1,5 @@
 import os
-from shutil import copytree
+from shutil import copytree, rmtree
 import subprocess
 import time
 import webbrowser
@@ -97,7 +97,6 @@ class RepositoryManager:
         self._path_local.rmdir()
         logger.info(f"Delete existing folder: {self._path_local}")
 
-
     def publish(self) -> None:
         """
         Voert een commit en push uit naar de DevOps repository en opent de branch in de browser.
@@ -113,7 +112,20 @@ class RepositoryManager:
         self._git_commit()
         self._git_push()
         self._open_branch_in_browser()
+        
+    def clean_directory_in_repo(self) -> None:
+        """
+        Schoont een directory van "oude" bestanden en post-deployment scripts in de repository.
 
+        Args:
+
+        Returns:
+            None
+        """
+        dir_to_clean = self._path_local / "CentralLayer"
+        rmtree(dir_to_clean, ignore_errors=True)
+        pass
+        
     def add_directory_to_repo(self, path_source: Path) -> None:
         """
         Voegt een directory met nieuwe bestanden en post-deployment scripts toe aan de repository.
@@ -127,17 +139,15 @@ class RepositoryManager:
         Returns:
             None
         """
-        lst_files_new = self._find_files_new(path_source=path_source)
         #TODO: Mark, path_vs_project_file is niet compleet, dus nu even een tijdelijke fix hier gemaakt.
         path_sqlproj = self._config.path_local / self._config.path_file_sql_project
-        project_editor = SqlProjEditor(path_sqlproj=path_sqlproj)
-        #project_editor = SqlProjEditor(path_sqlproj=self._config.path_vs_project_file)
-
-        project_editor.add_new_files(folder=path_source)
 
         # Copy all files to repository
         copytree(src=path_source, dst=self._path_local / "CentralLayer", dirs_exist_ok=True)
-        # project_editor._remove_missing_files()
+        
+        project_editor = SqlProjEditor(path_sqlproj=path_sqlproj)
+        project_editor.add_new_files(folder=path_source)
+        project_editor._remove_missing_files()
         project_editor.save()
         logger.info("Added files to repository")
 

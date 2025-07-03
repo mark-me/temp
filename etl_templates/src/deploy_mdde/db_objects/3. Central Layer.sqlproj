@@ -1,0 +1,80 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Name>3. Central Layer</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{c6267b8e-ed68-4fe1-8901-885ac1a233ca}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.SqlDwDatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath/>
+    <RootNamespace>CentralLayer</RootNamespace>
+    <AssemblyName>CentralLayer</AssemblyName>
+    <ModelCollation>1033, CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetLanguage>CS</TargetLanguage>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <SqlServerVerification>False</SqlServerVerification>
+    <IncludeCompositeObjects>True</IncludeCompositeObjects>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <CompatibilityMode>140</CompatibilityMode>
+    <DbScopedConfigDWCompatibilityLevel>50</DbScopedConfigDWCompatibilityLevel>
+    <DefaultSchema>DA_Central</DefaultSchema>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <SuppressTSqlWarnings>71502</SuppressTSqlWarnings>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
+    <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
+  </PropertyGroup>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' != ''" Project="$(SQLDBExtensionsRefPath)\Microsoft.Data.Tools.Schema.SqlTasks.targets"/>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets"/>
+  <ItemGroup>
+    <ProjectReference Include="..\SourceLayer\2. Source Layer.sqlproj">
+      <Name>2. Source Layer</Name>
+      <Project>{a0936635-a2f3-4304-bd67-f82b6379e316}</Project>
+      <Private>True</Private>
+      <SuppressMissingDependenciesErrors>False</SuppressMissingDependenciesErrors>
+    </ProjectReference>
+    <ProjectReference Include="..\DataManagementLayer\1. DataManagement Layer.sqlproj">
+      <Name>1. DataManagement Layer</Name>
+      <Project>{7ad74e8b-aa45-4315-b508-efb84440425b}</Project>
+      <Private>True</Private>
+      <SuppressMissingDependenciesErrors>False</SuppressMissingDependenciesErrors>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+     <PostDeploy Include="PostDeployment\PostDeploy.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </PostDeploy>
+    <PreDeploy Include="PreDeployment\PreDeploy.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </PreDeploy>
+  </ItemGroup>
+</Project>

@@ -57,21 +57,26 @@ class Orchestrator:
         for pd_file in self.config.power_designer.files:
             file_RETW = self._extract(file_pd_ldm=pd_file)
             lst_files_RETW.append(file_RETW)
+
+        self._handle_issues()
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
         dag_etl = self._integrate_files(files_RETW=lst_files_RETW)
 
         # Genereer code voor doelschema's en mappings
-        #self._generate_code(dag_etl=dag_etl)
+        self._generate_code(dag_etl=dag_etl)
         # Genereer code voor ETL deployment
         self._generate_mdde_deployment(dag_etl=dag_etl)
 
         # Stop process if extraction and dependencies check result in issues
-        # self._handle_issues()
+        self._handle_issues()
         if not skip_devops:
             devops_handler = RepositoryManager(config=self.config.devops)
             devops_handler.clone()
             path_source = self.config.generator.path_output
-            devops_handler.add_directory_to_repo(path_source=path_source)
+            devops_handler.clean_directory_in_repo()
+            devops_handler.add_directory_to_repo(
+                path_source=path_source
+            )
             # TODO: Copy code and codelist to repo and update project file
             devops_handler.publish()
 
@@ -186,8 +191,8 @@ class Orchestrator:
         Returns:
             None
         """
-        if issue_tracker.has_issues():
-            file_issues = os.path.join(self.config.dir_extract, "extraction_issues.csv")
+        if issue_tracker.has_errors():
+            file_issues = os.path.join(self.config.path_intermediate, "extraction_issues.csv")
             issue_tracker.write_csv(file_csv=file_issues)
             raise ExtractionIssuesFound(
                 f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}"

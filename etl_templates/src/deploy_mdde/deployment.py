@@ -63,7 +63,7 @@ class DeploymentMDDE:
 
         """
         path_source = Path(__file__).parent / "db_objects"
-        copytree(path_source, self._path_output, dirs_exist_ok=True)
+        copytree(path_source, self._path_output.parent, dirs_exist_ok=True)
 
     def _get_template(self, type_template: TemplateType) -> Template:
         """

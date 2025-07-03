@@ -94,8 +94,7 @@ class ObjectTransformer:
         if idx_check > 0:
             logger.info(f"'{idx_check}' values found in extended_attrs_text using: '{preceded_by}'")
             idx_start = extended_attrs_text.find(preceded_by) + len(preceded_by)
-            idx_end = extended_attrs_text.find("\n", idx_start)
-            idx_end = idx_end if idx_end > -1 else len(extended_attrs_text) + 1
+            idx_end= len(extended_attrs_text) + 1
             value = extended_attrs_text[idx_start:idx_end]
             idx_start = value.find("=") + 1
             value = value[idx_start:].upper()
