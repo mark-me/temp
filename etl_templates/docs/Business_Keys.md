@@ -211,6 +211,3 @@ Een entiteit waarin alle sleutelkolommen zijn vervangen door BKey-definities, en
 
 ## API referentie
 
-### ::: src.generator.generator.DDLGenerator._collect_identifiers
-
-### ::: src.generator.ddl_entities.DDLEntities.__replace_entity_keys_with_bkeys
