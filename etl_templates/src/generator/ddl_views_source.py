@@ -3,6 +3,7 @@ from pathlib import Path
 import sqlparse
 from jinja2 import Template
 from logtools import get_logger
+from tqdm import tqdm
 
 from .ddl_views_base import DDLViewBase
 
@@ -22,7 +23,7 @@ class DDLSourceViews(DDLViewBase):
             mappings (dict): Bevat alle mappings uit een RETW bestand
             identifiers (dict): De JSON (RETW Output) geconverteerd naar een dictionary
         """
-        for mapping in mappings:
+        for mapping in tqdm(mappings, desc="Genereren Source Views", colour="yellow"):
             if mapping["EntityTarget"]["Stereotype"] == "mdde_AggregateBusinessRule":
                 continue
             mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
@@ -50,7 +51,7 @@ class DDLSourceViews(DDLViewBase):
         """
         mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
         content = self.template.render(mapping=mapping)
-        content = sqlparse.format(content, reindent=True, keyword_case="upper")
+        #content = sqlparse.format(content, reindent=True, keyword_case="upper")
         return content
 
     def _get_source_view_paths(self, mapping: dict) -> tuple:

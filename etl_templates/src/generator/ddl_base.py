@@ -1,8 +1,11 @@
+import sqlfluff
 from jinja2 import Template
 from logtools import get_logger
-import sqlfluff
+
+# import sqlparse
 
 logger = get_logger(__name__)
+
 
 class DDLGeneratorBase:
     def __init__(self, dir_output: str, ddl_template: Template):
@@ -19,9 +22,7 @@ class DDLGeneratorBase:
         self.template = ddl_template
         self.files_generated = []
 
-    def save_generated_object(
-        self, content: str, path_file_output: str
-    ):
+    def save_generated_object(self, content: str, path_file_output: str):
         """
         Slaat de gegenereerde source view DDL op in het opgegeven pad en registreert het bestand in de DDL-lijst.
 
@@ -32,8 +33,17 @@ class DDLGeneratorBase:
             path_file_output (str): Het volledige pad waar de source view wordt opgeslagen.
         """
         logger.info(f"Linter is bezig met: {path_file_output}'")
-        #contentFixList = sqlfluff.lint(content, dialect="tsql")
-        #content = sqlfluff.fix(content, dialect="tsql", exclude_rules = ['ST06','RF06'])
-        content = sqlfluff.fix(content, dialect="tsql", rules = ['LT01','LT02','LT04','LT05','LT13','CP05'])
+        content = sqlfluff.fix(
+            content,
+            dialect="tsql",
+            rules=["LT01", "LT02", "LT04", "LT05", "LT13", "CP05"],
+        )
+        # content = sqlparse.format(
+        #     content,
+        #     reindent=True,
+        #     #reindent_aligned=True,
+        #     comma_first=True,
+        #     keyword_case="upper"
+        # )
         with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)

@@ -2,6 +2,7 @@ from pathlib import Path
 
 from jinja2 import Template
 from logtools import get_logger
+from tqdm import tqdm
 
 from .ddl_base import DDLGeneratorBase
 
@@ -27,7 +28,7 @@ class DDLEntities(DDLGeneratorBase):
         """
         # Select entities that are defined within a document (not just derived from mappings (sources))
         entities_create = [entity for entity in entities if entity["IsCreated"]]
-        for entity in entities_create:
+        for entity in tqdm(entities_create, desc="Genereren tabellen", colour="red"):
             self._process_entity(entity=entity)
 
     def _process_entity(self, entity: dict):
