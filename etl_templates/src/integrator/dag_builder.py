@@ -391,6 +391,8 @@ class DagBuilder:
     def _add_dag_statistics(self):
         self._stats_mapping_run_level()
         self._stats_entity_level()
+        self._mappings_share_target()
+
 
     def _stats_mapping_run_level(self):
         """Bepaalt en wijst run-levels toe aan mappings in de graaf.
@@ -446,6 +448,15 @@ class DagBuilder:
             else:
                 run_level_max = 0
             vx["etl_level"] = run_level_max
+
+    def _mappings_share_target(self) -> None:
+        vs_mappings = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
+        for vx in vs_mappings:
+            vx_entity_target = self.dag.neighbors(vx, mode="out")
+            qty_mappings = len(self.dag.neighbors(vx_entity_target[0], mode="in"))
+            vx["multi_mapping"] = qty_mappings > 1
+
+
 
     def get_dag_total(self) -> ig.Graph:
         """Geeft de volledige gegenereerde graaf (DAG) terug.
