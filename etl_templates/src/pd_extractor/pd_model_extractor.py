@@ -57,7 +57,7 @@ class ModelExtractor:
         if isinstance(self.lst_entity, dict):
             self.lst_entity = [self.lst_entity]
         model["Entities"] = self.lst_entity
-        model["Relationships"] = self.__relationships(lst_entity=self.lst_entity, lst_aggregates=lst_aggregates)
+        # model["Relationships"] = self.__relationships(lst_entity=self.lst_entity, lst_aggregates=lst_aggregates)
         model["DataSources"] = self.__datasources()
         return model
 
