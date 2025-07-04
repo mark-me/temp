@@ -100,7 +100,7 @@ class TransformModelInternal(ObjectTransformer):
             entity = lst_entities[i]
 
             # Reroute attributes
-            entity = self.__entity_attributes(entity=entity, dict_domains=dict_domains)
+            entity = self._entity_attributes(entity=entity, dict_domains=dict_domains)
             # Create subset of attributes to enrich identifier attributes
             dict_attrs = {
                 d["Id"]: {"Name": d["Name"], "Code": d["Code"]}
@@ -108,7 +108,7 @@ class TransformModelInternal(ObjectTransformer):
             }
 
             # Identifiers and primary identifier
-            entity = self.__entity_identifiers(entity=entity, dict_attrs=dict_attrs)
+            entity = self._entity_identifiers(entity=entity, dict_attrs=dict_attrs)
 
             # Reroute default mapping
             # TODO: research role DefaultMapping
@@ -120,7 +120,7 @@ class TransformModelInternal(ObjectTransformer):
             lst_entities[i] = entity
         return lst_entities
 
-    def __entity_attributes(self, entity: dict, dict_domains: dict) -> dict:
+    def _entity_attributes(self, entity: dict, dict_domains: dict) -> dict:
         """Omvormen van attribuut data voor de interne entiteiten en verrijkt deze met domain data
 
         Args:
@@ -171,7 +171,7 @@ class TransformModelInternal(ObjectTransformer):
             entity.pop("Variables")
         return entity
 
-    def __entity_identifiers(self, entity: dict, dict_attrs: dict) -> dict:
+    def _entity_identifiers(self, entity: dict, dict_attrs: dict) -> dict:
         """Omvormen en schoonmaken van de index en primary key van een interne entiteit.
 
         Deze functie verwerkt de identifiers van een entiteit, verrijkt deze met attribuutdata en splitst ze in primaire en vreemde sleutels.
@@ -334,22 +334,22 @@ class TransformModelInternal(ObjectTransformer):
         for i in range(len(lst_relationships)):
             relationship = lst_relationships[i]
             # Add entity data
-            self.__relationship_entities(
+            self._relationship_entities(
                 relationship=relationship, dict_entities=dict_entities
             )
             # Add attribute data
-            relationship = self.__relationship_join(
+            relationship = self._relationship_join(
                 relationship=relationship, dict_attributes=dict_attributes
             )
             # Add identifier data
-            relationship = self.__relationship_identifiers(
+            relationship = self._relationship_identifiers(
                 relationship=relationship, dict_identifiers=dict_identifiers
             )
             lst_relationships[i] = relationship
 
         return lst_relationships
 
-    def __relationship_entities(self, relationship: dict, dict_entities: dict) -> dict:
+    def _relationship_entities(self, relationship: dict, dict_entities: dict) -> dict:
         """Vormt om en hernoemt de entiteiten beschreven in de relatie
 
         Args:
@@ -380,7 +380,7 @@ class TransformModelInternal(ObjectTransformer):
             )
         return relationship
 
-    def __relationship_join(self, relationship: dict, dict_attributes: dict) -> dict:
+    def _relationship_join(self, relationship: dict, dict_attributes: dict) -> dict:
         """Vormt om en voegt attributen van de entiteiten toe aan joins
 
         Args:
@@ -429,7 +429,7 @@ class TransformModelInternal(ObjectTransformer):
             )
         return relationship
 
-    def __relationship_identifiers(
+    def _relationship_identifiers(
         self, relationship: dict, dict_identifiers: dict
     ) -> dict:
         """Schoont, vormt om identifiers (sleutels) die onderdeel zijn van de relatie en voegt deze toe
