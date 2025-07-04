@@ -298,12 +298,14 @@ class PDDocument:
         raise TypeError("Type not serializable")
 
     def write_result(self, file_output: str):
-        """Schrijft een json document weg naar het pad opgegeven in file_document_output. Dit bestand bevat alle opgeslagen
-        modellen en mappings.
+        """Schrijft het geëxtraheerde en getransformeerde model, filters, scalars, aggregaten en mappings naar een outputbestand.
+
+        Deze functie verzamelt alle relevante data uit het logisch datamodel en schrijft deze als JSON naar het opgegeven bestandspad.
 
         Args:
-            file_output (str):  Het pad van het bestand waar de output naartoe wordt geschreven
+            file_output (str): Het pad waar het resultaatbestand wordt opgeslagen.
         """
+
         dict_document = {}
 
         lst_filters = self.get_filters()
