@@ -7,11 +7,14 @@ CREATE TABLE [{{entity.CodeModel}}].[{{entity.Code}}] (
 
 {%- if entity.type_entity == "Regular" -%},
 [X_Startdate] DATE, [X_EndDate] DATE, [X_HashKey] INT, [X_IsCurrent] bit, [X_IsReplaced] bit, [X_RunId] NVARCHAR(100), [X_LoadDateTime] datetime, [X_Bron] nvarchar(10),
-PRIMARY KEY(
+CONSTRAINT [{{entity.Code}}_PK] PRIMARY KEY NONCLUSTERED (
+    [{{entity.Code}}Key]
+)NOT ENFORCED
+,CONSTRAINT [{{entity.Code}}_UK] UNIQUE NONCLUSTERED(
     {% for KeyAttribute in entity.KeyPrimary.Attributes %}
         [{{KeyAttribute.Code}}]{%- if not loop.last -%},{% endif %}
     {%- endfor -%}
-)
+) NOT ENFORCED
 {% endif %}
 ) WITH (
     {% if entity.Number | int < 10000000 %}

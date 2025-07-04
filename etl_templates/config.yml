@@ -7,7 +7,7 @@ ignore-warnings: True
 power-designer:
   folder: "./etl_templates/input"
   files:
-    - "UsecaseV2.21a.ldm"
+    - "UsecaseV2.26a.ldm"
 
 extractor:
   folder-output: "RETW"

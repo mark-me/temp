@@ -1,4 +1,8 @@
 ﻿DECLARE @sql NVARCHAR(MAX)
+PRINT ('****************************************************')
+PRINT ('Running PreDeploy.sql.')
+PRINT ('Remove unused tables and views in Da_Central schema.')
+PRINT ('****************************************************')
 
 SELECT @sql = string_agg(CAST(CONCAT (
 				'DROP '
@@ -17,7 +21,7 @@ FROM (
 	WHERE 1 = 1 AND NAME NOT IN (
 			SELECT [TargetName]
 			FROM [DA_MDDE].[Config]
-			) AND schema_name(schema_id) = 'Da_Central'
+			) AND schema_name(schema_id) = 'Da_Central' AND NAME NOT IN ('Calendar')
 	
 	UNION ALL
 	
@@ -33,4 +37,4 @@ FROM (
 
 PRINT (@sql)
 --PRINT ('PreDeploy execution is disabled in PreDeploy.sql.')
---EXEC sp_executesql @sql
+EXEC sp_executesql @sql

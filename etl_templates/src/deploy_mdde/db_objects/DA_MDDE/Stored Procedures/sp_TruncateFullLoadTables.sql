@@ -14,9 +14,11 @@ SUMMARY OF CHANGES
 Date(yyyy-mm-dd)    Author              Comments
 ------------------- ------------------- ------------------------------------------------------------
 2025-06-16	        Jeroen Poll         Initial Script V1.0  
+2025-07-01			Jeroen Poll			
 
 ***************************************************************************************************/
 DECLARE @LogMessage NVARCHAR(max);
+DECLARE @sql NVARCHAR(MAX);
 
 BEGIN
 	SET @LogMessage = CONCAT (
@@ -29,66 +31,29 @@ BEGIN
 		, @LogMessage
 END
 
-IF OBJECT_ID('tempdb..#TablesToBeTruncatedFL') IS NOT NULL
 BEGIN
-	DROP TABLE #TablesToBeTruncatedFL
-END
+SELECT @sql = string_agg(CAST(CONCAT (
+				'TRUNCATE TABLE '
+				, Soort
+				, ' ['
+				, SchemaNaam
+				, '].['
+				, NAME
+				, ']'
+				) AS NVARCHAR(MAX)), '; ' + CHAR(13))
+FROM (
+	SELECT 'TABLE' AS Soort
+		, s.[NAME]
+		, schema_name(s.[schema_id]) AS SchemaNaam
+	FROM sys.tables s
+	INNER JOIN [DA_MDDE].[Config] c ON c.[LayerName] = schema_name(s.[schema_id]) AND c.[TargetName] = s.[NAME] AND c.[LoadType] = 0
+	GROUP BY s.[NAME]
+		, schema_name(s.[schema_id])
+	) A
 
-CREATE TABLE #TablesToBeTruncatedFL (
-	Id INT IDENTITY(1, 1)
-	, TableObjectId INT
-	, SchemaName SYSNAME
-	, TableName SYSNAME
-	, SchemaId INT
-	)
-
-INSERT INTO #TablesToBeTruncatedFL (
-	TableObjectId
-	, SchemaName
-	, TableName
-	, SchemaId
-	)
-SELECT ST.object_id
-	, schema_name(ST.schema_id)
-	, ST.name
-	, ST.schema_id
-FROM [DA_MDDE].[Config] C
-INNER JOIN sys.Tables ST ON C.[TargetName] = ST.name AND C.[LayerName] = schema_name(ST.schema_id)
-WHERE 1 = 1 AND [LoadType] <> 99 AND LoadType = 0
-GROUP BY ST.object_id
-	, schema_name(ST.schema_id)
-	, ST.name
-	, ST.schema_id
-
-PRINT 'BEGIN TRANSACTION TruncateTables'
-PRINT 'BEGIN TRY'
 PRINT '    --------TRUNCATE TABLES SCRIPT--------'
-
-DECLARE @id INT
-	, @truncatescript NVARCHAR(MAX)
-
-SELECT @id = MIN(Id)
-FROM #TablesToBeTruncatedFL
-
-WHILE @id IS NOT NULL
-BEGIN
-	SELECT @truncatescript = '    TRUNCATE TABLE ' + QUOTENAME(SchemaName) + '.' + QUOTENAME(TableName)
-	FROM #TablesToBeTruncatedFL
-	WHERE Id = @id
-
-	SET @LogMessage = CONCAT (
-			@par_runid
-			, '¡'
-			, @truncatescript
-			)
-
-	EXEC [DA_MDDE].[sp_Logger] 'INFO'
-		, @LogMessage
-
-	EXEC sp_executesql @truncatescript;
-
-	SELECT @id = MIN(Id)
-	FROM #TablesToBeTruncatedFL
-	WHERE Id > @id
+PRINT (@sql)
+	--PRINT ('PreDeploy execution is disabled in PreDeploy.sql.')
+	--EXEC sp_executesql @sql
 END
 GO

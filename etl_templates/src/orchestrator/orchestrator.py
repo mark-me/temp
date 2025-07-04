@@ -7,6 +7,7 @@ from generator import DDLGenerator
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
 from repository_manager import RepositoryManager
+from tqdm import tqdm
 
 from .config_file import ConfigFile
 
@@ -49,22 +50,25 @@ class Orchestrator:
         logger.info("Start Genesis verwerking")
         # TODO: Handler van issues resetten na elke stap
         lst_files_RETW = self._extract()
-        self._handle_issues() # Stop process if extraction results in issues
+        self._handle_issues()  # Stop process if extraction results in issues
+
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
         dag_etl = self._integrate_files(files_RETW=lst_files_RETW)
-        self._handle_issues() # Stop process if integration results in issues
+        self._handle_issues()  # Stop process if integration results in issues
 
         # Genereer code voor doelschema's en mappings
         self._generate_code(dag_etl=dag_etl)
         # Genereer code voor ETL deployment
         self._generate_mdde_deployment(dag_etl=dag_etl)
-        self._handle_issues() # Stop process when generating code result in issues
+        self._handle_issues()  # Stop process when generating code result in issues
 
         if not skip_devops:
             self._add_to_repository()
 
         # Write issues to file
-        file_issues = os.path.join(self.config.path_intermediate, "extraction_issues.csv")
+        file_issues = os.path.join(
+            self.config.path_intermediate, "extraction_issues.csv"
+        )
         issue_tracker.write_csv(file_csv=file_issues)
 
     def _extract(self) -> list:
@@ -85,7 +89,8 @@ class Orchestrator:
                 "Geen PowerDesigner-bestanden geconfigureerd. Genesis verwerking wordt afgebroken."
             )
             return []
-        for file_pd_ldm in self.config.power_designer.files:
+        files_pd_ldm = self.config.power_designer.files
+        for file_pd_ldm in tqdm(files_pd_ldm, desc="Extracten Power Designer bestanden", colour="green"):
             logger.info(f"Start extractie van Power Designer bestand '{file_pd_ldm}'")
             document = PDDocument(file_pd_ldm=file_pd_ldm)
             file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
@@ -114,7 +119,9 @@ class Orchestrator:
             else:
                 error = True
         if max_severity_level == "ERROR" or error:
-            file_issues = os.path.join(self.config.path_intermediate, "extraction_issues.csv")
+            file_issues = os.path.join(
+                self.config.path_intermediate, "extraction_issues.csv"
+            )
             issue_tracker.write_csv(file_csv=file_issues)
             raise ExtractionIssuesFound(
                 f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}"
@@ -202,7 +209,6 @@ class Orchestrator:
         ddl_generator = DDLGenerator(params=self.config.generator)
         ddl_generator.generate_ddls(dag_etl=dag_etl)
 
-
     def _add_to_repository(self):
         """Voegt de gegenereerde code toe aan de DevOps repository.
 
@@ -212,8 +218,6 @@ class Orchestrator:
         devops_handler.clone()
         path_source = self.config.generator.path_output
         devops_handler.clean_directory_in_repo()
-        devops_handler.add_directory_to_repo(
-                path_source=path_source
-            )
-            # TODO: Copy code and codelist to repo and update project file
+        devops_handler.add_directory_to_repo(path_source=path_source)
+        # TODO: Copy code and codelist to repo and update project file
         devops_handler.publish()

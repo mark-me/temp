@@ -1,15 +1,15 @@
-import json
 import hashlib
+import json
 from collections import namedtuple
+from copy import deepcopy
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
 from typing import Union
-from copy import deepcopy
 
 import igraph as ig
-
 from logtools import get_logger
+from tqdm import tqdm
 
 logger = get_logger(__name__)
 
@@ -114,7 +114,7 @@ class DagBuilder:
         files_RETW = list(dict.fromkeys(files_RETW))
 
         # Process files
-        for file_RETW in files_RETW:
+        for file_RETW in tqdm(files_RETW, desc="Integreren van bestanden", colour="blue"):
             # Add file to parser
             if not self._add_RETW_file(file_RETW=file_RETW):
                 logger.error(f"Failed to add RETW file '{file_RETW}'")
