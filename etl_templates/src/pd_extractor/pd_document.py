@@ -154,8 +154,6 @@ class PDDocument:
             lst_entities = model["Entities"]
             for entity in lst_entities:
                 if "Stereotype" not in entity:
-                    if "Identifiers" not in entity:
-                        entity["Identifiers"] = {}
                     dict_result[entity["Id"]] = {
                         "Id": entity["Id"],
                         "Name": entity["Name"],
@@ -163,7 +161,6 @@ class PDDocument:
                         "IdModel": model["Id"],
                         "NameModel": model["Name"],
                         "CodeModel": model["Code"],
-                        "Identifiers": entity["Identifiers"],
                         "IsDocumentModel": not model["IsDocumentModel"],
                         "Stereotype": None
                     }

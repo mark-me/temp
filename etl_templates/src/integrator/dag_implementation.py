@@ -32,25 +32,29 @@ class DagImplementation(DagBuilder):
         super().__init__()
 
     def build_dag(self, files_RETW):
+        """Bouwt de DAG op basis van de aangeleverde RETW-bestanden en verrijkt deze met afgeleide gegevens.
+
+        Deze functie initialiseert de DAG-structuur en voegt extra modelinformatie en hashkeys toe.
+
+        Args:
+            files_RETW: De inputbestanden voor het opbouwen van de DAG.
+        """
         super().build_dag(files_RETW)
         self._add_dag_derived()
 
     def _add_dag_derived(self):
-        """Voegt afgeleide gegevens toe aan de DAG, zoals modelinformatie, hashkeys en business keys.
+        """Verrijkt de DAG met extra informatie voor entiteiten en mappings.
 
-        Deze functie verrijkt mappings met modelinformatie en hashkeys, en vervangt entity keys door business keys
-        op het eerste afgeleide niveau.
+        Deze functie voegt entiteittype, modelinformatie en hashkeys toe aan de knopen in de DAG.
         """
-        # Add data to entities
-        vs_entities = [vx for vx in self.dag.vs if vx["type"] == VertexType.ENTITY.name]
-        for vx_entity in vs_entities:
-            self._set_entity_type(vx_entity=vx_entity)
-            self._split_entity_identifiers(vx_entity=vx_entity)
-        # Add data to mappings
-        vs_mappings = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
-        for vx_mapping in vs_mappings:
-            self._mappings_add_model(vx_mapping=vx_mapping)
-            self._mappings_add_hashkey(vx_mapping=vx_mapping)
+        for vx in self.dag.vs:
+            # Add data to entities
+            if vx["type"] == VertexType.ENTITY.name:
+                self._set_entity_type(vx_entity=vx)
+            # Add data to mappings
+            if vx["type"] == VertexType.MAPPING.name:
+                self._mappings_add_model(vx_mapping=vx)
+                self._mappings_add_hashkey(vx_mapping=vx)
 
     def _mappings_add_model(self, vx_mapping: ig.Vertex):
         """Voegt modelinformatie toe aan een mapping op basis van de doelentiteit.
@@ -118,24 +122,6 @@ class DagImplementation(DagBuilder):
             vx_entity["type_entity"] = "Regular"
         else:
             vx_entity["type_entity"] = "Aggregate"
-
-    def _split_entity_identifiers(self, vx_entity: ig.Vertex) -> None:
-        #? Move to extractor
-        if "Identifiers" in vx_entity.attributes():
-            primary_key = None
-            lst_foreign_keys = []
-            for identifier in vx_entity["Identifiers"]:
-                if identifier["IsPrimary"]:
-                    if primary_key is not None:
-                        logger.error(f"Meerdere primary keys aangetroffen voor entiteit '{vx_entity["Name"]}'")
-                    else:
-                        primary_key = identifier
-                else:
-                    lst_foreign_keys.append(identifier)
-            vx_entity["KeyPrimary"] = primary_key
-            vx_entity["KeysForeign"] = lst_foreign_keys
-        else:
-            logger.warning(f"Geen identifiers gevonden voor entiteit '{vx_entity["Name"]}'")
 
     def get_run_config(self, deadlock_prevention: DeadlockPrevention) -> list:
         """Geeft een gesorteerde lijst van mappings terug op basis van run level en deadlock-preventie.

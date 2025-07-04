@@ -6,8 +6,8 @@ logger = get_logger(__name__)
 
 
 class TransformModelInternal(ObjectTransformer):
-    """ Hangt om en schoont elk onderdeel van de metadata van het model dat omgezet wordt naar DDL en ETL generatie
-    """
+    """Hangt om en schoont elk onderdeel van de metadata van het model dat omgezet wordt naar DDL en ETL generatie"""
+
     def __init__(self):
         super().__init__()
 
@@ -63,16 +63,16 @@ class TransformModelInternal(ObjectTransformer):
         for domain in lst_domains:
             dict_domains[domain["Id"]] = domain
         return dict_domains
-    
+
     def datasources(self, lst_datasources: list) -> dict:
         """Datasource gerelateerde data
-        
-        Args: 
+
+        Args:
             lst_datasources (list): Datasource data
-            
+
         Returns:
             dict: Geschoonde datasource data (Id, naam en code) te gebruiken in model en mapping
-        """ 
+        """
         dict_datasources = {}
         if isinstance(lst_datasources, dict):
             lst_datasources = [lst_datasources]
@@ -81,12 +81,12 @@ class TransformModelInternal(ObjectTransformer):
             dict_datasources[datasource["Id"]] = {
                 "Id": datasource["Id"],
                 "Name": datasource["Name"],
-                "Code": datasource["Code"]
+                "Code": datasource["Code"],
             }
         return dict_datasources
-    
+
     def entities(self, lst_entities: list, dict_domains: dict) -> list:
-        """Omvormen van data van interne entiteiten en verrijkt de attributen met domain data 
+        """Omvormen van data van interne entiteiten en verrijkt de attributen met domain data
 
         Args:
             lst_entities (list): Het deel van het PowerDesigner document dat entiteiten beschrijft
@@ -114,8 +114,9 @@ class TransformModelInternal(ObjectTransformer):
             # TODO: research role DefaultMapping
             if "c:DefaultMapping" in entity:
                 entity.pop("c:DefaultMapping")
-            else:
-                pass
+            if "c:AttachedKeywords" in entity:
+                entity.pop("c:AttachedKeywords")
+
             lst_entities[i] = entity
         return lst_entities
 
@@ -147,7 +148,14 @@ class TransformModelInternal(ObjectTransformer):
 
                     # Add matching domain data
                     attr_domain = dict_domains[id_domain]
-                    keys_domain = {"Id", "Name", "Code", "DataType", "Length", "Precision"}
+                    keys_domain = {
+                        "Id",
+                        "Name",
+                        "Code",
+                        "DataType",
+                        "Length",
+                        "Precision",
+                    }
                     attr_domain = {
                         k: attr_domain[k] for k in keys_domain if k in attr_domain
                     }
@@ -160,61 +168,132 @@ class TransformModelInternal(ObjectTransformer):
         if "c:Attributes" in entity:
             entity.pop("c:Attributes")
         elif "Variables" in entity:
-            entity.pop("Variables")  
+            entity.pop("Variables")
         return entity
 
     def __entity_identifiers(self, entity: dict, dict_attrs: dict) -> dict:
-        """Omvormen van de index en primary key van een interne entiteit
+        """Omvormen en schoonmaken van de index en primary key van een interne entiteit.
+
+        Deze functie verwerkt de identifiers van een entiteit, verrijkt deze met attribuutdata en splitst ze in primaire en vreemde sleutels.
 
         Args:
-            entity (dict): Entiteit
-            dict_attrs (dict): Alle entiteit attributen
+            entity (dict): Entiteit die verwerkt moet worden.
+            dict_attrs (dict): Alle entiteit attributen.
 
         Returns:
-            dict: Entiteit met geschoonde identifier (sleutels) informatie
+            dict: Entiteit met geschoonde en gestructureerde identifier (sleutel) informatie.
         """
-        # Set primary identifiers as an attribute of the identifiers
-        has_primary = "c:PrimaryIdentifier" in entity
-        if has_primary:
-            primary_id = entity["c:PrimaryIdentifier"]["o:Identifier"]["@Ref"]
 
-        # Reroute identifiers
-        if "c:Identifiers" in entity:
-            identifiers = entity["c:Identifiers"]["o:Identifier"]
-            if isinstance(identifiers, dict):
-                identifiers = [identifiers]
-            identifiers = self.clean_keys(identifiers)
-            # Clean and transform identifier data
-            for j in range(len(identifiers)):
-                identifier = identifiers[j]
-                identifier["EntityID"] = entity["Id"]
-                identifier["EntityName"] = entity["Name"]
-                identifier["EntityCode"] = entity["Code"]
-                if "c:Identifier.Attributes" not in identifier:
-                    logger.error(
-                        f"No attributes included in the identifier '{identifier['Name']}'"
-                    )
-                else:
-                    lst_attr_id = identifier["c:Identifier.Attributes"][
-                        "o:EntityAttribute"
-                    ]
-                    if isinstance(lst_attr_id, dict):
-                        lst_attr_id = [lst_attr_id]
-                    lst_attr_id = [dict_attrs[d["@Ref"]] for d in lst_attr_id]
-                    identifier["Attributes"] = lst_attr_id
-                    identifier.pop("c:Identifier.Attributes")
-                # Set primary identifier attribute
-                if has_primary:
-                    identifier["IsPrimary"] = primary_id == identifier["Id"]
-                identifiers[j] = identifier
-            entity["Identifiers"] = identifiers
-            if "c:Identifiers" in entity:
-                entity.pop("c:Identifiers")
-            if "c:PrimaryIdentifier" in entity:
-                entity.pop("c:PrimaryIdentifier")
+        primary_key = None
+        lst_foreign_keys = []
+
+        has_primary, primary_id = self._extract_primary_identifier(entity)
+
+        if "c:Identifiers" not in entity:
+            return entity
+
+        identifiers = self._prepare_identifiers(entity)
+
+        for identifier in identifiers:
+            if not self._has_identifier_attributes(identifier, entity):
+                continue
+
+            self._enrich_identifier_with_attributes(identifier, dict_attrs)
+
+            if has_primary and primary_id == identifier["Id"]:
+                primary_key = identifier
+            else:
+                lst_foreign_keys.append(identifier)
+
+        entity["KeyPrimary"] = primary_key
+        entity["KeysForeign"] = lst_foreign_keys
+        entity.pop("c:Identifiers")
+
         return entity
 
-    def relationships(self, lst_relationships: list, lst_entity: list, lst_aggregates: list) -> list:
+    def _extract_primary_identifier(self, entity: dict):
+        """Haalt de primaire identifier uit een entiteit en verwijdert deze.
+
+        Bepaalt of de entiteit een primaire identifier heeft en geeft de referentie terug.
+        Verwijdert de primaire identifier uit de entiteit indien aanwezig, en logt een:
+          * Waarschuwing bij entiteiten met een Stereotype
+          * Fout bij een 'reguliere' entiteit
+
+        Args:
+            entity (dict): De entiteit waaruit de primaire identifier wordt gehaald.
+
+        Returns:
+            tuple: (has_primary, primary_id) waarbij has_primary een bool is en primary_id de identifier referentie of None.
+        """
+        has_primary = "c:PrimaryIdentifier" in entity
+        primary_id = None
+        msg_missing = f"Entiteit '{entity['Name']}' heeft geen primary key."
+        if has_primary:
+            primary_id = entity["c:PrimaryIdentifier"]["o:Identifier"]["@Ref"]
+            entity.pop("c:PrimaryIdentifier")
+        elif "Stereotype" in entity:
+            logger.warning(msg_missing)
+        else:
+            logger.error(msg_missing)
+        return has_primary, primary_id
+
+    def _prepare_identifiers(self, entity: dict):
+        """Bereidt de lijst van identifiers voor en maakt deze schoon.
+
+        Deze functie normaliseert de structuur van identifiers en past key-cleaning toe voor verdere verwerking.
+
+        Args:
+            entity (dict): De entiteit met identifier data.
+
+        Returns:
+            list: Een geschoonde lijst van identifier dictionaries.
+        """
+
+        identifiers = entity["c:Identifiers"]["o:Identifier"]
+        if isinstance(identifiers, dict):
+            identifiers = [identifiers]
+        return self.clean_keys(identifiers)
+
+    def _has_identifier_attributes(self, identifier: dict, entity: dict) -> bool:
+        """Controleert of de identifier attribuutinformatie bevat.
+
+        Geeft True terug als de identifier attribuutdata heeft, logt anders een foutmelding en geeft False terug.
+
+        Args:
+            identifier (dict): De identifier die gecontroleerd wordt op attributen.
+            entity (dict): De entiteit waartoe de identifier behoort.
+
+        Returns:
+            bool: True als attributen aanwezig zijn, anders False.
+        """
+
+        if "c:Identifier.Attributes" not in identifier:
+            logger.error(
+                f"Geen attributes gevonden voor de identifier '{identifier['Name']}' in entiteit '{entity['Name']}'"
+            )
+            return False
+        return True
+
+    def _enrich_identifier_with_attributes(self, identifier: dict, dict_attrs: dict):
+        """Verrijkt een identifier met attribuutinformatie op basis van een attribuutdictionary.
+
+        Deze functie voegt de bijbehorende attributen toe aan de identifier zodat deze eenvoudig verder verwerkt kan worden.
+
+        Args:
+            identifier (dict): De identifier die verrijkt moet worden.
+            dict_attrs (dict): Dictionary met referenties naar attribuutdata.
+        """
+
+        lst_attr_id = identifier["c:Identifier.Attributes"]["o:EntityAttribute"]
+        if isinstance(lst_attr_id, dict):
+            lst_attr_id = [lst_attr_id]
+        lst_attr_id = [dict_attrs[d["@Ref"]] for d in lst_attr_id]
+        identifier["Attributes"] = lst_attr_id
+        identifier.pop("c:Identifier.Attributes")
+
+    def relationships(
+        self, lst_relationships: list, lst_entity: list, lst_aggregates: list
+    ) -> list:
         # TODO: added lst_aggregates as input because of reference issues due to relationships between entity and objects
         """Vormt om en verrijkt relatie data
 
@@ -226,7 +305,7 @@ class TransformModelInternal(ObjectTransformer):
             list: Relaties tussen model entiteiten
         """
         # TODO: Added lst_relationship_entity because of reference issues. Combined the lst_entity and lst_aggregates
-        lst_relationship_entity = lst_entity #+ lst_aggregates
+        lst_relationship_entity = lst_entity  # + lst_aggregates
 
         # Creating dictionaries to simplify adding data to relationships
         dict_entities = {entity["Id"]: entity for entity in lst_relationship_entity}
@@ -285,7 +364,9 @@ class TransformModelInternal(ObjectTransformer):
             relationship["Entity1"] = dict_entities[id_entity]
             relationship.pop("c:Object1")
         else:
-            logger.warning(f"{id_entity} for relationship[Entity1] not in dict_entities")
+            logger.warning(
+                f"{id_entity} for relationship[Entity1] not in dict_entities"
+            )
         if "o:Entity" in relationship["c:Object2"]:
             id_entity = relationship["c:Object2"]["o:Entity"]["@Ref"]
         elif "o:Shortcut" in relationship["c:Object2"]:
@@ -294,7 +375,9 @@ class TransformModelInternal(ObjectTransformer):
             relationship["Entity2"] = dict_entities[id_entity]
             relationship.pop("c:Object2")
         else:
-            logger.warning(f"{id_entity} for relationship[Entity2] not in dict_entities")
+            logger.warning(
+                f"{id_entity} for relationship[Entity2] not in dict_entities"
+            )
         return relationship
 
     def __relationship_join(self, relationship: dict, dict_attributes: dict) -> dict:
@@ -307,7 +390,7 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             dict: De geschoonde versie van de join(s) behorende bij de relatie
         """
-        if "c:Joins" in  relationship:
+        if "c:Joins" in relationship:
             lst_joins = relationship["c:Joins"]["o:RelationshipJoin"]
             if isinstance(lst_joins, dict):
                 lst_joins = [lst_joins]
@@ -319,26 +402,36 @@ class TransformModelInternal(ObjectTransformer):
                     id_attr = lst_joins[i]["c:Object1"]["o:EntityAttribute"]["@Ref"]
                 elif "o:Shortcut" in lst_joins[i]["c:Object1"]:
                     id_attr = lst_joins[i]["c:Object1"]["o:Shortcut"]["@Ref"]
-                    logger.warning(f"Relationship:{relationship['Name']} , missing relationship join")
+                    logger.warning(
+                        f"Relationship:{relationship['Name']} , missing relationship join"
+                    )
                 else:
                     logger.warning(f"{relationship['Name']} missing relationship join")
                 if id_attr in dict_attributes:
                     join["Entity1Attribute"] = dict_attributes[id_attr]
                 else:
-                    logger.warning(f"{id_attr} for join[Entity1Attribute] not in dict_acttributes")
+                    logger.warning(
+                        f"{id_attr} for join[Entity1Attribute] not in dict_acttributes"
+                    )
                 id_attr = lst_joins[i]["c:Object2"]["o:EntityAttribute"]["@Ref"]
                 if id_attr in dict_attributes:
                     join["Entity2Attribute"] = dict_attributes[id_attr]
                     lst_joins[i] = join
                 else:
-                    logger.warning(f"{id_attr} for join[Entity2Attribute] not in dict_acttributes")
+                    logger.warning(
+                        f"{id_attr} for join[Entity2Attribute] not in dict_acttributes"
+                    )
             relationship["Joins"] = lst_joins
             relationship.pop("c:Joins")
         else:
-            logger.warning(f"Relationship:{relationship['Name']} , missing relationship join")           
+            logger.warning(
+                f"Relationship:{relationship['Name']} , missing relationship join"
+            )
         return relationship
 
-    def __relationship_identifiers(self, relationship: dict, dict_identifiers: dict) -> dict:
+    def __relationship_identifiers(
+        self, relationship: dict, dict_identifiers: dict
+    ) -> dict:
         """Schoont, vormt om identifiers (sleutels) die onderdeel zijn van de relatie en voegt deze toe
 
         Args:
@@ -350,7 +443,7 @@ class TransformModelInternal(ObjectTransformer):
         """
         if "c:ParentIdentifier" in relationship:
             if "o:Identifier" in relationship["c:ParentIdentifier"]:
-                lst_identifier_id = relationship["c:ParentIdentifier"]["o:Identifier"]                    
+                lst_identifier_id = relationship["c:ParentIdentifier"]["o:Identifier"]
                 if lst_identifier_id["@Ref"] in dict_identifiers:
                     if isinstance(lst_identifier_id, dict):
                         lst_identifier_id = [lst_identifier_id]
@@ -358,10 +451,16 @@ class TransformModelInternal(ObjectTransformer):
                         dict_identifiers[id["@Ref"]] for id in lst_identifier_id
                     ]
                 else:
-                    logger.warning(f"{lst_identifier_id} for relationship[Identifiers] not in dict_acttributes")          
+                    logger.warning(
+                        f"{lst_identifier_id} for relationship[Identifiers] not in dict_acttributes"
+                    )
             else:
-                logger.warning(f"{relationship['Name']} : missing identifier for relationship")
-            relationship.pop("c:ParentIdentifier") 
+                logger.warning(
+                    f"{relationship['Name']} : missing identifier for relationship"
+                )
+            relationship.pop("c:ParentIdentifier")
         else:
-            logger.warning(f"{relationship['Name']} : missing parent for relationship join")
+            logger.warning(
+                f"{relationship['Name']} : missing parent for relationship join"
+            )
         return relationship
