@@ -74,7 +74,7 @@ class MappingExtractor:
             # TODO: Is this correct? We need dict_variables for attribute mappings and source_composition
             dict_attributes = dict_attributes | dict_variables
             lst_attribute_mapping = self.transform_attribute_mapping.attribute_mapping(
-                dict_entity_target=lst_entity_target, dict_attributes=dict_attributes, lst_mappings_full = mappings_full,
+                dict_entity_target=lst_entity_target, dict_attributes=dict_attributes
             )
             lst_source_composition = (
                 self.transform_source_composition.source_composition(

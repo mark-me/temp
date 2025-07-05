@@ -17,7 +17,7 @@ class TransformModelsExternal(ObjectTransformer):
 
         Args:
             lst_models (list): Data van de doelmodellen
-            dict_entities (dict): Bevat alle externe entiteiten 
+            dict_entities (dict): Bevat alle externe entiteiten
 
         Returns:
             list: Doelmodellen met entiteit data
@@ -34,15 +34,14 @@ class TransformModelsExternal(ObjectTransformer):
                 model["Entities"] = [
                     dict_entities[id] for id in shortcuts if id in dict_entities
                 ]
-            if "Entities" in model:
-                if len(model["Entities"]) > 0:
-                    model["IsDocumentModel"] = False
-                    lst_result.append(model)
-                    model.pop("c:SessionShortcuts")
-                    if "c:SessionReplications" in model:
-                        model.pop("c:SessionReplications")
-                    if "c:FullShortcutModel" in model:
-                        model.pop("c:FullShortcutModel")
+            if "Entities" in model and len(model["Entities"]) > 0:
+                model["IsDocumentModel"] = False
+                lst_result.append(model)
+                model.pop("c:SessionShortcuts")
+                if "c:SessionReplications" in model:
+                    model.pop("c:SessionReplications")
+                if "c:FullShortcutModel" in model:
+                    model.pop("c:FullShortcutModel")
         return lst_result
 
     def entities(self, lst_entities: list) -> list:
@@ -61,12 +60,12 @@ class TransformModelsExternal(ObjectTransformer):
             entity = lst_entities[i]
             if "c:FullShortcutReplica" in entity:
                 entity.pop("c:FullShortcutReplica")
-            self.__entity_attribute(entity)
+            self._entity_attribute(entity)
             entity.pop("c:SubShortcuts")
             lst_entities[i] = entity
         return lst_entities
 
-    def __entity_attribute(self, entity: dict) -> dict:
+    def _entity_attribute(self, entity: dict) -> dict:
         """Vormt om en schoont attributen van een entiteit
 
         Args:

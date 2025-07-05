@@ -32,7 +32,7 @@ class TransformTargetEntity(ObjectTransformer):
             logger.debug(
                 f"Mapping target entity: '{mapping['EntityTarget']['Name']}'"
             )
-            mapping = self.__remove_source_entities(
+            mapping = self._remove_source_entities(
                 mapping = mapping, dict_objects=dict_objects
             )
         else:
@@ -41,7 +41,7 @@ class TransformTargetEntity(ObjectTransformer):
         mapping.pop("SourceObjects_REMOVE")
         return mapping
 
-    def __remove_source_entities(self, mapping: dict, dict_objects: dict) -> dict:
+    def _remove_source_entities(self, mapping: dict, dict_objects: dict) -> dict:
         """Verwijderd de bron entiteiten die onderdeel uitmaken van een mapping
 
         Args:

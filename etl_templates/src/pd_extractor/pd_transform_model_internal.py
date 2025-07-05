@@ -23,7 +23,6 @@ class TransformModelInternal(ObjectTransformer):
         content = self.convert_timestamps(content)
         if "c:GenerationOrigins" in content:
             model = content["c:GenerationOrigins"]["o:Shortcut"]  # Document model
-            model = self.clean_keys(model)
         else:
             lst_include = [
                 "@Id",
@@ -42,7 +41,7 @@ class TransformModelInternal(ObjectTransformer):
                 "a:ExtendedAttributesText",
             ]
             model = {item: content[item] for item in content if item in lst_include}
-            model = self.clean_keys(model)
+        model = self.clean_keys(model)
         model["IsDocumentModel"] = True
         return model
 
@@ -291,9 +290,7 @@ class TransformModelInternal(ObjectTransformer):
         identifier["Attributes"] = lst_attr_id
         identifier.pop("c:Identifier.Attributes")
 
-    def relationships(
-        self, lst_relationships: list, lst_entity: list, lst_aggregates: list
-    ) -> list:
+    def relationships(self, lst_relationships: list, lst_entity: list) -> list:
         # TODO: added lst_aggregates as input because of reference issues due to relationships between entity and objects
         """Vormt om en verrijkt relatie data
 
@@ -304,29 +301,23 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             list: Relaties tussen model entiteiten
         """
-        # TODO: Added lst_relationship_entity because of reference issues. Combined the lst_entity and lst_aggregates
-        lst_relationship_entity = lst_entity  # + lst_aggregates
-
         # Creating dictionaries to simplify adding data to relationships
-        dict_entities = {entity["Id"]: entity for entity in lst_relationship_entity}
+        dict_entities = {entity["Id"]: entity for entity in lst_entity}
 
         # TODO: added dict_variables because of reference issues.
-        # dict_variables = {
-        #     variables["Id"]: variables for aggregate in lst_aggregates for variables in aggregate["Variables"]
-        # }
         dict_attributes = {
             attr["Id"]: attr for entity in lst_entity for attr in entity["Attributes"]
         }
-        # TODO: dict_attributes is a combination of attributes (from entities) and variables (from objects)
-        # dict_attributes = dict_attributes | dict_variables
-        # TODO: if we support relationships between entities and objects we'll have to add the identifiers from objects as well
         dict_identifiers = {
+            entity["KeyPrimary"]["Id"]: entity["KeyPrimary"]
+            for entity in lst_entity
+            if "KeyPrimary" in entity
+        } | {
             ids["Id"]: ids
-            for entity in lst_relationship_entity
-            if "Identifiers" in entity
-            for ids in entity["Identifiers"]
+            for entity in lst_entity
+            if "KeysForeign" in entity
+            for ids in entity["KeysForeign"]
         }
-
         # Processing relationships
         lst_relationships = self.clean_keys(lst_relationships)
         if isinstance(lst_relationships, dict):

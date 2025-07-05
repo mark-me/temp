@@ -109,14 +109,14 @@ class PDDocument:
 
         extractor = MappingExtractor(pd_content=self.content)
         logger.debug("Start mapping extraction")
-        dict_entities = self.__all_entities()
-        dict_filters = self.__all_filters()
-        dict_scalars = self.__all_scalars()
-        dict_aggregates = self.__all_aggregates()
+        dict_entities = self._all_entities()
+        dict_filters = self._all_filters()
+        dict_scalars = self._all_scalars()
+        dict_aggregates = self._all_aggregates()
         dict_objects = dict_entities | dict_filters | dict_scalars | dict_aggregates
-        dict_variables = self.__all_variables()
-        dict_attributes = self.__all_attributes()
-        dict_datasources = self.__all_datasources()
+        dict_variables = self._all_variables()
+        dict_attributes = self._all_attributes()
+        dict_datasources = self._all_datasources()
         lst_mappings = extractor.mappings(
             dict_objects=dict_objects,
             dict_attributes=dict_attributes,
@@ -142,7 +142,7 @@ class PDDocument:
         dict_data = dict_data["Model"]["o:RootObject"]["c:Children"]["o:Model"]
         return dict_data
 
-    def __all_entities(self) -> dict:
+    def _all_entities(self) -> dict:
         """Haalt alle entiteiten op ongeacht het model waartoe ze behoren. Daarnaast worden ook alle aggregaties die
         bij een intern model zijn gevonden toegevoegd.
 
@@ -166,15 +166,14 @@ class PDDocument:
                     }
         return dict_result
 
-    def __all_filters(self) -> list:
+    def _all_filters(self) -> list:
         """Haalt alle filters op ongeacht het model waartoe ze behoren.
 
         Returns:
             list: Elke value uit de list representeert een stereotype, de sleutel is het interne ID
         """
-        dict_result = {}
-        for filter in self.lst_filters:
-            dict_result[filter["Id"]] = {
+        dict_result = {
+            filter["Id"]: {
                 "Id": filter["Id"],
                 "Name": filter["Name"],
                 "Code": filter["Code"],
@@ -184,17 +183,18 @@ class PDDocument:
                 "SqlVariable": filter["SqlVariable"],
                 "SqlExpression": filter["SqlExpression"],
             }
+            for filter in self.lst_filters
+        }
         return dict_result
 
-    def __all_scalars(self) -> list:
+    def _all_scalars(self) -> list:
         """Haalt alle scalars op ongeacht het model waartoe ze behoren.
 
         Returns:
             list: Elke value uit de list representeert een stereotype, de sleutel is het interne ID
         """
-        dict_result = {}
-        for scalar in self.lst_scalars:
-            dict_result[scalar["Id"]] = {
+        dict_result = {
+            scalar["Id"]: {
                 "Id": scalar["Id"],
                 "Name": scalar["Name"],
                 "Code": scalar["Code"],
@@ -205,17 +205,18 @@ class PDDocument:
                 "SqlExpression": scalar["SqlExpression"],
                 "SqlExpressionVariables": scalar["SqlExpressionVariables"],
             }
+            for scalar in self.lst_scalars
+        }
         return dict_result
 
-    def __all_aggregates(self) -> list:
+    def _all_aggregates(self) -> list:
         """Haalt alle aggregaties op ongeacht het model waartoe ze behoren.
 
         Returns:
             list: Elke value uit de list representeert een stereotype, de sleutel is het interne ID
         """
-        dict_result = {}
-        for aggregates in self.lst_aggregates:
-            dict_result[aggregates["Id"]] = {
+        dict_result = {
+            aggregates["Id"]: {
                 "Id": aggregates["Id"],
                 "Name": aggregates["Name"],
                 "Code": aggregates["Code"],
@@ -223,9 +224,11 @@ class PDDocument:
                 "Variables": aggregates["Attributes"],
                 "Stereotype": aggregates["Stereotype"],
             }
+            for aggregates in self.lst_aggregates
+        }
         return dict_result
 
-    def __all_attributes(self) -> dict:
+    def _all_attributes(self) -> dict:
         """Haalt alle attributen op ongeacht tot welk model of entiteit zij behoren
 
         Returns:
@@ -253,7 +256,7 @@ class PDDocument:
                         }
         return dict_result
 
-    def __all_variables(self) -> dict:
+    def _all_variables(self) -> dict:
         """Extraheert de variabelen van de filters, scalars en aggregaten
 
         Returns:
@@ -276,14 +279,14 @@ class PDDocument:
                 }
         return dict_result
 
-    def __all_datasources(self) -> dict:
+    def _all_datasources(self) -> dict:
         dict_result = {}
         for model in self.lst_models:
             if "DataSources" in model:
                 dict_result = model["DataSources"]
         return dict_result
 
-    def __serialize_datetime(self, obj):
+    def _serialize_datetime(self, obj):
         """Haalt alle datetime voorkomens op en formatteert deze naar een ISO-format
 
         Args:
@@ -336,7 +339,7 @@ class PDDocument:
         Path(path.parent).mkdir(parents=True, exist_ok=True)
         with open(file_output, "w") as outfile:
             json.dump(
-                dict_document, outfile, indent=4, default=self.__serialize_datetime
+                dict_document, outfile, indent=4, default=self._serialize_datetime
             )
         logger.info(f"Document output is written to '{file_output}'")
 
