@@ -1,3 +1,4 @@
+import sqlparse
 from jinja2 import Template
 from logtools import get_logger
 
@@ -35,3 +36,18 @@ class DDLViewBase(DDLGeneratorBase):
             logger.error(f"Geen datasource opgegeven voor mapping {mapping['Name']}")
         return mapping
 
+    def format_sql(self, sql_content: str) -> str:
+        """Formatteert SQL statement(s)
+
+        Args:
+            sql_content (str): SQL statement(s) die geformatteerd dienen te worden
+
+        Returns:
+            str: Geformatteerd(e) SQL statement(s)
+        """
+        return sqlparse.format(
+            sql_content,
+            reindent=True,
+            comma_first=True,
+            keyword_case="upper"
+        )

@@ -210,14 +210,14 @@ class TransformStereotype(ObjectTransformer):
                         lst_var_id = [lst_var_id]
                     lst_var_id = [dict_vars[d["@Ref"]] for d in lst_var_id]
                     identifier["Variables"] = lst_var_id
-                    identifier.pop("c:Identifier.Attributes")
+                    #identifier.pop("c:Identifier.Attributes")
                 # Set primary identifier attribute
                 if has_primary:
                     identifier["IsPrimary"] = primary_id == identifier["Id"]
                 identifiers[j] = identifier
             object["Identifiers"] = identifiers
-            object.pop("c:Identifiers")
-            object.pop("c:PrimaryIdentifier")
+            #object.pop("c:Identifiers")
+            #object.pop("c:PrimaryIdentifier")
             logger.debug(f"Finished collecting identifiers for {object['Name']}")
         return object
 
@@ -235,7 +235,7 @@ class TransformStereotype(ObjectTransformer):
         number_of_variables = sqlexpression.count("@")
         j = 0
         k = number_of_variables
-        expressionvariable = None
+        expression_variable = None
         # Start loop to split the SqlExpression further
         while j < k:
             idx_start = sqlexpression.find("@", 1)
@@ -243,9 +243,8 @@ class TransformStereotype(ObjectTransformer):
             find_non_alpha = re.search("[\W]", sqlexpression[idx_start + 1 :])
             # Idx_end is the start_position plus the position of the first alphanumeric character
             idx_end = idx_start + find_non_alpha.start()
-            expressionvariable = sqlexpression[idx_start : idx_end + 1]
-            # TODO: the list syntax was needed due to missing listitems once you pass it to dict_scalars
-            lst_expression_variables = (*lst_expression_variables, expressionvariable)
+            expression_variable = sqlexpression[idx_start : idx_end + 1]
+            lst_expression_variables = (*lst_expression_variables, expression_variable)
             # remove the variable from the sqlexpression string
             sqlexpression = sqlexpression[idx_end + 1 :]
             j += 1

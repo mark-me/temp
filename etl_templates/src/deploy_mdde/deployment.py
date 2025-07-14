@@ -18,6 +18,7 @@ class TemplateType(Enum):
     """
 
     POST_DEPLOY_CONFIG = "PostDeployScript_Config.sql"
+    POST_DEPLOY_LOAD_DEPENDENCIES = "PostDeployScript_LoadDependencies.sql"
     POST_DEPLOY_CODELIST = "PostDeployScript_CodeList.sql"
 
 
@@ -37,7 +38,7 @@ class DeploymentMDDE:
         self._path_data = path_data
         self.post_deployment_scripts = []
 
-    def process(self, mapping_order: list) -> list:
+    def process(self, mapping_order: list, mapping_dependencies: list) -> list:
         """
         Voert het volledige post-deployment scriptgeneratieproces uit.
 
@@ -45,12 +46,14 @@ class DeploymentMDDE:
 
         Args:
             mapping_order (list): De mapping order configuratie die in het script verwerkt moet worden.
+            mapping_dependencies (list): Een lijst met alle mappings die voor en na een mapping worden verwerkt
 
         Returns:
             list: Een lijst met paden naar de gegenereerde post-deployment scripts.
         """
         self._generate_load_code_list()
         self._generate_load_config(mapping_order=mapping_order)
+        self._generate_load_dependencies(mapping_dependencies=mapping_dependencies)
         self._generate_load_dates()
         self._copy_db_objects()
         self._generate_post_deploy_master()
@@ -108,6 +111,28 @@ class DeploymentMDDE:
         path_output = self._path_output / "PostDeployment"
         path_output.mkdir(parents=True, exist_ok=True)
         path_file_output = path_output / "PostDeploy_MetaData_Config_MappingOrder.sql"
+        with open(str(path_file_output), mode="w", encoding="utf-8") as file_ddl:
+            file_ddl.write(content)
+        logger.info(
+            f"Created MDDE Config post deployment script '{path_file_output.resolve()}'"
+        )
+
+        self.post_deployment_scripts.append(path_file_output)
+
+    def _generate_load_dependencies(self, mapping_dependencies: list):
+        """
+        Genereert het post-deploy script voor de mapping dependencies voor conditioneel laden van entiteiten.
+        Rendert het template met de mapping dependencies en schrijft het resultaat naar het juiste outputbestand.
+
+        Args:
+            mapping_dependencies (list): De afhankelijkheden tussen de mappings die in het script verwerkt moet worden.
+        """
+        template = self._get_template(TemplateType.POST_DEPLOY_LOAD_DEPENDENCIES)
+        content = template.render(mapping_dependencies=mapping_dependencies)
+
+        path_output = self._path_output / "PostDeployment"
+        path_output.mkdir(parents=True, exist_ok=True)
+        path_file_output = path_output / "PostDeploy_MetaData_LoadDependencies.sql"
         with open(str(path_file_output), mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)
         logger.info(

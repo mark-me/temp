@@ -3,6 +3,7 @@ from pathlib import Path
 import sqlparse
 from jinja2 import Template
 from logtools import get_logger
+from tqdm import tqdm
 
 from .ddl_views_base import DDLViewBase
 
@@ -21,15 +22,15 @@ class DDLSourceViewsAggr(DDLViewBase):
         Args:
             mappings (dict): Bevat alle mappings uit een RETW bestand
         """
-        for mapping in mappings:
+        for mapping in tqdm(mappings, desc="Genereren Source Views Aggregates", colour="#6aa84f"):
             if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
                 continue
             mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
             self._set_datasource_code(mapping)
-            mapping = self.__set_source_view_aggr_derived(mapping=mapping)
-            content = self.__render_source_view_aggr(mapping=mapping)
+            mapping = self._set_source_view_aggr_derived(mapping=mapping)
+            content = self._render_source_view_aggr(mapping=mapping)
             dir_output, file_output, path_file_output = (
-                self.__get_source_view_aggr_paths(mapping=mapping)
+                self._get_source_view_aggr_paths(mapping=mapping)
             )
             self.save_generated_object(
                 content=content, path_file_output=path_file_output
@@ -38,7 +39,7 @@ class DDLSourceViewsAggr(DDLViewBase):
                 f"Written Source view aggregation DDL {Path(path_file_output).resolve()}"
             )
 
-    def __get_source_view_aggr_paths(self, mapping: dict):
+    def _get_source_view_aggr_paths(self, mapping: dict):
         dir_output = Path(
             f"{self.dir_output}/{mapping['EntityTarget']['CodeModel']}/Views/"
         )
@@ -48,7 +49,7 @@ class DDLSourceViewsAggr(DDLViewBase):
         path_file_output = f"{dir_output}/{file_output}"
         return dir_output, file_output, path_file_output
 
-    def __set_source_view_aggr_derived(self, mapping: dict) -> dict:
+    def _set_source_view_aggr_derived(self, mapping: dict) -> dict:
         """Stelt afgeleiden in voor de entiteit die gebruikt worden bij de implementatie
 
         Args:
@@ -65,8 +66,11 @@ class DDLSourceViewsAggr(DDLViewBase):
             "MINIMUM": "MIN",
             "SUM": "SUM",
         }
+        for attr_mapping in mapping["AttributeMapping"]:
+            if "Expression" in attr_mapping:
+                attr_mapping["Expression"] = dict_aggr_functions[attr_mapping["Expression"]]
         return mapping
 
-    def __render_source_view_aggr(self, mapping: dict) -> str:
+    def _render_source_view_aggr(self, mapping: dict) -> str:
         content = self.template.render(mapping=mapping)
         return sqlparse.format(content, reindent=True, keyword_case="upper")

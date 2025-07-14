@@ -33,7 +33,8 @@ class IssueTrackingHandler(logging.Handler):
             )
 
     def max_severity_level(self) -> str:
-        return min(self.issues, key=lambda x: x["severity"])["severity"]
+        if self.issues:
+            return min(self.issues, key=lambda x: x["severity"])["severity"]
 
     def has_errors(self) -> bool:
         """Controleer of er errors zijn gelogd.
@@ -57,12 +58,15 @@ class IssueTrackingHandler(logging.Handler):
         Args:
             file_csv: De locatie van het CSV bestand.
         """
-        with open(file_csv, "w", encoding="utf8", newline="") as output_file:
-            fc = csv.DictWriter(
-                output_file,
-                fieldnames=self.issues[0].keys(),
-                dialect="excel",
-                quoting=csv.QUOTE_STRINGS,
-            )
-            fc.writeheader()
-            fc.writerows(self.issues)
+        if self.issues:
+            with open(file_csv, "w", encoding="utf8", newline="") as output_file:
+                fc = csv.DictWriter(
+                    output_file,
+                    fieldnames=self.issues[0].keys(),
+                    dialect="excel",
+                    quoting=csv.QUOTE_STRINGS,
+                )
+                fc.writeheader()
+                fc.writerows(self.issues)
+        else:
+            print("Er zijn geen issues gevonden om weg te schrijven. Genesis heeft succesvol gerund")

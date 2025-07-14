@@ -29,7 +29,7 @@ class CodeListReader():
         """
         Leest de code list bestanden voor het opgegeven systeem en voegt deze toe aan de lijst met code lists.
 
-        Deze functie zoekt naar .xls-bestanden in de systeemmap, verwerkt de inhoud en voegt de resultaten toe aan lst_codeList.
+        Deze functie zoekt naar .xls-bestanden in de systeem-map, verwerkt de inhoud en voegt de resultaten toe aan lst_codeList.
 
         Args:
             system (str): De naam van het systeem waarvan de code lists gelezen moeten worden.
@@ -57,7 +57,8 @@ class CodeListReader():
         for file_xlsx in files_xlsx:
             df_dmsCodeList = pl.read_excel(
                 source=file_xlsx.resolve(),
-                sheet_name="DMS.core Code List Elements",  # FIXME: Klopt dit? Is alles op deze sheetnaam of is deze variabel met systemen?
+                sheet_name="DMS.core Code List Elements",  # FIXME: Klopt dit? Is alles op deze sheet-naam of is deze variabel met systemen?
+                infer_schema_length=None
             )
             df_dmsCodeList = df_dmsCodeList.drop(
                 df_dmsCodeList.columns[2]

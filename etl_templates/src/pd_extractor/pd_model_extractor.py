@@ -24,7 +24,6 @@ class ModelExtractor:
         Returns:
             list: lijst van modellen die gebruikt worden in het Power Designer LDM document
         """
-        # TODO: added lst_aggregates as input because of reference issues due to relationships between entity and objects
         dict_model_internal = self._model_internal(lst_aggregates=lst_aggregates)
         # TODO: need to add the condition for c:Packages if we encounter models that use packages
         if "o:Shortcut" in self.content["c:Entities"]:
@@ -49,7 +48,6 @@ class ModelExtractor:
         Returns:
             dict: In het Power Designer LDM ontworpen model (niet geïmporteerd voor ETL)
         """
-        # TODO: added lst_aggregates as input because of reference issues due to relationships between entity and objects
         model = self.transform_model_internal.model(content=self.content)
         # Model add entity data
         self.lst_entity = self._entities_internal()
@@ -183,7 +181,6 @@ class ModelExtractor:
         Returns:
             list: _description_
         """
-        # TODO: lst_aggregates added due to reference issues caused by relation between object and entity
         lst_relationships = []
         if "c:Relationships" in self.content:
             lst_pd_relationships = self.content["c:Relationships"]["o:Relationship"]

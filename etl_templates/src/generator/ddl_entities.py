@@ -28,7 +28,7 @@ class DDLEntities(DDLGeneratorBase):
         """
         # Select entities that are defined within a document (not just derived from mappings (sources))
         entities_create = [entity for entity in entities if entity["IsCreated"]]
-        for entity in tqdm(entities_create, desc="Genereren tabellen", colour="red"):
+        for entity in tqdm(entities_create, desc="Genereren tabellen", colour="#38761d"):
             self._process_entity(entity=entity)
 
     def _process_entity(self, entity: dict):

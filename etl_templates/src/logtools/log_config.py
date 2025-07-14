@@ -11,7 +11,7 @@ LOGGING = {
         "stdout": {
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
-            "formatter": "json",
+            #"formatter": "json",
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",

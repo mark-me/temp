@@ -1,7 +1,6 @@
 import os
 from shutil import copytree, rmtree
 import subprocess
-import time
 import webbrowser
 from pathlib import Path
 
@@ -18,7 +17,7 @@ class RepositoryManager:
     def __init__(self, config: dict):
         """Initialiseert de RepositoryManager met de opgegeven configuratie.
 
-        Stelt de lokale repositorypad en configuratie in op basis van de meegegeven parameters.
+        Stelt de lokale repository-pad en configuratie in op basis van de meegegeven parameters.
 
         Args:
             config (dict): Configuratieobject met repository-instellingen.
@@ -40,7 +39,6 @@ class RepositoryManager:
         logger.info(f"Kloon van repository '{self._config.url}'.")
         dir_current = Path("./").resolve()
         self._remove_old_repo()  # deletes a directory and all its contents.
-        # time.sleep(5)
         lst_command = [
             "git",
             "clone",
@@ -57,6 +55,20 @@ class RepositoryManager:
             raise
         logger.info(f"chdir to: {self._path_local}")
         os.chdir(self._path_local)
+        self._create_branch()
+        # Relocate to org root folder
+        os.chdir(dir_current)
+
+    def _create_branch(self):
+        """
+        Maakt een feature-branch aan en schakelt hiernaar over.
+
+        Deze functie maakt een nieuwe feature-branch aan en schakelt hiernaar over. Probeert eerst de feature branch te verwijderen
+
+        Returns:
+            None
+        """
+        self._remove_remote_branch()
         lst_command = [
             "git",
             "branch",
@@ -68,8 +80,21 @@ class RepositoryManager:
         lst_command = ["git", "switch", self._config.feature_branch]
         logger.info(f"Executed: {' '.join(lst_command)}")
         subprocess.run(lst_command, check=True)
-        # Relocate to org root folder
-        os.chdir(dir_current)
+
+    def _remove_remote_branch(self):
+        """Verwijdert een oude versie van de feature branch die men probeert aan te maken
+        """
+        lst_command = [
+            "git",
+            "push",
+            "origin",
+            "--delete",
+            self._config.feature_branch
+        ]
+        try:
+            subprocess.run(lst_command, check=True)
+        except subprocess.CalledProcessError:
+            logger.info("Remote branch bestaat nog niet")
 
     def _remove_old_repo(self) -> None:
         """
@@ -112,7 +137,7 @@ class RepositoryManager:
         self._git_commit()
         self._git_push()
         self._open_branch_in_browser()
-        
+
     def clean_directory_in_repo(self) -> None:
         """
         Schoont een directory van "oude" bestanden en post-deployment scripts in de repository.
@@ -125,7 +150,7 @@ class RepositoryManager:
         dir_to_clean = self._path_local / "CentralLayer"
         rmtree(dir_to_clean, ignore_errors=True)
         pass
-        
+
     def add_directory_to_repo(self, path_source: Path) -> None:
         """
         Voegt een directory met nieuwe bestanden en post-deployment scripts toe aan de repository.
@@ -139,12 +164,10 @@ class RepositoryManager:
         Returns:
             None
         """
-        #TODO: Mark, path_vs_project_file is niet compleet, dus nu even een tijdelijke fix hier gemaakt.
-        path_sqlproj = self._config.path_local / self._config.path_file_sql_project
-
+        path_sqlproj = self._path_local / self._config.path_file_sql_project
         # Copy all files to repository
         copytree(src=path_source, dst=self._path_local / "CentralLayer", dirs_exist_ok=True)
-        
+
         project_editor = SqlProjEditor(path_sqlproj=path_sqlproj)
         project_editor.add_new_files(folder=path_source)
         project_editor._remove_missing_files()

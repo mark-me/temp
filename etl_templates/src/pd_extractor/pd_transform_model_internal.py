@@ -110,7 +110,6 @@ class TransformModelInternal(ObjectTransformer):
             entity = self._entity_identifiers(entity=entity, dict_attrs=dict_attrs)
 
             # Reroute default mapping
-            # TODO: research role DefaultMapping
             if "c:DefaultMapping" in entity:
                 entity.pop("c:DefaultMapping")
             if "c:AttachedKeywords" in entity:
@@ -291,7 +290,6 @@ class TransformModelInternal(ObjectTransformer):
         identifier.pop("c:Identifier.Attributes")
 
     def relationships(self, lst_relationships: list, lst_entity: list) -> list:
-        # TODO: added lst_aggregates as input because of reference issues due to relationships between entity and objects
         """Vormt om en verrijkt relatie data
 
         Args:
@@ -304,7 +302,6 @@ class TransformModelInternal(ObjectTransformer):
         # Creating dictionaries to simplify adding data to relationships
         dict_entities = {entity["Id"]: entity for entity in lst_entity}
 
-        # TODO: added dict_variables because of reference issues.
         dict_attributes = {
             attr["Id"]: attr for entity in lst_entity for attr in entity["Attributes"]
         }

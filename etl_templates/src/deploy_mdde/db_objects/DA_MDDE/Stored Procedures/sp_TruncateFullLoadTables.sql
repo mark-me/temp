@@ -14,7 +14,7 @@ SUMMARY OF CHANGES
 Date(yyyy-mm-dd)    Author              Comments
 ------------------- ------------------- ------------------------------------------------------------
 2025-06-16	        Jeroen Poll         Initial Script V1.0  
-2025-07-01			Jeroen Poll			
+2025-07-01			Jeroen Poll			Optimize script to one statement.
 
 ***************************************************************************************************/
 DECLARE @LogMessage NVARCHAR(max);
@@ -33,7 +33,7 @@ END
 
 BEGIN
 SELECT @sql = string_agg(CAST(CONCAT (
-				'TRUNCATE TABLE '
+				'TRUNCATE '
 				, Soort
 				, ' ['
 				, SchemaNaam
@@ -54,6 +54,6 @@ FROM (
 PRINT '    --------TRUNCATE TABLES SCRIPT--------'
 PRINT (@sql)
 	--PRINT ('PreDeploy execution is disabled in PreDeploy.sql.')
-	--EXEC sp_executesql @sql
+EXEC sp_executesql @sql
 END
 GO

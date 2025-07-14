@@ -79,12 +79,12 @@ class StereotypeExtractor:
         if "c:DefaultMapping" in stereotype_object:
             stereotype_object.pop("c:DefaultMapping")
             logger.debug("Removed c:DefaultMapping from lst_objects'")
-        if self.stereotype != 'mdde_AggregateBusinessRule':
-            if "c:PrimaryIdentifier" in stereotype_object:
-                stereotype_object.pop("c:PrimaryIdentifier")
-            if "c:Identifiers" in stereotype_object:
-                stereotype_object.pop("c:Identifiers")
-                logger.debug("Removed c:Identifiers from lst_objects'")
+        # if stereotype_object["a:Stereotype"] != 'mdde_AggregateBusinessRule':
+        #     if "c:PrimaryIdentifier" in stereotype_object:
+        #         stereotype_object.pop("c:PrimaryIdentifier")
+        #     if "c:Identifiers" in stereotype_object:
+        #         stereotype_object.pop("c:Identifiers")
+        #         logger.debug("Removed c:Identifiers from lst_objects'")
 
     def _domains(self) -> dict:
         """Haalt op en schoont domain data voor de objecten van het opgegeven stereotype

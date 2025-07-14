@@ -2,8 +2,6 @@ import sqlfluff
 from jinja2 import Template
 from logtools import get_logger
 
-# import sqlparse
-
 logger = get_logger(__name__)
 
 
@@ -33,17 +31,22 @@ class DDLGeneratorBase:
             path_file_output (str): Het volledige pad waar de source view wordt opgeslagen.
         """
         logger.info(f"Linter is bezig met: {path_file_output}'")
-        content = sqlfluff.fix(
-            content,
+        content = self.format_sql(sql_content=content)
+
+        with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:
+            file_ddl.write(content)
+
+    def format_sql(self, sql_content: str) -> str:
+        """Formatteert SQL statement(s)
+
+        Args:
+            sql_content (str): SQL statement(s) die geformatteerd dienen te worden
+
+        Returns:
+            str: Geformatteerd(e) SQL statement(s)
+        """
+        return sqlfluff.fix(
+            sql_content,
             dialect="tsql",
             rules=["LT01", "LT02", "LT04", "LT05", "LT13", "CP05"],
         )
-        # content = sqlparse.format(
-        #     content,
-        #     reindent=True,
-        #     #reindent_aligned=True,
-        #     comma_first=True,
-        #     keyword_case="upper"
-        # )
-        with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:
-            file_ddl.write(content)

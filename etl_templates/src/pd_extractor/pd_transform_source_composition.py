@@ -33,7 +33,6 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             list: Versie van mapping data waar compositie data is geschoond en verrijkt
         """
-        # TODO: Review naming of compositions/ composition items
         mapping = lst_attribute_mapping
         logger.debug(f"Starting compositions transform for mapping '{mapping['Name']}'")
 

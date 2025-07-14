@@ -28,11 +28,20 @@ Date(yyyy-mm-dd)    Author              Comments
 2025-02-17	        Jeroen Poll         Initial Script V1.0   First version Full Load Only
 2025-02-28	        Jeroen Poll         V2.0   Added Incremental load 
 2025-04-04	        Jeroen Poll         V2.1   Added checks and more load types
-
+2025-07-11			Jeroen Poll			v2.2   Added Load option 98 for Error on Predecessor
 ***************************************************************************************************/
+DECLARE @sql NVARCHAR(MAX) = ''
+DECLARE @LogMessage NVARCHAR(max);
+
 BEGIN TRY
-	DECLARE @sql NVARCHAR(MAX) = ''
-	DECLARE @LogMessage NVARCHAR(max);
+	DECLARE @err_message nvarchar(max)
+	IF (SELECT COUNT(*) FROM SYS.OBJECTS o WHERE 1 = 1 AND o.name = @par_SourceName AND schema_name(o.schema_id) = @par_LayerName)  = 0
+		BEGIN
+			SET @err_message = CONCAT(N'Source view ' , @par_LayerName, '.', @par_SourceName, ' does not exist.')
+			RAISERROR(@err_message, 16, 1)
+		END
+
+
 	BEGIN
 		SET @LogMessage = CONCAT (@par_runid,'¡','Begin laden van mapping: ', @par_MappingName)
 
@@ -86,25 +95,29 @@ BEGIN TRY
 					THEN 'SELECT 1'
 				WHEN 5 /* Fact Table Incremental Load */
 					THEN 'SELECT 1'
+				WHEN 98 /* Error Predecessor */
+					THEN 'SELECT 1'
 				WHEN 99 /*  Disabled */
 					THEN 'SELECT 1'
 				ELSE 'SELECT 1'
 				END
 		SET @LogMessage = CASE @par_loadtype
 				WHEN 0
-					THEN CONCAT ('LoadType is set to: Full Load, with command: ', @sql)
+					THEN CONCAT (@par_runid,'¡','LoadType is set to: Full Load, with command: ', @sql)
 				WHEN 1
-					THEN CONCAT ('LoadType is set to: Incremental Load, with command: ', @sql)
+					THEN CONCAT (@par_runid,'¡','LoadType is set to: Incremental Load, with command: ', @sql)
 				WHEN 2
-					THEN CONCAT ('LoadType is set to: Dimension Table Full Load, with command: ', @sql)
+					THEN CONCAT (@par_runid,'¡','LoadType is set to: Dimension Table Full Load, with command: ', @sql)
 				WHEN 3
-					THEN CONCAT ('LoadType is set to: Dimension Table Incremental Load, with command: ', @sql)
+					THEN CONCAT (@par_runid,'¡','LoadType is set to: Dimension Table Incremental Load, with command: ', @sql)
 				WHEN 4
-					THEN CONCAT ('LoadType is set to: Fact Table Full Load, with command: ', @sql)
+					THEN CONCAT (@par_runid,'¡','LoadType is set to: Fact Table Full Load, with command: ', @sql)
 				WHEN 5
-					THEN CONCAT ('LoadType is set to: Fact Table Incremental Load, with command: ', @sql)
+					THEN CONCAT (@par_runid,'¡','LoadType is set to: Fact Table Incremental Load, with command: ', @sql)
+				WHEN 98
+					THEN CONCAT (@par_runid,'¡','LoadType is set to: Error Predecessor, with command: ', @sql)
 				WHEN 99
-					THEN CONCAT ('LoadType is set to: Disabled', '.')
+					THEN CONCAT (@par_runid,'¡','LoadType is set to: Disabled', '.')
 				ELSE 'SELECT 1'
 				END
 
@@ -128,6 +141,10 @@ BEGIN CATCH
     SELECT @ErrorMessage = ERROR_MESSAGE(),
            @ErrorSeverity = ERROR_SEVERITY(),
            @ErrorState = ERROR_STATE();
+	/* Update config table with NOK, timestamp and run sp_UpdateConfig_ErrorPredecessor to update predecessors */
+	SET @LogMessage = CONCAT (@par_runid,'¡',N'Update Config Table with uitcome NOK')
+	EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+	EXEC [DA_MDDE].[sp_UpdateConfig_Error]  @par_runid , @par_LayerName , @par_MappingName , 0 
 
 	SET @LogMessage = CONCAT ('Error Message: ', @ErrorMessage)
 	EXEC [DA_MDDE].[sp_Logger] 'ERROR', @LogMessage

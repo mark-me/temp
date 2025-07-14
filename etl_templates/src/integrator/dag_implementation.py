@@ -96,8 +96,8 @@ class DagImplementation(DagBuilder):
             hash_attrib = f"{separator}DA_MDDE.fn_IsNull("
             if "Expression" in attr_mapping:
                 return f"{hash_attrib}{attr_mapping['Expression']})"
-            entity_alias = attr_mapping['AttributesSource']['EntityAlias']
-            attr_source = attr_mapping['AttributesSource']['Code']
+            entity_alias = attr_mapping["AttributesSource"]["EntityAlias"]
+            attr_source = attr_mapping["AttributesSource"]["Code"]
             return f"{hash_attrib}{entity_alias}.[{attr_source}])"
 
         x_hashkey = "[X_HashKey] = CHECKSUM(CONCAT(N'',"
@@ -118,7 +118,10 @@ class DagImplementation(DagBuilder):
         Args:
             vx_entity (ig.Vertex): De entiteit waarvoor het type wordt bepaald.
         """
-        if "Stereotype" not in vx_entity.attributes() or vx_entity["Stereotype"] is None:
+        if (
+            "Stereotype" not in vx_entity.attributes()
+            or vx_entity["Stereotype"] is None
+        ):
             vx_entity["type_entity"] = "Regular"
         else:
             vx_entity["type_entity"] = "Aggregate"
@@ -148,17 +151,18 @@ class DagImplementation(DagBuilder):
                 "There are no mappings, so there is no mapping order to generate!"
             )
             return []
-        for vx in self.dag.vs:
-            if vx["type"] == VertexType.MAPPING.name:
-                dict_mapping = {
-                    "RunLevel": vx["run_level"],
-                    "RunLevelStage": vx["run_level_stage"],
-                    "NameModel": vx["NameModel"],
-                    "CodeModel": vx["CodeModel"],
-                    "SourceViewName": f"vw_src_{vx['Name'].replace(' ', '_')}",
-                    "TargetName": vx["EntityTarget"]["Code"]
-                }
-                lst_mappings.append(dict_mapping)
+        vs_mappings = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
+        for vx in vs_mappings:
+            dict_mapping = {
+                "RunLevel": vx["run_level"],
+                "RunLevelStage": vx["run_level_stage"],
+                "NameModel": vx["NameModel"],
+                "CodeModel": vx["CodeModel"],
+                "MappingName": vx["Name"].replace(" ", "_"),
+                "SourceViewName": f"vw_src_{vx['Name'].replace(' ', '_')}",
+                "TargetName": vx["EntityTarget"]["Code"],
+            }
+            lst_mappings.append(dict_mapping)
         # Sort the list of mappings by run level and the run level stage
         lst_mappings = sorted(
             lst_mappings,
@@ -258,6 +262,61 @@ class DagImplementation(DagBuilder):
             vertices=lst_vertices, edges=lst_edges, directed=False
         )
         return graph_conflicts
+
+    def get_load_dependencies(self, vertex_type: VertexType = VertexType.MAPPING) -> list:
+        """Geeft van iedere knoop in het ETL-proces alle voorliggende (predecessors) of opvolgende (successors) vergelijkbare typen knopen terug
+
+        Args:
+            vertex_type (VertexType, optional): Geeft aan welk type (mapping/entiteiten) afhankelijkheden moet worden teruggegeven.
+            Defaults naar VertexType.MAPPING.
+
+        Raises:
+            NoFlowError: Indien er geen ETL flow met mappings is
+
+        Returns:
+            list: Lijst met dictionaries met voor iedere ETL-knoop de voorliggende en opvolgende knopen.
+        """
+        lst_dependencies = []
+        if not self.dag:
+            raise NoFlowError("There are no mappings, so there is no ETL flow!")
+
+        vs_of_type = self.dag.vs.select(type_eq=vertex_type.name)
+        for vx in vs_of_type:
+            vs_in = [
+                self.dag.vs[vx_in]
+                for vx_in in self.dag.subcomponent(vx, mode="in")
+                if vx_in != vx.index
+            ]
+            predecessors = [
+                {
+                    "model": vx["CodeModel"],
+                    "name": vx["Name"].replace(" ", "_"),
+                    "type_relation": "predecessor",
+                    "model_related": vx_in["CodeModel"],
+                    "name_related": vx_in["Name"].replace(" ", "_"),
+                }
+                for vx_in in vs_in
+                if vx_in["type"] == vertex_type.name
+            ]
+            lst_dependencies.extend(predecessors)
+            vs_out = [
+                self.dag.vs[vx_out]
+                for vx_out in self.dag.subcomponent(vx, mode="out")
+                if vx_out != vx.index
+            ]
+            successors = [
+                {
+                    "model": vx["CodeModel"],
+                    "name": vx["Name"].replace(" ", "_"),
+                    "type_relation": "successor",
+                    "model_related": vx_out["CodeModel"],
+                    "name_related": vx_out["Name"].replace(" ", "_"),
+                }
+                for vx_out in vs_out
+                if vx_out["type"] == vertex_type.name
+            ]
+            lst_dependencies.extend(successors)
+        return lst_dependencies
 
     def get_mappings(self) -> list:
         """Geeft een lijst terug van alle mapping-knopen in de huidige DAG.

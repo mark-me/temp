@@ -26,6 +26,7 @@ Date(yyyy-mm-dd)    Author              Comments
 2025-07-03			Jeroen Poll			Add support for Loading with constraint info
 ***************************************************************************************************/
 BEGIN TRY
+	SET NOCOUNT ON;
 	DECLARE @sql NVARCHAR(MAX) = ''
 	DECLARE @sql_select NVARCHAR(MAX) = ''
 	DECLARE @sql_insert NVARCHAR(MAX) = ''
@@ -44,9 +45,10 @@ BEGIN TRY
 	DECLARE @ErrorState INT;
 
 
-	/* Insert execution to config execution table */
-	EXEC  [DA_MDDE].[sp_InsertConfigExecution] @ExecutionId , @par_runid, @par_LayerName, @par_MappingName, @par_DestinationName
-	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadType', 0;
+	/* Update Config_Start in config table */
+	SET @LogMessage = CONCAT(@par_runid,'¡','Update Config table with StartDateTime')
+	EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+	EXEC [DA_MDDE].[sp_UpdateConfig_Start] @par_runid , @par_LayerName , @par_MappingName 	, @par_Debug 
 
 	IF (@par_Debug = 1)
 		BEGIN 
@@ -54,7 +56,7 @@ BEGIN TRY
 			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
 		END
 
-	/* Check if table has Unique Key for loading */
+	/* Check if table has Unique Key constraint, needed for loading the data */
 	SELECT @LoadType_UniqueKey = COUNT(*)
 	FROM information_schema.TABLE_CONSTRAINTS c
 	WHERE 1 = 1 AND c.TABLE_SCHEMA = @par_LayerName AND c.TABLE_NAME = @par_DestinationName AND c.CONSTRAINT_TYPE = 'UNIQUE'
@@ -171,18 +173,15 @@ BEGIN TRY
 		END
 	ELSE
 		BEGIN
+			EXEC [DA_MDDE].[sp_Logger] 'INFO', N'Run Query to get rowcount for new insert.'
 			EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_New OUT
 		END
 
+	
+	/* Update rowcount in Config table */
+	EXEC [DA_MDDE].[sp_Logger] 'INFO', N'Update Config table with Rowcounts.'
+	EXEC [DA_MDDE].[sp_UpdateConfig_RowCount]  @par_runid , @par_LayerName , @par_MappingName , @rowcount_New, 0, 0	, @par_Debug 
 	SET @LogMessage = CONCAT (@par_runid, '¡', 'Rowcount to be inserted into ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' is: ', @rowcount_New)
-
-	EXEC [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'RowCountInsert', @rowcount_New;
-	EXEC [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'RowCountUpdate', 0;
-	EXEC [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'RowCountDelete', 0;
-	EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
-
-	SET @LogMessage = CONCAT (@par_runid, '¡', 'Execute load command: ', @sqlNewRow, @sql, @sqlNewRow)
-
 	EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
 
 	IF (@par_Debug = 1)
@@ -191,15 +190,14 @@ BEGIN TRY
 	END
 	ELSE
 	BEGIN
+		EXEC [DA_MDDE].[sp_Logger] 'INFO', N'Run Query for new insert.'
 		EXEC sp_executesql @sql
 	END
 		
+	/* Update config table with OK and timestamp */
+	EXEC [DA_MDDE].[sp_Logger] 'INFO', N'Update Config table with sp_UpdateConfig_End.'
+	EXEC [DA_MDDE].[sp_UpdateConfig_End]  @par_runid , @par_LayerName , @par_MappingName , @par_Debug 
 
-	DECLARE @Endtime DATETIME2 = GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time'
-
-	EXEC [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'EndLoadDateTime', @Endtime
-
-	EXEC [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadOutcome', 'Success'
 END TRY
 
 BEGIN CATCH
@@ -208,13 +206,15 @@ BEGIN CATCH
            @ErrorState = ERROR_STATE();
 
 	SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+	/* Update config table with NOK, timestamp and run sp_UpdateConfig_ErrorPredecessor to update predecessors */
+	SET @LogMessage = CONCAT (@par_runid,'¡',N'Update Config Table with uitcome NOK')
+	EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+	EXEC [DA_MDDE].[sp_UpdateConfig_Error]  @par_runid , @par_LayerName , @par_MappingName , @par_Debug 
+
 	SET @LogMessage = CONCAT (@par_runid,'¡','Error loding folowing command:')
-	EXEC [DA_MDDE].[sp_Logger] 'ERROR', @LogMessage
-	SET @LogMessage = CONCAT (@par_runid,'¡','[DA_MDDE].[sp_InsertConfigExecution] ', @ExecutionId , ' , ', @par_runid, ' , ', @par_LayerName, ' , ', @par_MappingName, ' , ', @par_DestinationName)
 	EXEC [DA_MDDE].[sp_Logger] 'ERROR', @LogMessage
 	SET @LogMessage = CONCAT (@par_runid,'¡','Error Message: ', @ErrorMessage)
 	EXEC [DA_MDDE].[sp_Logger] 'ERROR', @LogMessage
-	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadOutcome', 'Error'
     RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
 END CATCH
 GO

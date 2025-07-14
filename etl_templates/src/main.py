@@ -24,7 +24,6 @@ def main():
     """,
         file=sys.stdout,
     )
-
     parser.add_argument("config_file", help="Locatie van een configuratiebestand")
     parser.add_argument(
         "-s", "--skip", action="store_true", help="Sla DevOps deployment over"

@@ -73,6 +73,7 @@ class DagBuilder:
         self.mappings: dict = {}
         self.edges: list = []
         self.dag: ig.Graph = None
+        self._progress_description = "Integreren van PD bestanden"
 
     def build_dag(self, files_RETW: Union[str, list]):
         """Genereert een graaf met alle mappings, entiteiten en RETW bestanden.
@@ -114,7 +115,7 @@ class DagBuilder:
         files_RETW = list(dict.fromkeys(files_RETW))
 
         # Process files
-        for file_RETW in tqdm(files_RETW, desc="Integreren van bestanden", colour="blue"):
+        for file_RETW in tqdm(files_RETW, desc=self._progress_description, colour="#b6d7a8"):
             # Add file to parser
             if not self._add_RETW_file(file_RETW=file_RETW):
                 logger.error(f"Failed to add RETW file '{file_RETW}'")
@@ -149,7 +150,7 @@ class DagBuilder:
                 "name": id_file,
                 "type": VertexType.FILE_RETW.name,
                 "Order": order_added,
-                "FileRETW": file_RETW,
+                "FileRETW": str(file_RETW),
                 "CreationDate": datetime.fromtimestamp(
                     Path(file_RETW).stat().st_ctime
                 ).strftime("%Y-%m-%d %H:%M:%S"),

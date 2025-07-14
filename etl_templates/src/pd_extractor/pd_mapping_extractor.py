@@ -51,7 +51,7 @@ class MappingExtractor:
             "Mapping Br Custom Business Rule Example",
             "Mapping AggrTotalSalesPerCustomer",
             "Mapping Pivot Orders Per Country Per Date",
-        ]  # TODO: Ignored mappings for 1st version with CrossBreeze example.
+        ]  # Ignored mappings for 1st version with CrossBreeze example.
         if isinstance(lst_mappings, list):
             lst_mappings = [
                 m for m in lst_mappings if m["a:Name"] not in lst_ignored_mapping
@@ -60,18 +60,17 @@ class MappingExtractor:
             if lst_mappings["a:Name"] not in lst_ignored_mapping:
                 lst_mappings = [lst_mappings]
         lst_mappings_def = []
-        # TODO: changed loop within the transformations to a loop in mapping_extractor. Is this the best place or not?
         for i in range(len(lst_mappings)):
-            mappings_full = lst_mappings
-            mappings = lst_mappings[i]
-            logger.debug(f"Mapping starting for '{mappings['a:Name']}")
+            mapping = lst_mappings[i]
+            logger.debug(f"Mapping starting for '{mapping['a:Name']}")
+            if ' ' in mapping['a:Name']:
+                logger.warning(f"Er staan spatie(s) in de mapping naam staan voor '{mapping['a:Name']}'.")
             # Select all Target entities with their identifier
             lst_entity_target = self.transform_target_entity.target_entities(
-                mapping=mappings,
+                mapping=mapping,
                 dict_objects=dict_objects,
             )
             # Get all attribute mappings (source/target)
-            # TODO: Is this correct? We need dict_variables for attribute mappings and source_composition
             dict_attributes = dict_attributes | dict_variables
             lst_attribute_mapping = self.transform_attribute_mapping.attribute_mapping(
                 dict_entity_target=lst_entity_target, dict_attributes=dict_attributes

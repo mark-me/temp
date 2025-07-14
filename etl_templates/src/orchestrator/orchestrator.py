@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 
-from integrator import DagReporting, DagImplementation, DeadlockPrevention
 from deploy_mdde import DeploymentMDDE
 from generator import DDLGenerator
+from integrator import DagImplementation, DagReporting, DeadlockPrevention, VertexType
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
 from repository_manager import RepositoryManager
@@ -48,7 +48,6 @@ class Orchestrator:
             None
         """
         logger.info("Start Genesis verwerking")
-        # TODO: Handler van issues resetten na elke stap
         lst_files_RETW = self._extract()
         self._handle_issues()  # Stop process if extraction results in issues
 
@@ -90,7 +89,9 @@ class Orchestrator:
             )
             return []
         files_pd_ldm = self.config.power_designer.files
-        for file_pd_ldm in tqdm(files_pd_ldm, desc="Extracten Power Designer bestanden", colour="green"):
+        for file_pd_ldm in tqdm(
+            files_pd_ldm, desc="Extracten Power Designer bestanden", colour="#d7f5cb"
+        ):
             logger.info(f"Start extractie van Power Designer bestand '{file_pd_ldm}'")
             document = PDDocument(file_pd_ldm=file_pd_ldm)
             file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
@@ -114,7 +115,7 @@ class Orchestrator:
             if self.config.ignore_warnings:
                 return
             answer = input("Waarschuwingen gevonden, wil je doorgaan? (J/n):")
-            if answer.upper() in ["", "J", "JA", "Y", "YES"]:
+            if answer.upper() in ["", "J", "JA", "JAWOHL", "Y", "YES"]:
                 return
             else:
                 error = True
@@ -165,8 +166,8 @@ class Orchestrator:
         # Visualization of the ETL flow for all RETW files combined
         path_output = str(self.config.extractor.path_output / "ETL_flow.html")
         dag.plot_etl_dag(file_html=path_output)
-        # path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
-        # dag.plot_file_dependencies(file_html=path_output)
+        path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
+        dag.plot_file_dependencies(file_html=path_output)
 
     def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> list:
         """
@@ -190,7 +191,8 @@ class Orchestrator:
         mapping_order = dag_etl.get_run_config(
             deadlock_prevention=DeadlockPrevention.TARGET
         )
-        return deploy_mdde.process(mapping_order=mapping_order)
+        mapping_dependencies = dag_etl.get_load_dependencies(vertex_type=VertexType.MAPPING)
+        return deploy_mdde.process(mapping_order=mapping_order, mapping_dependencies=mapping_dependencies)
 
     def _generate_code(self, dag_etl: DagImplementation) -> None:
         """
@@ -219,5 +221,4 @@ class Orchestrator:
         path_source = self.config.generator.path_output
         devops_handler.clean_directory_in_repo()
         devops_handler.add_directory_to_repo(path_source=path_source)
-        # TODO: Copy code and codelist to repo and update project file
         devops_handler.publish()

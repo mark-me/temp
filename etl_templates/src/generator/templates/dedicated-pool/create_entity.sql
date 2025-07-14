@@ -6,8 +6,9 @@ CREATE TABLE [{{entity.CodeModel}}].[{{entity.Code}}] (
 {%- endfor -%}
 
 {%- if entity.type_entity == "Regular" -%},
-[X_Startdate] DATE, [X_EndDate] DATE, [X_HashKey] INT, [X_IsCurrent] bit, [X_IsReplaced] bit, [X_RunId] NVARCHAR(100), [X_LoadDateTime] datetime, [X_Bron] nvarchar(10),
-CONSTRAINT [{{entity.Code}}_PK] PRIMARY KEY NONCLUSTERED (
+[X_Startdate] DATE, [X_EndDate] DATE, [X_HashKey] INT, [X_IsCurrent] bit, [X_IsReplaced] bit, [X_RunId] NVARCHAR(100), [X_LoadDateTime] datetime, [X_Bron] nvarchar(10)
+{% endif %}
+,CONSTRAINT [{{entity.Code}}_PK] PRIMARY KEY NONCLUSTERED (
     [{{entity.Code}}Key]
 )NOT ENFORCED
 ,CONSTRAINT [{{entity.Code}}_UK] UNIQUE NONCLUSTERED(
@@ -15,7 +16,7 @@ CONSTRAINT [{{entity.Code}}_PK] PRIMARY KEY NONCLUSTERED (
         [{{KeyAttribute.Code}}]{%- if not loop.last -%},{% endif %}
     {%- endfor -%}
 ) NOT ENFORCED
-{% endif %}
+
 ) WITH (
     {% if entity.Number | int < 10000000 %}
         DISTRIBUTION = ROUND_ROBIN, HEAP

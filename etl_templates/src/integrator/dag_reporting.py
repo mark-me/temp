@@ -36,6 +36,7 @@ class DagReporting(DagImplementation):
         en roept de initialisatie van de bovenliggende klasse aan.
         """
         super().__init__()
+        self._progress_description = "Rapporteren ETL afhankelijkheden"
         self.colors_discrete = [
             "#008cf9",
             "#00bbad",
@@ -93,9 +94,8 @@ class DagReporting(DagImplementation):
         dag_nx.add_nodes_from(lst_nodes)
 
         # Convert edges
-        lst_edges_igraph = graph.get_edge_dataframe().to_dict("records")
         lst_edges = []
-        lst_edges.extend((edge["source"], edge["target"]) for edge in lst_edges_igraph)
+        lst_edges.extend((edge["source"], edge["target"]) for edge in graph.es)
         dag_nx.add_edges_from(lst_edges)
         return dag_nx
 
@@ -200,7 +200,7 @@ class DagReporting(DagImplementation):
         net.toggle_physics(True)
         for edge in net.edges:
             edge["shadow"] = True
-        net.show(file_html, notebook=False)
+        net.save_graph(file_html)
 
     def _dag_node_hierarchy_level(self, dag: ig.Graph) -> ig.Graph:
         """Bepaalt en stelt de hiërarchieniveaus in voor alle knopen in de DAG.
