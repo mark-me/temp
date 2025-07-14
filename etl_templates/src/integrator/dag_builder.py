@@ -14,7 +14,7 @@ from tqdm import tqdm
 logger = get_logger(__name__)
 
 EntityRef = namedtuple("EntityRef", ("CodeModel", "CodeEntity"))
-MappingRef = namedtuple("MappingRef", ("FileRETW", "CodeMapping"))
+MappingRef = namedtuple("MappingRef", ("CodeModel", "CodeMapping"))
 
 
 class VertexType(Enum):
@@ -225,9 +225,8 @@ class DagBuilder:
         Retourneert:
             int: De stabiele hash-ID voor de mapping.
         """
-        file_RETW, code_mapping = mapping_ref
-        id_file = self.get_file_id(file=file_RETW)
-        return self._stable_hash(key=str(id_file) + code_mapping)
+        code_model, code_mapping = mapping_ref
+        return self._stable_hash(key=code_model + code_mapping)
 
     def _add_model_entities(self, file_RETW: str, dict_RETW: list) -> None:
         """Voegt model entiteiten toe aan de graaf.
@@ -287,7 +286,7 @@ class DagBuilder:
         """
         for mapping_RETW in mappings:
             id_mapping = self.get_mapping_id(
-                MappingRef(file_RETW, mapping_RETW["Code"])
+                MappingRef(mapping_RETW['EntityTarget']['CodeModel'], mapping_RETW["Code"])
             )
             mapping_RETW.update(
                 {
