@@ -1,7 +1,8 @@
-from shutil import copytree
+import os
 from enum import Enum
 from pathlib import Path
-import os
+from shutil import copytree
+from typing import List
 
 from jinja2 import Environment, FileSystemLoader, Template
 from logtools import get_logger
@@ -38,7 +39,7 @@ class DeploymentMDDE:
         self._path_data = path_data
         self.post_deployment_scripts = []
 
-    def process(self, mapping_order: list, mapping_dependencies: list) -> list:
+    def process(self, mapping_order: list, mapping_dependencies: list) -> List[Path]:
         """
         Voert het volledige post-deployment scriptgeneratieproces uit.
 

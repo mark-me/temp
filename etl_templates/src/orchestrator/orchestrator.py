@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from typing import List
 
 from deploy_mdde import DeploymentMDDE
 from generator import DDLGenerator
@@ -91,19 +92,11 @@ class Orchestrator:
             return []
 
         files_pd_ldm = self.config.power_designer.files
-        use_tqdm = sys.stdout.isatty()
-        iterator = (
-            tqdm(
-                files_pd_ldm,
-                desc="Extracten Power Designer bestanden",
-                colour="#d7f5cb",
-            )
-            if use_tqdm
-            else files_pd_ldm
-        )
-        for file_pd_ldm in iterator:
-            if not use_tqdm:
-                logger.info(f"Extracten Power Designer bestand: '{file_pd_ldm}'")
+        for file_pd_ldm in tqdm(
+            files_pd_ldm,
+            desc="Extracten Power Designer bestanden",
+            colour="#d7f5cb",
+        ):
             logger.info(f"Start extractie van Power Designer bestand '{file_pd_ldm}'")
             document = PDDocument(file_pd_ldm=file_pd_ldm)
             file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
@@ -159,7 +152,7 @@ class Orchestrator:
         dag.build_dag(files_RETW=files_RETW)
         return dag
 
-    def _report_integration(self, files_RETW: list) -> None:
+    def _report_integration(self, files_RETW: list[Path]) -> None:
         """
         Rapporteert en visualiseert de afhankelijkheden tussen de opgegeven RETW-bestanden.
 
@@ -181,7 +174,7 @@ class Orchestrator:
         path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
         dag.plot_file_dependencies(file_html=path_output)
 
-    def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> list:
+    def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> List[Path]:
         """
         Genereert MDDE deployment scripts op basis van de ETL-DAG.
 
@@ -203,8 +196,12 @@ class Orchestrator:
         mapping_order = dag_etl.get_run_config(
             deadlock_prevention=DeadlockPrevention.TARGET
         )
-        mapping_dependencies = dag_etl.get_load_dependencies(vertex_type=VertexType.MAPPING)
-        return deploy_mdde.process(mapping_order=mapping_order, mapping_dependencies=mapping_dependencies)
+        mapping_dependencies = dag_etl.get_load_dependencies(
+            vertex_type=VertexType.MAPPING
+        )
+        return deploy_mdde.process(
+            mapping_order=mapping_order, mapping_dependencies=mapping_dependencies
+        )
 
     def _generate_code(self, dag_etl: DagImplementation) -> None:
         """
