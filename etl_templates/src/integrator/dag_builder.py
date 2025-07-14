@@ -5,7 +5,7 @@ from copy import deepcopy
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
-from typing import Union
+from typing import List, Union, Tuple
 
 import igraph as ig
 from logtools import get_logger
@@ -115,7 +115,9 @@ class DagBuilder:
         files_RETW = list(dict.fromkeys(files_RETW))
 
         # Process files
-        for file_RETW in tqdm(files_RETW, desc=self._progress_description, colour="#b6d7a8"):
+        for file_RETW in tqdm(
+            files_RETW, desc=self._progress_description, colour="#b6d7a8"
+        ):
             # Add file to parser
             if not self._add_RETW_file(file_RETW=file_RETW):
                 logger.error(f"Failed to add RETW file '{file_RETW}'")
@@ -394,7 +396,6 @@ class DagBuilder:
         self._stats_entity_level()
         self._mappings_share_target()
 
-
     def _stats_mapping_run_level(self):
         """Bepaalt en wijst run-levels toe aan mappings in de graaf.
 
@@ -456,8 +457,6 @@ class DagBuilder:
             vx_entity_target = self.dag.neighbors(vx, mode="out")
             qty_mappings = len(self.dag.neighbors(vx_entity_target[0], mode="in"))
             vx["multi_mapping"] = qty_mappings > 1
-
-
 
     def get_dag_total(self) -> ig.Graph:
         """Geeft de volledige gegenereerde graaf (DAG) terug.
@@ -525,67 +524,138 @@ class DagBuilder:
 
         for vx_file in vs_files:
             dict_vertices |= {vx_file["name"]: vx_file.attributes()}
-            vs_mappings = [
-                vs
-                for vs in dag.vs(dag.successors(vx_file))
-                if vs["type"] == VertexType.MAPPING.name
-            ]
-
-            # Mappings can have source entities that are defined in another RETW file
+            vs_mappings = self._get_mappings_for_file(dag=dag, vx_file=vx_file)
             for vx_mapping in vs_mappings:
-                # Get source entities
-                vs_first_order = dag.vs(dag.neighborhood(vx_mapping, mode="in"))
-                vs_source_entities = [
-                    vx for vx in vs_first_order if vx["type"] == VertexType.ENTITY.name
-                ]
-
-                # Find RETW files connected to source entities other than the file in vx_file
+                vs_source_entities = self._get_source_entities_for_mapping(
+                    dag=dag, vx_mapping=vx_mapping
+                )
                 for vx_source_entity in vs_source_entities:
-                    vx_file_source = [
-                        vx
-                        for vx in dag.vs(
-                            dag.neighborhood(vx_source_entity.index, mode="in")
-                        )
-                        if vx["type"] == VertexType.FILE_RETW.name
-                        and vx["name"] != vx_file["name"]
-                    ]
+                    vx_file_source = self._get_file_source_for_entity(
+                        dag=dag, vx_source_entity=vx_source_entity, vx_file=vx_file
+                    )
                     if not vx_file_source:
                         continue
-
                     vx_file_source = vx_file_source[0]
                     dict_vertices |= {
                         vx_file_source["name"]: vx_file_source.attributes()
                     }
-
                     if include_entities:
                         dict_vertices |= {
                             vx_source_entity["name"]: vx_source_entity.attributes()
                         }
                         lst_edges.extend(
-                            (
-                                {
-                                    "source": vx_file_source["name"],
-                                    "target": vx_source_entity["name"],
-                                },
-                                {
-                                    "source": vx_source_entity["name"],
-                                    "target": vx_file["name"],
-                                },
+                            self._make_entity_edges(
+                                vx_file_source=vx_file_source,
+                                vx_source_entity=vx_source_entity,
+                                vx_file=vx_file,
                             )
                         )
                     else:
-                        # Make connection between files
                         lst_edges.append(
-                            {
-                                "source": vx_file_source["name"],
-                                "target": vx_file["name"],
-                            }
+                            self._make_file_edge(
+                                vx_file_source=vx_file_source, vx_file=vx_file
+                            )
                         )
 
         dag_dependencies = ig.Graph.DictList(
             vertices=list(dict_vertices.values()), edges=lst_edges, directed=True
         )
         return dag_dependencies
+
+    def _get_mappings_for_file(
+        self, dag: ig.Graph, vx_file: ig.Vertex
+    ) -> List[ig.Vertex]:
+        """Geeft alle mappings terug die bij een RETW-bestand horen.
+
+        Deze functie zoekt alle mapping-knopen die direct verbonden zijn aan het opgegeven RETW-bestand,
+        zodat afhankelijkheden tussen bestanden en mappings inzichtelijk worden.
+
+        Args:
+            dag (ig.Graph): De graaf waarin gezocht wordt.
+            vx_file (ig.Vertex): Het RETW-bestand waarvoor mappings worden gezocht.
+
+        Returns:
+            list: Een lijst van mapping knopen die bij het bestand horen.
+        """
+        return [
+            vs
+            for vs in dag.vs(dag.successors(vx_file))
+            if vs["type"] == VertexType.MAPPING.name
+        ]
+
+    def _get_source_entities_for_mapping(
+        self, dag: ig.Graph, vx_mapping: ig.Vertex
+    ) -> List[ig.Vertex]:
+        """Geeft alle bron-entiteiten terug voor een mapping.
+
+        Deze functie zoekt alle entiteiten die direct verbonden zijn als bron aan de opgegeven mapping,
+        zodat afhankelijkheden tussen mappings en entiteiten inzichtelijk worden.
+
+        Args:
+            dag (ig.Graph): De graaf waarin gezocht wordt.
+            vx_mapping (ig.Vertex): De mapping waarvoor bron-entiteiten worden gezocht.
+
+        Returns:
+            list: Een lijst van bron-entiteit knopen.
+        """
+        vs_first_order = dag.vs(dag.neighborhood(vx_mapping, mode="in"))
+        return [vx for vx in vs_first_order if vx["type"] == VertexType.ENTITY.name]
+
+    def _get_file_source_for_entity(
+        self, dag: ig.Graph, vx_source_entity: ig.Vertex, vx_file: ig.Vertex
+    ) -> List[ig.Vertex]:
+        """Geeft het RETW-bestand terug dat verbonden is aan een bron-entiteit, anders dan het huidige bestand.
+
+        Deze functie zoekt naar RETW-bestanden die als bron dienen voor de opgegeven entiteit,
+        met uitzondering van het bestand dat momenteel wordt verwerkt.
+
+        Args:
+            dag (ig.Graph): De graaf waarin gezocht wordt.
+            vx_source_entity (ig.Vertex): De bron-entiteit waarvoor het bestand wordt gezocht.
+            vx_file (ig.Vertex): Het huidige RETW-bestand dat wordt uitgesloten.
+
+        Returns:
+            list: Een lijst van RETW-bestand knopen die als bron dienen voor de entiteit.
+        """
+        return [
+            vx
+            for vx in dag.vs(dag.neighborhood(vx_source_entity.index, mode="in"))
+            if vx["type"] == VertexType.FILE_RETW.name and vx["name"] != vx_file["name"]
+        ]
+
+    def _make_entity_edges(
+        self, vx_file_source: ig.Vertex, vx_source_entity: ig.Vertex, vx_file: ig.Vertex
+    ) -> Tuple[dict]:
+        """Maakt de edges tussen een bronbestand, een entiteit en een doelbestand.
+
+        Deze functie genereert de randinformatie voor de afhankelijkheidsgraaf tussen een RETW-bronbestand,
+        een entiteit en een RETW-doelbestand, zodat de afhankelijkheden in de graaf correct worden weergegeven.
+
+        Args:
+            vx_file_source (ig.Vertex): Het bronbestand (RETW-bestand).
+            vx_source_entity (ig.Vertex): De entiteit die als tussenknoop fungeert.
+            vx_file (ig.Vertex): Het doelbestand (RETW-bestand).
+
+        Returns:
+            tuple: Een tuple met twee dictionary's die de edges representeren.
+        """
+        return (
+            {
+                "source": vx_file_source["name"],
+                "target": vx_source_entity["name"],
+            },
+            {
+                "source": vx_source_entity["name"],
+                "target": vx_file["name"],
+            },
+        )
+
+    def _make_file_edge(self, vx_file_source, vx_file):
+        """Maakt een directe edge tussen twee RETW-bestanden."""
+        return {
+            "source": vx_file_source["name"],
+            "target": vx_file["name"],
+        }
 
     def get_dag_of_entity(self, entity: EntityRef) -> ig.Graph:
         """Genereert een subgraaf voor een specifieke entiteit.
@@ -658,32 +728,71 @@ class DagBuilder:
         vs_mappings = dag.vs.select(type_eq=VertexType.MAPPING.name)
         for vx_mapping in vs_mappings:
             dict_vertices |= {vx_mapping["name"]: vx_mapping.attributes()}
-            vs_entities_source = dag.vs(dag.neighbors(vx_mapping, mode="in"))
-
-            # Getting mappings that filled source entities
-            for vx_entity_source in vs_entities_source:
-                if idx_mapping_input := dag.neighbors(vx_entity_source, mode="in"):
-                    vs_mapping_input = dag.vs(idx_mapping_input)[0]
-                    lst_edges.append(
-                        {
-                            "source": vs_mapping_input["name"],
-                            "target": vx_mapping["name"],
-                        }
-                    )
-                lst_edges
-
-            # Get mappings that depend on target entities
-            vx_entity_target = dag.vs(dag.neighbors(vx_mapping, mode="out"))[0]
-            vs_mappings_target = dag.vs(dag.neighbors(vx_entity_target, mode="out"))
             lst_edges.extend(
-                {
-                    "source": vx_mapping["name"],
-                    "target": vx_mapping_target["name"],
-                }
-                for vx_mapping_target in vs_mappings_target
+                self._add_source_entity_edges(dag=dag, vx_mapping=vx_mapping)
+            )
+            lst_edges.extend(
+                self._add_target_entity_edges(dag=dag, vx_mapping=vx_mapping)
             )
         lst_vertices = list(dict_vertices.values())
         dag_mappings = ig.Graph.DictList(
             vertices=lst_vertices, edges=lst_edges, directed=True
         )
         return dag_mappings
+
+    def _add_source_entity_edges(
+        self, dag: ig.Graph, vx_mapping: ig.Vertex
+    ) -> List[dict]:
+        """Voegt edges toe van mappings die bron-entiteiten vullen.
+
+        Deze functie zoekt voor elke bron-entiteit van de mapping naar mappings die deze entiteit vullen,
+        en voegt edges toe van deze mappings naar de huidige mapping om afhankelijkheden inzichtelijk te maken.
+
+        Args:
+            dag (ig.Graph): De graaf waarin gezocht wordt.
+            vx_mapping (ig.Vertex): De mapping waarvoor bron-entiteiten worden verwerkt.
+            lst_edges (list): De lijst waarin de edges worden toegevoegd.
+
+        Returns:
+            None
+        """
+        lst_edges = []
+        vs_entities_source = dag.vs(dag.neighbors(vx_mapping, mode="in"))
+        for vx_entity_source in vs_entities_source:
+            if idx_mapping_input := dag.neighbors(vx_entity_source, mode="in"):
+                vs_mapping_input = dag.vs(idx_mapping_input)[0]
+                lst_edges.append(
+                    {
+                        "source": vs_mapping_input["name"],
+                        "target": vx_mapping["name"],
+                    }
+                )
+        return lst_edges
+
+    def _add_target_entity_edges(
+        self, dag: ig.Graph, vx_mapping: ig.Vertex
+    ) -> List[dict]:
+        """Voegt edges toe van een mapping naar mappings die afhankelijk zijn van hun doeleenheid.
+
+        Deze functie zoekt mappings die dezelfde doeleenheid delen en voegt edges toe van de huidige mapping naar deze mappings,
+        zodat afhankelijkheden tussen mappings via entiteiten inzichtelijk worden.
+
+        Args:
+            dag (ig.Graph): De graaf waarin gezocht wordt.
+            vx_mapping (ig.Vertex): De mapping waarvan de doeleenheid wordt gebruikt.
+            lst_edges (list): De lijst waarin de edges worden toegevoegd.
+
+        Returns:
+            list: De bijgewerkte lijst met edges.
+        """
+
+        vx_entity_target = dag.vs(dag.neighbors(vx_mapping, mode="out"))[0]
+        vs_mappings_target = dag.vs(dag.neighbors(vx_entity_target, mode="out"))
+        lst_edges = [
+            {
+                "source": vx_mapping["name"],
+                "target": vx_mapping_target["name"],
+            }
+            for vx_mapping_target in vs_mappings_target
+        ]
+        return lst_edges
