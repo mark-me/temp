@@ -261,7 +261,7 @@ classDiagram
   }
   class MappingRef{
     <<namedtuple>>
-    FileRETW
+    CodeModel
     CodeMapping
   }
   class VertexType{
