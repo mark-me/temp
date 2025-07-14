@@ -384,8 +384,7 @@ class TransformModelInternal(ObjectTransformer):
                 lst_joins = [lst_joins]
             lst_joins = self.clean_keys(lst_joins)
             for i in range(len(lst_joins)):
-                join = {}
-                join["Order"] = i
+                join = {"Order": i}
                 if "o:EntityAttribute" in lst_joins[i]["c:Object1"]:
                     id_attr = lst_joins[i]["c:Object1"]["o:EntityAttribute"]["@Ref"]
                 elif "o:Shortcut" in lst_joins[i]["c:Object1"]:
@@ -396,14 +395,14 @@ class TransformModelInternal(ObjectTransformer):
                 else:
                     logger.warning(f"{relationship['Name']} missing relationship join")
                 if id_attr in dict_attributes:
-                    join["Entity1Attribute"] = dict_attributes[id_attr]
+                    join |= {"Entity1Attribute": dict_attributes[id_attr] }
                 else:
                     logger.warning(
                         f"{id_attr} for join[Entity1Attribute] not in dict_acttributes"
                     )
                 id_attr = lst_joins[i]["c:Object2"]["o:EntityAttribute"]["@Ref"]
                 if id_attr in dict_attributes:
-                    join["Entity2Attribute"] = dict_attributes[id_attr]
+                    join |= {"Entity2Attribute": dict_attributes[id_attr] }
                     lst_joins[i] = join
                 else:
                     logger.warning(
