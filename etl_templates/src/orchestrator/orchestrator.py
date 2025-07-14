@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 from deploy_mdde import DeploymentMDDE
@@ -88,10 +89,21 @@ class Orchestrator:
                 "Geen PowerDesigner-bestanden geconfigureerd. Genesis verwerking wordt afgebroken."
             )
             return []
+
         files_pd_ldm = self.config.power_designer.files
-        for file_pd_ldm in tqdm(
-            files_pd_ldm, desc="Extracten Power Designer bestanden", colour="#d7f5cb"
-        ):
+        use_tqdm = sys.stdout.isatty()
+        iterator = (
+            tqdm(
+                files_pd_ldm,
+                desc="Extracten Power Designer bestanden",
+                colour="#d7f5cb",
+            )
+            if use_tqdm
+            else files_pd_ldm
+        )
+        for file_pd_ldm in iterator:
+            if not use_tqdm:
+                logger.info(f"Extracten Power Designer bestand: '{file_pd_ldm}'")
             logger.info(f"Start extractie van Power Designer bestand '{file_pd_ldm}'")
             document = PDDocument(file_pd_ldm=file_pd_ldm)
             file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"

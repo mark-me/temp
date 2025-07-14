@@ -228,7 +228,7 @@ class DagBuilder:
         code_model, code_mapping = mapping_ref
         return self._stable_hash(key=code_model + code_mapping)
 
-    def _add_model_entities(self, file_RETW: str, dict_RETW: list) -> None:
+    def _add_model_entities(self, file_RETW: str, dict_RETW: dict) -> None:
         """Voegt model entiteiten toe aan de graaf.
 
         Extraheert de entiteiten uit het document model in de RETW dictionary en voegt zet als knopen aan graaf toe.
@@ -236,7 +236,7 @@ class DagBuilder:
 
         Args:
             file_RETW (str): RETW bestandspad
-            dict_RETW (list): Dictionary met RETW data.
+            dict_RETW (dict): Dictionary met RETW data.
 
         Returns:
             None
