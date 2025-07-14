@@ -116,7 +116,7 @@ class DagBuilder:
 
         # Process files
         for file_RETW in tqdm(
-            files_RETW, desc=self._progress_description, colour="#b6d7a8"
+            files_RETW, desc=self._progress_description, colour="#b6d7a8", leave=False
         ):
             # Add file to parser
             if not self._add_RETW_file(file_RETW=file_RETW):
