@@ -1,27 +1,25 @@
-from typing import List
-
 import igraph as ig
 from logtools import get_logger
 
-from .dag_reporting import DagReporting, EntityRef, MappingRef, NoFlowError, VertexType
+from .dag_reporting import DagReporting, MappingRef, NoFlowError, VertexType
 
 logger = get_logger(__name__)
 
 
 
-class EtlFailure(DagReporting):
+class EtlSimulator(DagReporting):
     def __init__(self):
         super().__init__()
-        self.dag = ig.Graph()
-        self.impact = []
+        self.dag: ig.Graph = None
         self.colors_status = {
             "OK": "#92FA72",
             "NOK": "#FA8072",
             "DNR": "#72DAFA"
         }
+        self.vs_mapping_failed: list[MappingRef] = []
+        self.vs_mapping_impact: list[MappingRef] = []
 
-
-    def set_mappings_failed(self, mapping_refs: List[MappingRef]) -> None:
+    def set_mappings_failed(self, mapping_refs: list[MappingRef]) -> None:
         """Markeert opgegeven mappings als gefaald in de ETL-DAG en registreert de impact.
 
         Deze functie zoekt de opgegeven mappings in de ETL-DAG, markeert ze als gefaald,
@@ -41,40 +39,11 @@ class EtlFailure(DagReporting):
         for mapping_ref in mapping_refs:
             try:
                 id_mapping = self.get_mapping_id(mapping_ref)
-                vx_failed = dag.vs.select(name=id_mapping)[0]
+                self.vs_mapping_failed.append(dag.vs.select(name=id_mapping)[0])
             except ValueError:
                 code_model, code_entity = mapping_ref
                 logger.error(f"Can't find entity '{code_model}.{code_entity}' in ETL flow!")
                 continue
-            self._set_affected(dag=dag, vx_failed=vx_failed)
-
-    def set_entities_failed(self, entity_refs: List[EntityRef]) -> None:
-        """Sets the specified entities as failed in the ETL DAG.
-
-        Marks the given entities as failed and identifies all downstream components affected by these failures.
-        The impact of the failures (failed entity/mapping and affected components) is stored for reporting and visualization.
-
-        Args:
-            entity_refs (list): A list of EntityRef tuples, each representing a failed entity.
-
-        Returns:
-            None
-        """
-        try:
-            dag = self.get_dag_ETL()
-        except NoFlowError:
-            logger.error("There are no mappings, so there is no ETL flow!")
-            return
-        for entity_ref in entity_refs:
-            try:
-                id_entity = self.get_entity_id(entity_ref)
-                vx_failed = dag.vs.select(name=id_entity)[0]
-            except ValueError:
-                code_model, code_entity = entity_ref
-                logger.error(f"Can't find entity '{code_model}.{code_entity}' in ETL flow!")
-                continue
-            self._set_affected(dag=dag, vx_failed=vx_failed)
-
 
     def _set_affected(self, dag: ig.Graph, vx_failed: ig.Vertex) -> None:
         """Bepaalt en registreert de impact van een gefaalde knoop in de ETL-DAG.
@@ -110,7 +79,7 @@ class EtlFailure(DagReporting):
                 dag.vs.select(name=affected)["color"] = "red"
         return dag
 
-    def get_report_fallout(self) -> List[dict]:
+    def get_report_fallout(self) -> list[dict]:
         """Retrieves dictionary reporting on the affected ETL components
 
         Returns:

@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-from integrator import EtlFailure, MappingRef
+from integrator import EtlSimulator, MappingRef
 from logtools import get_logger
 from orchestrator import ConfigFile
 from pd_extractor import PDDocument
@@ -11,22 +11,32 @@ from tqdm import tqdm
 
 logger = get_logger(__name__)
 
-class ReportFailure:
+class ReportEtlSimulation:
     def __init__(self, file_config: str):
-        """Initialiseert de Orkestrator.
+        """
+        Initialiseert een nieuwe ReportEtlSimulation instantie met het opgegeven configuratiebestand.
 
-        Sets up the configuration based on the provided file path.
+        Laadt de configuratie, initialiseert de ETL simulator en bereidt de rapportage voor.
 
         Args:
-            file_config (Path): Locatie configuratiebestand
+            file_config (str): Pad naar het configuratiebestand.
         """
         self.file_config = Path(file_config)
         self.config = ConfigFile(file_config=self.file_config)
         logger.info(f"Failure report geïnitialiseerd met configuratie uit '{file_config}'")
         self.paths_RETW = []
-        self.dag = EtlFailure()
+        self.dag = EtlSimulator()
 
     def create_report(self, mapping_refs: List[MappingRef], path_report: Path):
+        """
+        Genereert een rapportage van de ETL-simulatie op basis van opgegeven mappings en rapportpad.
+
+        Voert extractie uit, bouwt de ETL-DAG en slaat het rapport op.
+
+        Args:
+            mapping_refs (List[MappingRef]): Lijst van mappings die als gefaald worden beschouwd.
+            path_report (Path): Pad waar het rapport opgeslagen wordt.
+        """
         self.paths_RETW = self._extract()
         self.dag.build_dag(files_RETW=self.paths_RETW)
         self._save_report(mapping_refs=mapping_refs, path_report=path_report)
@@ -41,7 +51,6 @@ class ReportFailure:
         Returns:
             list: Lijst van paden naar de geëxtraheerde JSON-bestanden.
         """
-
         lst_files_RETW = []
         # Extractie van data uit Power Designer bestanden
         if not self.config.power_designer.files:
@@ -64,6 +73,15 @@ class ReportFailure:
         return lst_files_RETW
 
     def _save_report(self, mapping_refs: List[MappingRef], path_report: Path):
+        """
+        Slaat het ETL-simulatie rapport op met de opgegeven gefaalde mappings en rapportpad.
+
+        Zet de opgegeven mappings als gefaald en visualiseert de ETL-flow in een HTML-bestand.
+
+        Args:
+            mapping_refs (List[MappingRef]): Lijst van mappings die als gefaald worden beschouwd.
+            path_report (Path): Pad waar het rapport opgeslagen wordt.
+        """
         logger.info("Reporting on dependencies")
         self.dag.set_mappings_failed(mapping_refs=mapping_refs)
         # Visualization of the ETL flow for all RETW files combined
@@ -72,9 +90,10 @@ class ReportFailure:
 
 def main():
     """
-    Start het Genesis orkestratieproces via de command line interface.
+    Voert de Genesis failure report simulatie uit via de command line interface.
 
-    Ontleedt command line argumenten, initialiseert de Orchestrator klasse met het opgegeven configuratiebestand en start de verwerking.
+    Parseert argumenten, initialiseert de rapportageklasse en genereert een ETL-failure rapport.
+
     """
     parser = argparse.ArgumentParser(description="De Genesis failure report simulatie")
     print(
@@ -92,7 +111,7 @@ def main():
     )
     parser.add_argument("config_file", help="Locatie van een configuratiebestand")
     args = parser.parse_args()
-    genesis = ReportFailure(file_config=Path(args.config_file))
+    genesis = ReportEtlSimulation(file_config=Path(args.config_file))
 
     failed_mappings = [
         MappingRef("DA_Central", "SL_KIS_AggrMaxEndDateEad"),
