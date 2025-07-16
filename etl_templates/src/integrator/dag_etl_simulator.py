@@ -18,7 +18,7 @@ class FailureStrategy(Enum):
 class EtlSimulator(DagReporting):
     def __init__(self):
         super().__init__()
-        self.dag: ig.Graph = None
+        self.dag_simulation: ig.Graph = None
         self.colors_status = {
             "OK": "#92FA72",
             "NOK": "#FA8072",
@@ -40,20 +40,22 @@ class EtlSimulator(DagReporting):
             None
         """
         try:
-            dag = self.get_dag_ETL()
+            self.dag_simulation = self.get_dag_ETL()
+            for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
+                vx["run_status"] = "OK"
         except NoFlowError:
             logger.error("There are no mappings, so there is no ETL flow!")
             return
         for mapping_ref in mapping_refs:
             try:
                 id_mapping = self.get_mapping_id(mapping_ref)
-                self.vs_mapping_failed.append(dag.vs.select(name=id_mapping)[0])
+                self.vs_mapping_failed.append(self.dag_simulation.vs.select(name=id_mapping)[0])
             except ValueError:
                 code_model, code_entity = mapping_ref
                 logger.error(f"Can't find entity '{code_model}.{code_entity}' in ETL flow!")
                 continue
 
-    def _set_affected(self, dag: ig.Graph, vx_failed: ig.Vertex) -> None:
+    def _set_affected(self, vx_failed: ig.Vertex) -> None:
         """Bepaalt en registreert de impact van een gefaalde knoop in de ETL-DAG.
 
         Deze functie zoekt alle knopen die stroomafwaarts (downstream) van de gefaalde knoop liggen,
@@ -66,13 +68,13 @@ class EtlSimulator(DagReporting):
         Returns:
             None
         """
-        ids_affected = dag.subcomponent(vx_failed, mode="out")
+        ids_affected = self.dag_simulation.subcomponent(vx_failed, mode="out")
         ids_affected.remove(vx_failed.index)
         self.impact.append(
-            {"failed": vx_failed["name"], "affected": dag.vs(ids_affected)["name"]}
+            {"failed": vx_failed["name"], "affected": self.dag_simulation.vs(ids_affected)["name"]}
         )
 
-    def _format_failure_impact(self, dag: ig.Graph) -> ig.Graph:
+    def _format_failure_impact(self) -> None:
         """Update the DAG to reflect the impact of failed nodes.
 
         Identifies and marks nodes affected by the failures, updating their visual attributes (color, shape) in the DAG.
@@ -80,12 +82,8 @@ class EtlSimulator(DagReporting):
         Returns:
             ig.Graph: The updated DAG.
         """
-        for failure in self.impact:
-            dag.vs.select(name=failure["failed"])["color"] = "red"
-            dag.vs.select(name=failure["failed"])["shape"] = "star"
-            for affected in failure["affected"]:
-                dag.vs.select(name=affected)["color"] = "red"
-        return dag
+        for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
+            vx["color"] = self.colors_status[vx["run_status"]]
 
     def get_report_fallout(self) -> list[dict]:
         """Retrieves dictionary reporting on the affected ETL components
@@ -128,7 +126,6 @@ class EtlSimulator(DagReporting):
         Returns:
             None
         """
-        dag = self.get_dag_ETL()
-        dag = self._format_etl_dag(dag=dag)
-        dag = self._format_failure_impact(dag=dag)
-        self.plot_graph_html(dag=dag, file_html=file_html)
+        self._format_etl_dag()
+        self._format_failure_impact()
+        self.plot_graph_html(dag=self.dag_simulation, file_html=file_html)
