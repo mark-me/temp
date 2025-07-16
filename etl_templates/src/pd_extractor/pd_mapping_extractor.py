@@ -65,6 +65,7 @@ class MappingExtractor:
             logger.debug(f"Mapping starting for '{mapping['a:Name']}")
             if ' ' in mapping['a:Name']:
                 logger.warning(f"Er staan spatie(s) in de mapping naam staan voor '{mapping['a:Name']}'.")
+                mapping['a:Name'] = mapping['a:Name'].replace(" ", "_")
             # Select all Target entities with their identifier
             lst_entity_target = self.transform_target_entity.target_entities(
                 mapping=mapping,

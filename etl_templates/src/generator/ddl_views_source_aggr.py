@@ -25,7 +25,7 @@ class DDLSourceViewsAggr(DDLViewBase):
         for mapping in tqdm(mappings, desc="Genereren Source Views Aggregates", colour="#6aa84f"):
             if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
                 continue
-            mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
+            mapping["Name"] =f"{mapping["Name"]}"
             self._set_datasource_code(mapping)
             mapping = self._set_source_view_aggr_derived(mapping=mapping)
             content = self._render_source_view_aggr(mapping=mapping)
@@ -44,7 +44,7 @@ class DDLSourceViewsAggr(DDLViewBase):
             f"{self.dir_output}/{mapping['EntityTarget']['CodeModel']}/Views/"
         )
         dir_output.mkdir(parents=True, exist_ok=True)
-        mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
+        mapping["Name"] =f"{mapping["Name"]}"
         file_output = f"vw_src_{mapping['Name']}.sql"
         path_file_output = f"{dir_output}/{file_output}"
         return dir_output, file_output, path_file_output
@@ -58,7 +58,6 @@ class DDLSourceViewsAggr(DDLViewBase):
         Returns:
             dict: Gewijzigde entiteitsdata
         """
-        mapping["Name"] = f"{mapping["Name"].replace(' ', '_')}"
         dict_aggr_functions = {
             "AVERAGE": "AVG",
             "COUNT": "COUNT",

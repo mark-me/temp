@@ -25,7 +25,7 @@ class DDLViewBase(DDLGeneratorBase):
             dict: De aangepaste mapping met eventueel toegevoegde DataSourceCode.
         """
         if "DataSource" in mapping:
-            mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
+            mapping["Name"] =f"{mapping["Name"]}"
             datasource = mapping["DataSource"]
             mapping["DataSourceCode"] = (
                 datasource[len(self.source_layer_prefix):]

@@ -39,7 +39,7 @@ class DeploymentMDDE:
         self._path_data = path_data
         self.post_deployment_scripts = []
 
-    def process(self, mapping_order: list, mapping_dependencies: list) -> List[Path]:
+    def process(self, mapping_order: List[dict], mapping_dependencies: List[dict]) -> List[Path]:
         """
         Voert het volledige post-deployment scriptgeneratieproces uit.
 
@@ -98,7 +98,7 @@ class DeploymentMDDE:
         )
         return environment.get_template(type_template.value)
 
-    def _generate_load_config(self, mapping_order: list):
+    def _generate_load_config(self, mapping_order: List[dict]) -> None:
         """
         Genereert het post-deploy script voor de mapping order configuratie.
         Rendert het template met de mapping order en schrijft het resultaat naar het juiste outputbestand.
@@ -120,7 +120,7 @@ class DeploymentMDDE:
 
         self.post_deployment_scripts.append(path_file_output)
 
-    def _generate_load_dependencies(self, mapping_dependencies: list):
+    def _generate_load_dependencies(self, mapping_dependencies: List[dict]) -> None:
         """
         Genereert het post-deploy script voor de mapping dependencies voor conditioneel laden van entiteiten.
         Rendert het template met de mapping dependencies en schrijft het resultaat naar het juiste outputbestand.
@@ -142,7 +142,7 @@ class DeploymentMDDE:
 
         self.post_deployment_scripts.append(path_file_output)
 
-    def _generate_load_code_list(self):
+    def _generate_load_code_list(self) -> None:
         """
         Genereert het post-deploy script voor alle codelijsten in de data directory.
         Leest de codelijsten, rendert het template en schrijft het resultaat naar het juiste outputbestand.
@@ -166,7 +166,7 @@ class DeploymentMDDE:
         )
         self.post_deployment_scripts.append(path_file_output)
 
-    def _generate_load_dates(self):
+    def _generate_load_dates(self) -> None:
         """
         Genereert het post-deploy script voor het laden van datums in de database.
         Schrijft een SQL-opdracht naar een bestand om de stored procedure voor het laden van datums uit te voeren.
@@ -183,7 +183,7 @@ class DeploymentMDDE:
         )
         self.post_deployment_scripts.append(path_file_output)
 
-    def _generate_post_deploy_master(self):
+    def _generate_post_deploy_master(self) -> None:
         """
         Voegt een post-deploy scriptbestand toe aan het masterbestand voor post-deployment scripts.
         Controleert of het bestand al is opgenomen en voegt het toe indien nodig.

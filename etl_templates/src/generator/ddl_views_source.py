@@ -25,7 +25,7 @@ class DDLSourceViews(DDLViewBase):
         for mapping in tqdm(mappings, desc="Genereren Source Views", colour="#93c47d"):
             if mapping["EntityTarget"]["Stereotype"] == "mdde_AggregateBusinessRule":
                 continue
-            mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
+            mapping["Name"] =f"{mapping["Name"]}"
             self._set_datasource_code(mapping)
             content = self._render_source_view(mapping)
             path_file_output = self._get_source_view_paths(
@@ -48,7 +48,7 @@ class DDLSourceViews(DDLViewBase):
         Returns:
             str: De geformatteerde SQL-string voor de source view.
         """
-        mapping["Name"] =f"{mapping["Name"].replace(' ','_')}"
+        mapping["Name"] =f"{mapping["Name"]}"
         content = self.template.render(mapping=mapping)
         #content = sqlparse.format(content, reindent=True, keyword_case="upper")
         return content

@@ -32,8 +32,8 @@ class EtlFailure(DagReporting):
             return
         for mapping_ref in mapping_refs:
             try:
-                id_entity = self.get_mapping_id(mapping_ref)
-                vx_failed = dag.vs.select(name=id_entity)[0]
+                id_mapping = self.get_mapping_id(mapping_ref)
+                vx_failed = dag.vs.select(name=id_mapping)[0]
             except ValueError:
                 code_model, code_entity = mapping_ref
                 logger.error(f"Can't find entity '{code_model}.{code_entity}' in ETL flow!")

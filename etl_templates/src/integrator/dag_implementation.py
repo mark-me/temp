@@ -163,8 +163,8 @@ class DagImplementation(DagBuilder):
                 "RunLevelStage": vx["run_level_stage"],
                 "NameModel": vx["NameModel"],
                 "CodeModel": vx["CodeModel"],
-                "MappingName": vx["Name"].replace(" ", "_"),
-                "SourceViewName": f"vw_src_{vx['Name'].replace(' ', '_')}",
+                "MappingName": vx["Name"],
+                "SourceViewName": f"vw_src_{vx['Name']}",
                 "TargetName": vx["EntityTarget"]["Code"],
             }
             lst_mappings.append(dict_mapping)
@@ -309,10 +309,10 @@ class DagImplementation(DagBuilder):
         return [
             {
                 "model": vx["CodeModel"],
-                "name": vx["Name"].replace(" ", "_"),
+                "name": vx["Name"],
                 "type_relation": "predecessor",
                 "model_related": vx_in["CodeModel"],
-                "name_related": vx_in["Name"].replace(" ", "_"),
+                "name_related": vx_in["Name"],
             }
             for vx_in in vs
             if vx_in["type"] == vertex_type.name
@@ -336,10 +336,10 @@ class DagImplementation(DagBuilder):
         return [
             {
                 "model": vx["CodeModel"],
-                "name": vx["Name"].replace(" ", "_"),
+                "name": vx["Name"],
                 "type_relation": "successor",
                 "model_related": vx_out["CodeModel"],
-                "name_related": vx_out["Name"].replace(" ", "_"),
+                "name_related": vx_out["Name"],
             }
             for vx_out in vs_out
             if vx_out["type"] == vertex_type.name
