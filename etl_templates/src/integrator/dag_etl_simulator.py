@@ -1,3 +1,5 @@
+from enum import Enum, auto
+
 import igraph as ig
 from logtools import get_logger
 
@@ -5,7 +7,13 @@ from .dag_reporting import DagReporting, MappingRef, NoFlowError, VertexType
 
 logger = get_logger(__name__)
 
-
+class FailureStrategy(Enum):
+    ONLY_SUCCESSORS = auto()
+    SIBLINGS_OF_MAPPINGS = auto()
+    SIBLINGS_OF_AGGREGATES = auto()
+    ALL_OF_SHARED_TARGET = auto()
+    WHOLE_SUBCOMPONENT = auto()
+    RUN_LEVEL = auto()
 
 class EtlSimulator(DagReporting):
     def __init__(self):
