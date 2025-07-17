@@ -24,8 +24,8 @@ class EtlSimulator(DagReporting):
             "NOK": "#FA8072",
             "DNR": "#72DAFA"
         }
+        self.color_entity = "#F1FA72"
         self.vs_mapping_failed: list[MappingRef] = []
-        self.vs_mapping_impact: list[MappingRef] = []
 
     def set_mappings_failed(self, mapping_refs: list[MappingRef]) -> None:
         """Markeert opgegeven mappings als gefaald in de ETL-DAG en registreert de impact.
@@ -41,6 +41,7 @@ class EtlSimulator(DagReporting):
         """
         try:
             self.dag_simulation = self.get_dag_ETL()
+            self.dag_simulation = self._dag_node_hierarchy_level(self.dag_simulation)
             for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
                 vx["run_status"] = "OK"
         except NoFlowError:
@@ -84,6 +85,8 @@ class EtlSimulator(DagReporting):
         """
         for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
             vx["color"] = self.colors_status[vx["run_status"]]
+        for vx in self.dag_simulation.vs.select(type_eq=VertexType.ENTITY.name):
+            vx["run_status"] = self.color_entity
 
     def get_report_fallout(self) -> list[dict]:
         """Retrieves dictionary reporting on the affected ETL components
@@ -126,6 +129,10 @@ class EtlSimulator(DagReporting):
         Returns:
             None
         """
-        self._format_etl_dag()
+        #self._format_etl_dag()
         self._format_failure_impact()
-        self.plot_graph_html(dag=self.dag_simulation, file_html=file_html)
+        hierarchy = [vx["level"] for vx in self.dag_simulation.vs]
+        layout = self.dag_simulation.layout_sugiyama(layers=hierarchy)
+        # labels = [vx["code"] for vx in self.dag_simulation.vs]
+        ig.plot(self.dag_simulation, layout=layout, target=file_html, bbox=(0,0,1920,1080))
+        #self.plot_graph_html(dag=self.dag_simulation, file_html=file_html)

@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-from integrator import EtlSimulator, MappingRef
+from integrator import EtlSimulator, MappingRef, FailureStrategy
 from logtools import get_logger
 from orchestrator import ConfigFile
 from pd_extractor import PDDocument
@@ -117,7 +117,7 @@ def main():
         MappingRef("DA_Central", "SL_KIS_AggrMaxEndDateEad"),
         MappingRef("DA_Central", "SL_KIS_AggrMaxMutationDate"),
     ]
-    genesis.create_report(mapping_refs=failed_mappings, path_report=Path("etl_templates/intermediate/test.html"))
+    genesis.create_report(mapping_refs=failed_mappings, path_report=Path("etl_templates/intermediate/test.png"))
 
 if __name__ == "__main__":
     main()
