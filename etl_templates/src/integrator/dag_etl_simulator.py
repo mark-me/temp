@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from copy import deepcopy
 
 import igraph as ig
 from logtools import get_logger
@@ -6,6 +7,7 @@ from logtools import get_logger
 from .dag_reporting import DagReporting, MappingRef, NoFlowError, VertexType
 
 logger = get_logger(__name__)
+
 
 class FailureStrategy(Enum):
     ONLY_SUCCESSORS = auto()
@@ -15,23 +17,45 @@ class FailureStrategy(Enum):
     WHOLE_SUBCOMPONENT = auto()
     RUN_LEVEL = auto()
 
+
 class EtlSimulator(DagReporting):
     def __init__(self):
+        """Initialiseert een nieuwe EtlSimulator instantie voor het simuleren van ETL-DAG's.
+
+        Zet de standaardwaarden voor de simulatie-DAG, statuskleuren, entiteitkleur en gefaalde mappings.
+
+        Returns:
+            None
+        """
         super().__init__()
         self.dag_simulation: ig.Graph = None
-        self.colors_status = {
-            "OK": "#92FA72",
-            "NOK": "#FA8072",
-            "DNR": "#72DAFA"
-        }
-        self.color_entity = "#F1FA72"
+        self.colors_status = {"OK": "green", "NOK": "red", "DNR": "blue"}
+        self.color_entity = "lemonchiffon"
         self.vs_mapping_failed: list[MappingRef] = []
+
+    def build_dag(self, files_RETW):
+        """Bouwt de ETL-DAG op basis van de opgegeven RETW-bestanden.
+
+        Initialiseert de simulatie-DAG en wijst hiërarchieniveaus en standaardstatussen toe aan de knooppunten.
+
+        Args:
+            files_RETW: De RETW-bestanden die gebruikt worden om de DAG te bouwen.
+
+        Returns:
+            None
+        """
+        super().build_dag(files_RETW)
+        self.dag_simulation = self.get_dag_ETL()
+        self.dag_simulation = self._dag_node_hierarchy_level(self.dag_simulation)
+        for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
+            vx["run_status"] = "OK"
 
     def set_mappings_failed(self, mapping_refs: list[MappingRef]) -> None:
         """Markeert opgegeven mappings als gefaald in de ETL-DAG en registreert de impact.
 
         Deze functie zoekt de opgegeven mappings in de ETL-DAG, markeert ze als gefaald,
-        en bepaalt welke downstream componenten hierdoor worden beïnvloed. De impact wordt opgeslagen voor rapportage en visualisatie.
+        en bepaalt welke downstream componenten hierdoor worden beïnvloed. De impact wordt opgeslagen
+        voor rapportage en visualisatie.
 
         Args:
             mapping_refs (list): Een lijst van MappingRef tuples, elk representerend een gefaalde mapping.
@@ -39,100 +63,109 @@ class EtlSimulator(DagReporting):
         Returns:
             None
         """
-        try:
-            self.dag_simulation = self.get_dag_ETL()
-            self.dag_simulation = self._dag_node_hierarchy_level(self.dag_simulation)
-            for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
-                vx["run_status"] = "OK"
-        except NoFlowError:
-            logger.error("There are no mappings, so there is no ETL flow!")
-            return
         for mapping_ref in mapping_refs:
             try:
                 id_mapping = self.get_mapping_id(mapping_ref)
-                self.vs_mapping_failed.append(self.dag_simulation.vs.select(name=id_mapping)[0])
+                self.vs_mapping_failed.append(
+                    self.dag_simulation.vs.select(name=id_mapping)[0]
+                )
             except ValueError:
                 code_model, code_entity = mapping_ref
-                logger.error(f"Can't find entity '{code_model}.{code_entity}' in ETL flow!")
+                logger.error(
+                    f"Can't find entity '{code_model}.{code_entity}' in ETL flow!"
+                )
                 continue
 
-    def _set_affected(self, vx_failed: ig.Vertex) -> None:
-        """Bepaalt en registreert de impact van een gefaalde knoop in de ETL-DAG.
+    def _apply_failure_strategy(self, strategy: FailureStrategy):
+        """Past de geselecteerde faalstrategie toe op de ETL-DAG-simulatie.
 
-        Deze functie zoekt alle knopen die stroomafwaarts (downstream) van de gefaalde knoop liggen,
-        en slaat deze samen met de gefaalde knoop op in de impactlijst voor rapportage en visualisatie.
+        Werkt de run-status van knooppunten in de DAG bij op basis van de opgegeven faalstrategie,
+        waarbij gefaalde mappings en hun getroffen componenten worden gemarkeerd.
 
         Args:
-            dag (ig.Graph): De ETL-DAG waarin de failure is opgetreden.
-            vx_failed (ig.Vertex): De gefaalde knoop in de ETL-DAG.
+            strategy (FailureStrategy): De toe te passen faalstrategie.
 
         Returns:
             None
-        """
-        ids_affected = self.dag_simulation.subcomponent(vx_failed, mode="out")
-        ids_affected.remove(vx_failed.index)
-        self.impact.append(
-            {"failed": vx_failed["name"], "affected": self.dag_simulation.vs(ids_affected)["name"]}
-        )
-
-    def _format_failure_impact(self) -> None:
-        """Update the DAG to reflect the impact of failed nodes.
-
-        Identifies and marks nodes affected by the failures, updating their visual attributes (color, shape) in the DAG.
-
-        Returns:
-            ig.Graph: The updated DAG.
         """
         for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
-            vx["color"] = self.colors_status[vx["run_status"]]
-        for vx in self.dag_simulation.vs.select(type_eq=VertexType.ENTITY.name):
-            vx["run_status"] = self.color_entity
+            vx["run_status"] = "OK"
+        for vx in self.vs_mapping_failed:
+            vx["run_status"] = "NOK"
+        if strategy.ONLY_SUCCESSORS:
+            for vx in self.vs_mapping_failed:
+                id_vs = self.dag_simulation.subcomponent(vx, mode="out")
 
-    def get_report_fallout(self) -> list[dict]:
-        """Retrieves dictionary reporting on the affected ETL components
 
-        Returns:
-            list: Report on mappings and entities that failed or are affected by the failure
-        """
-        result = []
-        dag = self.get_dag_ETL()
-        for failure in self.impact:
-            vs_affected = dag.vs.select(name_in=failure["affected"])
-            mappings_data = [
-                vx.attributes()
-                for vx in vs_affected
-                if vx["type"] == VertexType.MAPPING.name
-            ]
-            entities_data = [
-                vx.attributes()
-                for vx in vs_affected
-                if vx["type"] == VertexType.ENTITY.name
-            ]
-            failed = [vx.attributes() for vx in dag.vs.select(name=failure["failed"])][0]
-            result.append(
-                {
-                    "failed": failed,
-                    "affected": {"mappings": mappings_data, "entities": entities_data},
-                }
-            )
-        return result
+    def _format_failure_impact(self, dag: ig.Graph) -> None:
+        """Formatteert de impact van falen in de ETL-DAG voor visualisatie.
 
-    def plot_etl_fallout(self, file_html: str) -> None:
-        """Plots the ETL fallout graph, highlighting failed nodes and their impact.
-
-        Generates an HTML visualization of the ETL DAG, highlighting the failed entities/mappings and the downstream
-        components affected by the failure.
+        Wijzigt labels, kleuren en vormen van knooppunten in de opgegeven DAG op basis van
+        hun status en type, zodat de impact van falen duidelijk zichtbaar is in de visualisatie.
 
         Args:
-            file_html (str): Path to the output HTML file.
+            dag (ig.Graph): De ETL-DAG die geformatteerd moet worden.
 
         Returns:
             None
         """
-        #self._format_etl_dag()
-        self._format_failure_impact()
-        hierarchy = [vx["level"] for vx in self.dag_simulation.vs]
-        layout = self.dag_simulation.layout_sugiyama(layers=hierarchy)
-        # labels = [vx["code"] for vx in self.dag_simulation.vs]
-        ig.plot(self.dag_simulation, layout=layout, target=file_html, bbox=(0,0,1920,1080))
-        #self.plot_graph_html(dag=self.dag_simulation, file_html=file_html)
+        for vx in dag.vs:
+            vx["label"] = f"{vx["CodeModel"]}.{vx["Code"]}"
+            if vx["type"] == VertexType.MAPPING.name:
+                vx["color"] = self.colors_status[vx["run_status"]]
+            elif vx["type"] == VertexType.ENTITY.name:
+                vx["shape"] = "square"
+                vx["color"] = self.color_entity
+
+
+    def plot_etl_fallout(self, failure_strategy: FailureStrategy, file_html: str) -> None:
+        """Visualiseert de impact van een faalstrategie op de ETL-DAG en slaat het resultaat op als HTML-bestand.
+
+        Past de opgegeven faalstrategie toe, bepaalt de getroffen componenten en genereert een visualisatie van
+        de ETL-DAG met de impact van falen.
+
+        Args:
+            failure_strategy (FailureStrategy): De toe te passen faalstrategie.
+            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+
+        Returns:
+            None
+        """
+        self._apply_failure_strategy(strategy=failure_strategy)
+        dag_report = self._get_affected_components()
+        self._format_failure_impact(dag=dag_report)
+        hierarchy = [vx["level"] for vx in dag_report.vs]
+        layout = dag_report.layout_sugiyama(layers=hierarchy)
+        visual_style = {
+            "vertex_label": dag_report.vs["label"],
+            "vertex_color": dag_report.vs['color'],
+            "vertex_label_dist": 2,
+            "vertex_label_angle": 0,
+        }
+        ig.plot(
+            dag_report,
+            layout=layout,
+            target=file_html,
+            bbox=(0, 0, 1920, 1080),
+            **visual_style
+        )
+
+    def _get_affected_components(self):
+        """Bepaalt en retourneert het subgraaf van de ETL-DAG met alleen de getroffen componenten.
+
+        Selecteert alle knooppunten die direct of indirect zijn beïnvloed door falen en retourneert een subgraaf met alleen deze componenten.
+
+        Returns:
+            ig.Graph: De subgraaf met getroffen componenten.
+        """
+        vs_affected = [vx for vx in self.dag_simulation.vs if vx["run_status"] in ["NOK", "DNR"]]
+        id_vs_dag = [vx.index for vx in self.dag_simulation.vs]
+        lst_components = []
+        for vx in vs_affected:
+            ids_affected = self.dag_simulation.subcomponent(vx, mode="all")
+            lst_components.extend(ids_affected)
+
+        ids_delete = list(set(id_vs_dag) - set(ids_affected))
+        dag = deepcopy(self.dag_simulation)
+        dag.delete_vertices(ids_delete)
+        return dag

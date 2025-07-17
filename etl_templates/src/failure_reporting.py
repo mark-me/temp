@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 logger = get_logger(__name__)
 
+
 class ReportEtlSimulation:
     def __init__(self, file_config: str):
         """
@@ -23,11 +24,13 @@ class ReportEtlSimulation:
         """
         self.file_config = Path(file_config)
         self.config = ConfigFile(file_config=self.file_config)
-        logger.info(f"Failure report geïnitialiseerd met configuratie uit '{file_config}'")
+        logger.info(
+            f"Failure report geïnitialiseerd met configuratie uit '{file_config}'"
+        )
         self.paths_RETW = []
         self.dag = EtlSimulator()
 
-    def create_report(self, mapping_refs: List[MappingRef], path_report: Path):
+    def build_dag(self, mapping_refs: List[MappingRef], path_report: Path):
         """
         Genereert een rapportage van de ETL-simulatie op basis van opgegeven mappings en rapportpad.
 
@@ -39,7 +42,7 @@ class ReportEtlSimulation:
         """
         self.paths_RETW = self._extract()
         self.dag.build_dag(files_RETW=self.paths_RETW)
-        self._save_report(mapping_refs=mapping_refs, path_report=path_report)
+        self.dag.set_mappings_failed(mapping_refs=mapping_refs)
 
     def _extract(self) -> list:
         """
@@ -72,7 +75,7 @@ class ReportEtlSimulation:
             lst_files_RETW.append(file_RETW)
         return lst_files_RETW
 
-    def _save_report(self, mapping_refs: List[MappingRef], path_report: Path):
+    def create_report(self, failure_strategy: FailureStrategy, path_report: Path):
         """
         Slaat het ETL-simulatie rapport op met de opgegeven gefaalde mappings en rapportpad.
 
@@ -83,10 +86,12 @@ class ReportEtlSimulation:
             path_report (Path): Pad waar het rapport opgeslagen wordt.
         """
         logger.info("Reporting on dependencies")
-        self.dag.set_mappings_failed(mapping_refs=mapping_refs)
         # Visualization of the ETL flow for all RETW files combined
         path_output = str(path_report)
-        self.dag.plot_etl_fallout(file_html=path_output)
+        self.dag.plot_etl_fallout(
+            failure_strategy=failure_strategy, file_html=path_output
+        )
+
 
 def main():
     """
@@ -111,13 +116,18 @@ def main():
     )
     parser.add_argument("config_file", help="Locatie van een configuratiebestand")
     args = parser.parse_args()
-    genesis = ReportEtlSimulation(file_config=Path(args.config_file))
+    simulator = ReportEtlSimulation(file_config=Path(args.config_file))
 
     failed_mappings = [
         MappingRef("DA_Central", "SL_KIS_AggrMaxEndDateEad"),
         MappingRef("DA_Central", "SL_KIS_AggrMaxMutationDate"),
     ]
-    genesis.create_report(mapping_refs=failed_mappings, path_report=Path("etl_templates/intermediate/test.png"))
+    simulator.build_dag(mapping_refs=failed_mappings)
+    simulator.create_report(
+        failure_strategy=FailureStrategy.ONLY_SUCCESSORS,
+        path_report=Path("etl_templates/intermediate/test.png"),
+    )
+
 
 if __name__ == "__main__":
     main()
