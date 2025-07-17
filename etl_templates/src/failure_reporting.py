@@ -30,7 +30,7 @@ class ReportEtlSimulation:
         self.paths_RETW = []
         self.dag = EtlSimulator()
 
-    def build_dag(self, mapping_refs: List[MappingRef], path_report: Path):
+    def build_dag(self, mapping_refs: List[MappingRef]):
         """
         Genereert een rapportage van de ETL-simulatie op basis van opgegeven mappings en rapportpad.
 
@@ -38,7 +38,6 @@ class ReportEtlSimulation:
 
         Args:
             mapping_refs (List[MappingRef]): Lijst van mappings die als gefaald worden beschouwd.
-            path_report (Path): Pad waar het rapport opgeslagen wordt.
         """
         self.paths_RETW = self._extract()
         self.dag.build_dag(files_RETW=self.paths_RETW)
@@ -77,19 +76,22 @@ class ReportEtlSimulation:
 
     def create_report(self, failure_strategy: FailureStrategy, path_report: Path):
         """
-        Slaat het ETL-simulatie rapport op met de opgegeven gefaalde mappings en rapportpad.
+        Genereert een rapportage van de ETL-failure simulatie met de opgegeven faalstrategie en rapportpad.
 
-        Zet de opgegeven mappings als gefaald en visualiseert de ETL-flow in een HTML-bestand.
+        Visualiseert de impact van de faalstrategie op de ETL-DAG en slaat het resultaat op als HTML-bestand.
 
         Args:
-            mapping_refs (List[MappingRef]): Lijst van mappings die als gefaald worden beschouwd.
-            path_report (Path): Pad waar het rapport opgeslagen wordt.
+            failure_strategy (FailureStrategy): De toe te passen faalstrategie.
+            path_report (Path): Het pad waar het rapport opgeslagen wordt.
+
+        Returns:
+            None
         """
         logger.info("Reporting on dependencies")
         # Visualization of the ETL flow for all RETW files combined
         path_output = str(path_report)
         self.dag.plot_etl_fallout(
-            failure_strategy=failure_strategy, file_html=path_output
+            failure_strategy=failure_strategy, file_png=path_output
         )
 
 

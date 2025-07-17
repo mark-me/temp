@@ -92,10 +92,15 @@ class EtlSimulator(DagReporting):
             vx["run_status"] = "OK"
         for vx in self.vs_mapping_failed:
             vx["run_status"] = "NOK"
-        if strategy.ONLY_SUCCESSORS:
-            for vx in self.vs_mapping_failed:
-                id_vs = self.dag_simulation.subcomponent(vx, mode="out")
+        if strategy == FailureStrategy.ONLY_SUCCESSORS:
+            self._apply_strategy_only_successors()
 
+    def _apply_strategy_only_successors(self):
+        for vx in self.vs_mapping_failed:
+                id_vs = self.dag_simulation.subcomponent(vx, mode="out")
+                id_vs = [id_vx for id_vx in id_vs if id_vx != vx.index]
+                for id_vx in id_vs:
+                    self.dag_simulation.vs[id_vx]["run_status"] = "DNR"
 
     def _format_failure_impact(self, dag: ig.Graph) -> None:
         """Formatteert de impact van falen in de ETL-DAG voor visualisatie.
@@ -118,7 +123,7 @@ class EtlSimulator(DagReporting):
                 vx["color"] = self.color_entity
 
 
-    def plot_etl_fallout(self, failure_strategy: FailureStrategy, file_html: str) -> None:
+    def plot_etl_fallout(self, failure_strategy: FailureStrategy, file_png: str) -> None:
         """Visualiseert de impact van een faalstrategie op de ETL-DAG en slaat het resultaat op als HTML-bestand.
 
         Past de opgegeven faalstrategie toe, bepaalt de getroffen componenten en genereert een visualisatie van
@@ -145,7 +150,7 @@ class EtlSimulator(DagReporting):
         ig.plot(
             dag_report,
             layout=layout,
-            target=file_html,
+            target=file_png,
             bbox=(0, 0, 1920, 1080),
             **visual_style
         )
