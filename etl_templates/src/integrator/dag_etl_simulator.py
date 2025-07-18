@@ -22,7 +22,7 @@ class MappingStatus(Enum):
     NOK = "Failed"
     OK = "Success"
     DNR = "Did not run"
-    RUN_RESTORE = "Success, but needs restoring"
+    OKR = "Success, but needs restoring"
 
 
 class EtlSimulator(DagReporting):
@@ -40,7 +40,7 @@ class EtlSimulator(DagReporting):
             MappingStatus.OK: "limegreen",
             MappingStatus.NOK: "red",
             MappingStatus.DNR: "gold",
-            MappingStatus.RUN_RESTORE: "orange",
+            MappingStatus.OKR: "orange",
         }
         self.color_entity = "lemonchiffon"
         self.vs_mapping_failed: list[MappingRef] = []
