@@ -10,12 +10,19 @@ logger = get_logger(__name__)
 
 
 class FailureStrategy(Enum):
-    ONLY_SUCCESSORS = auto()
-    SIBLINGS_OF_MAPPINGS = auto()
-    SIBLINGS_OF_AGGREGATES = auto()
-    ALL_OF_SHARED_TARGET = auto()
-    WHOLE_SUBCOMPONENT = auto()
-    RUN_LEVEL = auto()
+    ONLY_SUCCESSORS = "Only successors"
+    SIBLINGS_OF_MAPPINGS = "Sibling mappings"
+    SIBLINGS_OF_AGGREGATES = "Sibling aggregates"
+    ALL_OF_SHARED_TARGET = "All shared targets"
+    WHOLE_SUBCOMPONENT = "Whole subcomponent"
+    RUN_LEVEL = "Run level"
+
+
+class MappingStatus(Enum):
+    NOK = "Failed"
+    OK = "Success"
+    DNR = "Did not run"
+    RUN_RESTORE = "Success, but needs restoring"
 
 
 class EtlSimulator(DagReporting):
@@ -29,7 +36,12 @@ class EtlSimulator(DagReporting):
         """
         super().__init__()
         self.dag_simulation: ig.Graph = None
-        self.colors_status = {"OK": "green", "NOK": "red", "DNR": "blue"}
+        self.colors_status = {
+            MappingStatus.OK: "limegreen",
+            MappingStatus.NOK: "red",
+            MappingStatus.DNR: "gold",
+            MappingStatus.RUN_RESTORE: "orange",
+        }
         self.color_entity = "lemonchiffon"
         self.vs_mapping_failed: list[MappingRef] = []
 
@@ -48,7 +60,10 @@ class EtlSimulator(DagReporting):
         self.dag_simulation = self.get_dag_ETL()
         self.dag_simulation = self._dag_node_hierarchy_level(self.dag_simulation)
         for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
-            vx["run_status"] = "OK"
+            vx["run_status"] = MappingStatus.OK
+            vx["is_aggregate"] = (
+                vx["EntityTarget"]["Stereotype"] == "mdde_AggregateBusinessRule"
+            )
 
     def set_mappings_failed(self, mapping_refs: list[MappingRef]) -> None:
         """Markeert opgegeven mappings als gefaald in de ETL-DAG en registreert de impact.
@@ -69,7 +84,7 @@ class EtlSimulator(DagReporting):
                 self.vs_mapping_failed.append(
                     self.dag_simulation.vs.select(name=id_mapping)[0]
                 )
-            except ValueError:
+            except (ValueError, IndexError):
                 code_model, code_entity = mapping_ref
                 logger.error(
                     f"Can't find entity '{code_model}.{code_entity}' in ETL flow!"
@@ -89,18 +104,25 @@ class EtlSimulator(DagReporting):
             None
         """
         for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
-            vx["run_status"] = "OK"
+            vx["run_status"] = MappingStatus.OK
         for vx in self.vs_mapping_failed:
-            vx["run_status"] = "NOK"
+            vx["run_status"] = MappingStatus.NOK
         if strategy == FailureStrategy.ONLY_SUCCESSORS:
             self._apply_strategy_only_successors()
 
     def _apply_strategy_only_successors(self):
         for vx in self.vs_mapping_failed:
-                id_vs = self.dag_simulation.subcomponent(vx, mode="out")
-                id_vs = [id_vx for id_vx in id_vs if id_vx != vx.index]
-                for id_vx in id_vs:
-                    self.dag_simulation.vs[id_vx]["run_status"] = "DNR"
+            id_vs = self.dag_simulation.subcomponent(vx, mode="out")
+            id_vs = [id_vx for id_vx in id_vs if id_vx != vx.index]
+            for id_vx in id_vs:
+                self.dag_simulation.vs[id_vx]["run_status"] = MappingStatus.DNR
+
+    def _apply_strategy_shared_target(self):
+        for vx in self.vs_mapping_failed:
+            id_vs = self.dag_simulation.subcomponent(vx, mode="out")
+            id_vs = [id_vx for id_vx in id_vs if id_vx != vx.index]
+            for id_vx in id_vs:
+                self.dag_simulation.vs[id_vx]["run_status"] = MappingStatus.DNR
 
     def _format_failure_impact(self, dag: ig.Graph) -> None:
         """Formatteert de impact van falen in de ETL-DAG voor visualisatie.
@@ -115,15 +137,18 @@ class EtlSimulator(DagReporting):
             None
         """
         for vx in dag.vs:
-            vx["label"] = f"{vx["CodeModel"]}.{vx["Code"]}"
+            vx["label"] = f"{vx['CodeModel']}\n{vx['Code']}"
             if vx["type"] == VertexType.MAPPING.name:
                 vx["color"] = self.colors_status[vx["run_status"]]
+                if vx["is_aggregate"]:
+                    vx["shape"] = "triangle-down"
             elif vx["type"] == VertexType.ENTITY.name:
                 vx["shape"] = "square"
                 vx["color"] = self.color_entity
 
-
-    def plot_etl_fallout(self, failure_strategy: FailureStrategy, file_png: str) -> None:
+    def plot_etl_fallout(
+        self, failure_strategy: FailureStrategy, file_png: str
+    ) -> None:
         """Visualiseert de impact van een faalstrategie op de ETL-DAG en slaat het resultaat op als HTML-bestand.
 
         Past de opgegeven faalstrategie toe, bepaalt de getroffen componenten en genereert een visualisatie van
@@ -143,7 +168,7 @@ class EtlSimulator(DagReporting):
         layout = dag_report.layout_sugiyama(layers=hierarchy)
         visual_style = {
             "vertex_label": dag_report.vs["label"],
-            "vertex_color": dag_report.vs['color'],
+            "vertex_color": dag_report.vs["color"],
             "vertex_label_dist": 2,
             "vertex_label_angle": 0,
         }
@@ -152,7 +177,7 @@ class EtlSimulator(DagReporting):
             layout=layout,
             target=file_png,
             bbox=(0, 0, 1920, 1080),
-            **visual_style
+            **visual_style,
         )
 
     def _get_affected_components(self):
@@ -163,14 +188,16 @@ class EtlSimulator(DagReporting):
         Returns:
             ig.Graph: De subgraaf met getroffen componenten.
         """
-        vs_affected = [vx for vx in self.dag_simulation.vs if vx["run_status"] in ["NOK", "DNR"]]
+        vs_affected = [
+            vx for vx in self.dag_simulation.vs if vx["run_status"] in [MappingStatus.NOK, MappingStatus.DNR]
+        ]
         id_vs_dag = [vx.index for vx in self.dag_simulation.vs]
-        lst_components = []
+        id_vs_components = []
         for vx in vs_affected:
             ids_affected = self.dag_simulation.subcomponent(vx, mode="all")
-            lst_components.extend(ids_affected)
+            id_vs_components.extend(ids_affected)
 
-        ids_delete = list(set(id_vs_dag) - set(ids_affected))
+        ids_delete = list(set(id_vs_dag) - set(id_vs_components))
         dag = deepcopy(self.dag_simulation)
         dag.delete_vertices(ids_delete)
         return dag

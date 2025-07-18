@@ -122,7 +122,7 @@ def main():
 
     failed_mappings = [
         MappingRef("DA_Central", "SL_KIS_AggrMaxEndDateEad"),
-        MappingRef("DA_Central", "SL_KIS_AggrMaxMutationDate"),
+        MappingRef("DA_Central", "SlDmsCustomsvalue"),
     ]
     simulator.build_dag(mapping_refs=failed_mappings)
     simulator.create_report(
