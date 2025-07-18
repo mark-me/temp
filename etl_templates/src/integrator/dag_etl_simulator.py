@@ -1,10 +1,16 @@
-from enum import Enum
+from collections import deque
 from copy import deepcopy
+from enum import Enum, auto
 
 import igraph as ig
 from logtools import get_logger
 
-from .dag_reporting import DagReporting, MappingRef, VertexType
+from .dag_implementation import (
+    DagImplementation,
+    DeadlockPrevention,
+    MappingRef,
+    VertexType,
+)
 
 logger = get_logger(__name__)
 
@@ -24,8 +30,13 @@ class MappingStatus(Enum):
     DNR = "Did not run"
     OKR = "Success, but needs restoring"
 
+class ObjectPosition(Enum):
+    START = auto()
+    INTERMEDIATE = auto()
+    END = auto()
+    UNDETERMINED = auto()
 
-class EtlSimulator(DagReporting):
+class EtlSimulator(DagImplementation):
     def __init__(self):
         """Initialiseert een nieuwe EtlSimulator instantie voor het simuleren van ETL-DAG's.
 
@@ -57,13 +68,101 @@ class EtlSimulator(DagReporting):
             None
         """
         super().build_dag(files_RETW)
-        self.dag_simulation = self.get_dag_ETL()
-        self.dag_simulation = self._dag_node_hierarchy_level(self.dag_simulation)
+        self._dag_run_level_stages(deadlock_prevention=DeadlockPrevention.TARGET)
+        self.dag_simulation = self.dag_simulation = self.get_dag_ETL()
+        self._dag_node_hierarchy_level()
         for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
-            vx["run_status"] = MappingStatus.OK
+            vx["run_status"] = MappingStatus.DNR
             vx["is_aggregate"] = (
                 vx["EntityTarget"]["Stereotype"] == "mdde_AggregateBusinessRule"
             )
+    def _dag_node_hierarchy_level(self) -> None:
+        """Bepaalt en stelt de hiërarchieniveaus in voor alle knopen in de DAG.
+
+        Deze functie berekent het niveau van elke knoop op basis van zijn voorgangers
+        en past het maximale niveau toe op eindknopen voor een consistente visualisatie.
+        """
+        self._calculate_node_levels()
+        self._set_max_end_node_level()
+
+    def _calculate_node_levels(self) -> None:
+        """Berekent het hiërarchieniveau voor elke knoop in de DAG.
+
+        Deze functie bepaalt het niveau van elke knoop op basis van het aantal voorgangers,
+        zodat de hiërarchische structuur van de grafiek inzichtelijk wordt voor visualisatie of verdere verwerking.
+
+        Args:
+            dag (ig.Graph): De DAG waarvan de knoopniveaus berekend moeten worden.
+
+        Returns:
+            None
+        """
+        # Getting the number of preceding nodes to determine where to start
+        for vx in self.dag_simulation.vs:
+            vx["qty_predecessors"] = len(self.dag_simulation.subcomponent(vx, mode="in"))
+
+        # Calculating levels
+        id_vertices = deque(
+            [(vtx, 0) for vtx in self.dag_simulation.vs.select(qty_predecessors_eq=1).indices]
+        )
+        while id_vertices:
+            id_vx, level = id_vertices.popleft()
+            self.dag_simulation.vs[id_vx]["level"] = level
+            id_vertices.extend(
+                [(vtx, level + 1) for vtx in self.dag_simulation.neighbors(id_vx, mode="out")]
+            )
+
+    def _set_max_end_node_level(self) -> None:
+        """Stelt het maximale hiërarchieniveau in voor alle eindknopen in de DAG.
+
+        Deze functie zoekt alle knopen met de positie END en wijst het hoogste gevonden niveau toe aan deze knopen,
+        zodat eindknopen op hetzelfde hiërarchische niveau worden weergegeven in de visualisatie.
+
+        Args:
+            dag (ig.Graph): De DAG waarvan de eindknopen het maximale niveau moeten krijgen.
+
+        Returns:
+            ig.Graph: De DAG met bijgewerkte niveaus voor eindknopen.
+        """
+        self._dag_node_position_category()
+        end_levels = [
+            self.dag_simulation.vs[vtx]["level"]
+            for vtx in range(
+                self.dag_simulation.vcount()
+            )  # Iterate over all vertices to find the true max level.
+            if self.dag_simulation.vs[vtx]["position"] == ObjectPosition.END.name
+        ]
+        level_max = max(end_levels, default=0)
+        for vx in self.dag_simulation.vs:
+            if vx["position"] == ObjectPosition.END.name:
+                vx["level"] = level_max
+
+    def _dag_node_position_category(self) -> None:
+        """Bepaalt de positiecategorie van elke knoop in de DAG op basis van inkomende en uitgaande verbindingen.
+
+        Deze functie classificeert knopen als START, INTERMEDIATE, END of UNDETERMINED,
+        afhankelijk van het aantal inkomende en uitgaande verbindingen, en voegt deze categorie toe als attribuut.
+
+        Args:
+            dag (ig.Graph): De DAG waarvan de knoopposities gecategoriseerd moeten worden.
+
+        Returns:
+            ig.Graph: De DAG met toegevoegde 'position' attributen voor alle knopen.
+        """
+        self.dag_simulation.vs["qty_out"] = self.dag_simulation.degree(self.dag_simulation.vs, mode="out")
+        self.dag_simulation.vs["qty_in"] = self.dag_simulation.degree(self.dag_simulation.vs, mode="in")
+        lst_entity_position = []
+        for qty_in, qty_out in zip(self.dag_simulation.vs["qty_in"], self.dag_simulation.vs["qty_out"]):
+            if qty_in == 0 and qty_out > 0:
+                position = ObjectPosition.START.name
+            elif qty_in > 0 and qty_out > 0:
+                position = ObjectPosition.INTERMEDIATE.name
+            elif qty_in > 0 and qty_out == 0:
+                position = ObjectPosition.END.name
+            else:
+                position = ObjectPosition.UNDETERMINED.name
+            lst_entity_position.append(position)
+        self.dag_simulation.vs["position"] = lst_entity_position
 
     def set_mappings_failed(self, mapping_refs: list[MappingRef]) -> None:
         """Markeert opgegeven mappings als gefaald in de ETL-DAG en registreert de impact.
@@ -91,6 +190,25 @@ class EtlSimulator(DagReporting):
                 )
                 continue
 
+    def start_etl(self):
+        run_levels = {vx["run_level"] for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name)}
+        test = [vx.attributes() for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name)]
+        # Progress by run level
+        for run_level in run_levels:
+            vs_run_level = self.dag_simulation.vs.select(run_level_eq=run_level)
+            run_stages = {vx["run_level_stage"] for vx in vs_run_level}
+            # Progress by run level stages
+            for run_stage in run_stages:
+                vs_run_stage = self.dag_simulation.vs.select(run_level_stage_eq=run_stage)
+                for vx_run in vs_run_stage:
+                    if vx_run in self.vs_mapping_failed:
+                        vx_run["run_status"] = MappingStatus.NOK
+                    else:
+                        vx_run["run_status"] = MappingStatus.OK
+                    test = vx_run.attributes()
+                pass
+        pass
+
     def _apply_failure_strategy(self, strategy: FailureStrategy):
         """Past de geselecteerde faalstrategie toe op de ETL-DAG-simulatie.
 
@@ -111,6 +229,14 @@ class EtlSimulator(DagReporting):
             self._apply_strategy_only_successors()
 
     def _apply_strategy_only_successors(self):
+        """Markeert alleen de opvolgers van gefaalde mappings als 'Did not run' in de ETL-DAG.
+
+        Doorloopt alle gefaalde mappings en wijzigt de run-status van hun directe en indirecte opvolgers,
+        met uitzondering van de gefaalde mapping zelf, naar 'Did not run'.
+
+        Returns:
+            None
+        """
         for vx in self.vs_mapping_failed:
             id_vs = self.dag_simulation.subcomponent(vx, mode="out")
             id_vs = [id_vx for id_vx in id_vs if id_vx != vx.index]
@@ -119,10 +245,15 @@ class EtlSimulator(DagReporting):
 
     def _apply_strategy_shared_target(self):
         for vx in self.vs_mapping_failed:
-            id_vs = self.dag_simulation.subcomponent(vx, mode="out")
-            id_vs = [id_vx for id_vx in id_vs if id_vx != vx.index]
-            for id_vx in id_vs:
-                self.dag_simulation.vs[id_vx]["run_status"] = MappingStatus.DNR
+            id_vs_successors = self.dag_simulation.subcomponent(vx, mode="out")
+            id_vs_successors = [id_vx for id_vx in id_vs_successors if id_vx != vx.index]
+            for id_successor in id_vs_successors:
+                self.dag_simulation.vs[id_successor]["run_status"] = MappingStatus.DNR
+                id_vs_predecessors = self.dag_simulation.subcomponent(self.dag_simulation.vs[id_successor], mode="out")
+                id_vs_predecessors = [id_vx for id_vx in id_vs_predecessors if id_vx != vx.index]
+                for id_predecessor in id_vs_predecessors:
+                    run_status = self.dag_simulation.vs[id_predecessor]["run_status"]
+                    self.dag_simulation.vs[id_predecessor]["run_status"] = MappingStatus.DNR
 
     def _format_failure_impact(self, dag: ig.Graph) -> None:
         """Formatteert de impact van falen in de ETL-DAG voor visualisatie.

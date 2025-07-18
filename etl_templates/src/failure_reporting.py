@@ -74,6 +74,9 @@ class ReportEtlSimulation:
             lst_files_RETW.append(file_RETW)
         return lst_files_RETW
 
+    def start_etl(self):
+        self.dag.start_etl()
+
     def create_report(self, failure_strategy: FailureStrategy, path_report: Path):
         """
         Genereert een rapportage van de ETL-failure simulatie met de opgegeven faalstrategie en rapportpad.
@@ -125,6 +128,7 @@ def main():
         MappingRef("DA_Central", "SlDmsCustomsvalue"),
     ]
     simulator.build_dag(mapping_refs=failed_mappings)
+    simulator.start_etl()
     simulator.create_report(
         failure_strategy=FailureStrategy.ONLY_SUCCESSORS,
         path_report=Path("etl_templates/intermediate/test.png"),

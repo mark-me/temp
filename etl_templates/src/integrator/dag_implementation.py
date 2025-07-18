@@ -4,7 +4,7 @@ from typing import List
 from logtools import get_logger
 import igraph as ig
 
-from .dag_builder import DagBuilder, NoFlowError, VertexType
+from .dag_builder import DagBuilder, NoFlowError, VertexType, MappingRef, EntityRef
 
 logger = get_logger(__name__)
 
