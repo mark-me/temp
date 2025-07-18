@@ -1,10 +1,10 @@
-from enum import Enum, auto
+from enum import Enum
 from copy import deepcopy
 
 import igraph as ig
 from logtools import get_logger
 
-from .dag_reporting import DagReporting, MappingRef, NoFlowError, VertexType
+from .dag_reporting import DagReporting, MappingRef, VertexType
 
 logger = get_logger(__name__)
 
