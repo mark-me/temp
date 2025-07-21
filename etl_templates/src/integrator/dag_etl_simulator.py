@@ -1,4 +1,3 @@
-from collections import deque
 from copy import deepcopy
 from enum import Enum, auto
 
@@ -30,11 +29,13 @@ class MappingStatus(Enum):
     DNR = "Did not run"
     OKR = "Success, but needs restoring"
 
+
 class ObjectPosition(Enum):
     START = auto()
     INTERMEDIATE = auto()
     END = auto()
     UNDETERMINED = auto()
+
 
 class EtlSimulator(DagReporting):
     def __init__(self):
@@ -50,8 +51,8 @@ class EtlSimulator(DagReporting):
         self.colors_status = {
             MappingStatus.OK: "limegreen",
             MappingStatus.NOK: "red",
-            MappingStatus.DNR: "gold",
-            MappingStatus.OKR: "orange",
+            MappingStatus.DNR: "deepskyblue",
+            MappingStatus.OKR: "darkorange",
         }
         self.color_entity = "lemonchiffon"
         self.vs_mapping_failed: list[MappingRef] = []
@@ -103,26 +104,28 @@ class EtlSimulator(DagReporting):
                 )
                 continue
 
-    def start_etl(self):
-        run_levels = {vx["run_level"] for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name)}
-        test = [vx.attributes() for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name)]
+    def start_etl(self, failure_strategy: FailureStrategy) -> None:
+        run_levels = {
+            vx["run_level"]
+            for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name)
+        }
         # Progress by run level
         for run_level in run_levels:
             vs_run_level = self.dag_simulation.vs.select(run_level_eq=run_level)
             run_stages = {vx["run_level_stage"] for vx in vs_run_level}
             # Progress by run level stages
             for run_stage in run_stages:
-                vs_run_stage = self.dag_simulation.vs.select(run_level_stage_eq=run_stage)
+                vs_run_stage = self.dag_simulation.vs.select(
+                    run_level_stage_eq=run_stage
+                )
                 for vx_run in vs_run_stage:
-                    if vx_run in self.vs_mapping_failed:
-                        vx_run["run_status"] = MappingStatus.NOK
-                    else:
-                        vx_run["run_status"] = MappingStatus.OK
-                    test = vx_run.attributes()
-                pass
-        pass
+                    self._apply_failure_strategy(
+                        vs_run_stage=vs_run_stage, failure_strategy=failure_strategy
+                    )
 
-    def _apply_failure_strategy(self, strategy: FailureStrategy):
+    def _apply_failure_strategy(
+        self, vs_run_stage: ig.VertexSeq, failure_strategy: FailureStrategy
+    ):
         """Past de geselecteerde faalstrategie toe op de ETL-DAG-simulatie.
 
         Werkt de run-status van knooppunten in de DAG bij op basis van de opgegeven faalstrategie,
@@ -134,39 +137,64 @@ class EtlSimulator(DagReporting):
         Returns:
             None
         """
-        for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name):
-            vx["run_status"] = MappingStatus.OK
-        for vx in self.vs_mapping_failed:
-            vx["run_status"] = MappingStatus.NOK
-        if strategy == FailureStrategy.ONLY_SUCCESSORS:
-            self._apply_strategy_only_successors()
+        for vx in vs_run_stage:
+            if vx in self.vs_mapping_failed:
+                vx["run_status"] = MappingStatus.NOK
+            else:
+                vx["run_status"] = MappingStatus.OK
+            if failure_strategy == FailureStrategy.ONLY_SUCCESSORS:
+                self._apply_strategy_only_successors(vs_run_stage=vs_run_stage)
+            elif failure_strategy == FailureStrategy.ALL_OF_SHARED_TARGET:
+                self._apply_strategy_shared_target(vs_run_stage=vs_run_stage)
 
-    def _apply_strategy_only_successors(self):
+    def _apply_strategy_only_successors(self, vs_run_stage: ig.VertexSeq) -> None:
         """Markeert alleen de opvolgers van gefaalde mappings als 'Did not run' in de ETL-DAG.
 
         Doorloopt alle gefaalde mappings en wijzigt de run-status van hun directe en indirecte opvolgers,
         met uitzondering van de gefaalde mapping zelf, naar 'Did not run'.
 
+        Args:
+            vs_run_stage (ig.VertexSeq): De vertices van een run level stage.
+
         Returns:
             None
         """
-        for vx in self.vs_mapping_failed:
-            id_vs = self.dag_simulation.subcomponent(vx, mode="out")
-            id_vs = [id_vx for id_vx in id_vs if id_vx != vx.index]
-            for id_vx in id_vs:
-                self.dag_simulation.vs[id_vx]["run_status"] = MappingStatus.DNR
+        for vx in vs_run_stage:
+            if vx in self.vs_mapping_failed:
+                vx["run_status"] = MappingStatus.NOK
+            else:
+                id_vs = self.dag_simulation.subcomponent(vx, mode="in")
+                id_vs = [id_vx for id_vx in id_vs if id_vx != vx.index]
+                status_predecessors = [
+                    self.dag_simulation.vs[id_vx]["run_status"] for id_vx in id_vs
+                ]
+                if MappingStatus.NOK in status_predecessors:
+                    vx["run_status"] = MappingStatus.DNR
+                else:
+                    vx["run_status"] = MappingStatus.OK
 
-    def _apply_strategy_shared_target(self):
-        for vx in self.vs_mapping_failed:
-            id_vs_successors = self.dag_simulation.subcomponent(vx, mode="out")
-            id_vs_successors = [id_vx for id_vx in id_vs_successors if id_vx != vx.index]
-            for id_successor in id_vs_successors:
-                self.dag_simulation.vs[id_successor]["run_status"] = MappingStatus.DNR
-                id_vs_predecessors = self.dag_simulation.subcomponent(self.dag_simulation.vs[id_successor], mode="out")
-                id_vs_predecessors = [id_vx for id_vx in id_vs_predecessors if id_vx != vx.index]
-                for id_predecessor in id_vs_predecessors:
-                    run_status = self.dag_simulation.vs[id_predecessor]["run_status"]
-                    self.dag_simulation.vs[id_predecessor]["run_status"] = MappingStatus.DNR
+    def _apply_strategy_shared_target(self, vs_run_stage: ig.VertexSeq) -> None:
+        for vx in vs_run_stage:
+            if vx["run_status"] == MappingStatus.DNR:
+                vx["run_status"] = MappingStatus.DNR
+            elif vx in self.vs_mapping_failed:
+                id_vs_successors = [
+                    id_vx
+                    for id_vx in self.dag_simulation.subcomponent(vx, mode="out")
+                    if id_vx != vx.index
+                ]
+                for vx_successor in self.dag_simulation.vs.select(id_vs_successors):
+                    vx_successor["run_status"] = MappingStatus.DNR
+                    id_vs_predecessors = [
+                        id_vx
+                        for id_vx in self.dag_simulation.subcomponent(
+                            vx_successor, mode="in"
+                        )
+                        if id_vx != vx.index
+                    ]
+                    for vx_predecessor in self.dag_simulation.vs.select(id_vs_predecessors):
+                        if vx_predecessor["run_status"] == MappingStatus.OK:
+                            vx_predecessor["run_status"] = MappingStatus.OKR
 
     def _format_failure_impact(self, dag: ig.Graph) -> None:
         """Formatteert de impact van falen in de ETL-DAG voor visualisatie.
@@ -190,9 +218,7 @@ class EtlSimulator(DagReporting):
                 vx["shape"] = "square"
                 vx["color"] = self.color_entity
 
-    def plot_etl_fallout(
-        self, failure_strategy: FailureStrategy, file_png: str
-    ) -> None:
+    def plot_etl_fallout(self, file_png: str) -> None:
         """Visualiseert de impact van een faalstrategie op de ETL-DAG en slaat het resultaat op als HTML-bestand.
 
         Past de opgegeven faalstrategie toe, bepaalt de getroffen componenten en genereert een visualisatie van
@@ -205,7 +231,6 @@ class EtlSimulator(DagReporting):
         Returns:
             None
         """
-        self._apply_failure_strategy(strategy=failure_strategy)
         dag_report = self._get_affected_components()
         self._format_failure_impact(dag=dag_report)
         hierarchy = [vx["level"] for vx in dag_report.vs]
@@ -233,7 +258,10 @@ class EtlSimulator(DagReporting):
             ig.Graph: De subgraaf met getroffen componenten.
         """
         vs_affected = [
-            vx for vx in self.dag_simulation.vs if vx["run_status"] in [MappingStatus.NOK, MappingStatus.DNR]
+            vx
+            for vx in self.dag_simulation.vs
+            if vx["run_status"]
+            in [MappingStatus.NOK, MappingStatus.DNR, MappingStatus.OKR]
         ]
         id_vs_dag = [vx.index for vx in self.dag_simulation.vs]
         id_vs_components = []
