@@ -98,15 +98,20 @@ class EtlSimulator(DagReporting):
                 continue
 
     def start_etl(self, failure_strategy: FailureStrategy) -> None:
-        run_levels = {
-            vx["run_level"]
-            for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name)
-        }
-        # Progress by run level
+        """Start het ETL-proces met de opgegeven faalstrategie.
+
+        Doorloopt de run levels en stages van de ETL-DAG en past de geselecteerde faalstrategie toe op elke stage.
+
+        Args:
+            failure_strategy (FailureStrategy): De toe te passen faalstrategie.
+
+        Returns:
+            None
+        """
+        run_levels = self._get_run_levels()
         for run_level in run_levels:
             vs_run_level = self.dag_simulation.vs.select(run_level_eq=run_level)
-            run_stages = {vx["run_level_stage"] for vx in vs_run_level}
-            # Progress by run level stages
+            run_stages = self._get_run_stages(vs_run_level)
             for run_stage in run_stages:
                 vs_run_stage = self.dag_simulation.vs.select(
                     run_level_stage_eq=run_stage
@@ -115,6 +120,17 @@ class EtlSimulator(DagReporting):
                     self._apply_failure_strategy(
                         vs_run_stage=vs_run_stage, failure_strategy=failure_strategy
                     )
+
+    def _get_run_levels(self):
+        """Geeft de unieke run levels van mapping-knooppunten in de ETL-DAG terug."""
+        return {
+            vx["run_level"]
+            for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name)
+        }
+
+    def _get_run_stages(self, vs_run_level):
+        """Geeft de unieke run level stages binnen een run level terug."""
+        return {vx["run_level_stage"] for vx in vs_run_level}
 
     def _apply_failure_strategy(
         self, vs_run_stage: ig.VertexSeq, failure_strategy: FailureStrategy
