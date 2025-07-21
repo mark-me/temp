@@ -76,24 +76,26 @@ def main():
     args = parser.parse_args()
 
     path_output = Path("etl_templates/intermediate")
-    elt_simulator = build_dag(file_config=Path(args.config_file))
+    etl_simulator = build_dag(file_config=Path(args.config_file))
 
     failed_mappings = [
-        MappingRef("DA_Central", "SL_KIS_AggrMaxEndDateEad"),
+        MappingRef("DA_Central", "SL_KIS_AggrMaxOfMutDatEad"),
         MappingRef("DA_Central", "SlDmsCustomsvalue"),
     ]
-    elt_simulator.set_mappings_failed(mapping_refs=failed_mappings)
+    etl_simulator.set_mappings_failed(mapping_refs=failed_mappings)
 
-    elt_simulator.start_etl(failure_strategy=FailureStrategy.ONLY_SUCCESSORS)
-    elt_simulator.plot_etl_fallout(
+    # Scenario: Only successors
+    etl_simulator.start_etl(failure_strategy=FailureStrategy.ONLY_SUCCESSORS)
+    etl_simulator.plot_etl_fallout(
         file_png=path_output / "only_successors.png"
     )
 
-
-    elt_simulator.start_etl(failure_strategy=FailureStrategy.ALL_OF_SHARED_TARGET)
-    elt_simulator.plot_etl_fallout(
+    # Scenario: All of shared target
+    etl_simulator.start_etl(failure_strategy=FailureStrategy.ALL_OF_SHARED_TARGET)
+    etl_simulator.plot_etl_fallout(
         file_png=path_output / "all_of_shared_target.png"
     )
+    test = etl_simulator.get_strategy_shared_target()
 
 
 if __name__ == "__main__":

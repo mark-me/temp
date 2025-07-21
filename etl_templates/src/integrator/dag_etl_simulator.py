@@ -16,9 +16,9 @@ logger = get_logger(__name__)
 
 class FailureStrategy(Enum):
     ONLY_SUCCESSORS = "Only successors"
+    ALL_OF_SHARED_TARGET = "All shared targets"
     SIBLINGS_OF_MAPPINGS = "Sibling mappings"
     SIBLINGS_OF_AGGREGATES = "Sibling aggregates"
-    ALL_OF_SHARED_TARGET = "All shared targets"
     WHOLE_SUBCOMPONENT = "Whole subcomponent"
     RUN_LEVEL = "Run level"
 
@@ -28,13 +28,6 @@ class MappingStatus(Enum):
     OK = "Success"
     DNR = "Did not run"
     OKR = "Success, but needs restoring"
-
-
-class ObjectPosition(Enum):
-    START = auto()
-    INTERMEDIATE = auto()
-    END = auto()
-    UNDETERMINED = auto()
 
 
 class EtlSimulator(DagReporting):
@@ -174,27 +167,101 @@ class EtlSimulator(DagReporting):
                     vx["run_status"] = MappingStatus.OK
 
     def _apply_strategy_shared_target(self, vs_run_stage: ig.VertexSeq) -> None:
+        """Past de 'shared target' faalstrategie toe op de ETL-DAG-simulatie.
+
+        Werkt de run-status van knooppunten bij op basis van de 'shared target' faalstrategie,
+        waarbij opvolgers en hun voorgangers als getroffen worden gemarkeerd waar van toepassing.
+
+        Args:
+            vs_run_stage (ig.VertexSeq): De vertices van een run level stage.
+
+        Returns:
+            None
+        """
         for vx in vs_run_stage:
             if vx["run_status"] == MappingStatus.DNR:
                 vx["run_status"] = MappingStatus.DNR
             elif vx in self.vs_mapping_failed:
-                id_vs_successors = [
-                    id_vx
-                    for id_vx in self.dag_simulation.subcomponent(vx, mode="out")
-                    if id_vx != vx.index
-                ]
-                for vx_successor in self.dag_simulation.vs.select(id_vs_successors):
-                    vx_successor["run_status"] = MappingStatus.DNR
-                    id_vs_predecessors = [
-                        id_vx
-                        for id_vx in self.dag_simulation.subcomponent(
-                            vx_successor, mode="in"
-                        )
-                        if id_vx != vx.index
-                    ]
-                    for vx_predecessor in self.dag_simulation.vs.select(id_vs_predecessors):
-                        if vx_predecessor["run_status"] == MappingStatus.OK:
-                            vx_predecessor["run_status"] = MappingStatus.OKR
+                self._mark_successors_and_predecessors(vx)
+
+    def _mark_successors_and_predecessors(self, vx):
+        """Markeert opvolgers en hun voorgangers volgens de shared target strategie."""
+        vs_successors = self._get_succeeding_mappings(vx_mapping=vx)
+        for vx_successor in vs_successors:
+            vx_successor["run_status"] = MappingStatus.DNR
+            vs_predecessors = self._get_preceeding_mappings(vx_mapping=vx_successor)
+            for vx_predecessor in vs_predecessors:
+                if vx_predecessor["run_status"] == MappingStatus.OK:
+                    vx_predecessor["run_status"] = MappingStatus.OKR
+
+    def get_strategy_shared_target(self) -> list[dict]:
+        """Bepaalt de mapping-impact volgens de 'shared target' strategie.
+
+        Genereert een lijst van mappings en hun direct en indirect getroffen componenten volgens de 'shared target' faalstrategie.
+
+        Returns:
+            list[dict]: Een lijst van dictionaries met informatie over mappings en hun getroffen componenten.
+        """
+        lst_mappings = []
+        for vx in self.dag_simulation.vs:
+            mapping = {"CodeModel": vx["CodeModel"], "Mapping": vx["Name"]}
+            vs_successors = self._get_succeeding_mappings(vx_mapping=vx)
+            for vx_successor in vs_successors:
+                lst_mappings.append(
+                    mapping
+                    | {
+                        "AffectedCodeModel": vx_successor["CodeModel"],
+                        "AffectedMapping": vx_successor["Name"],
+                    }
+                )
+                vs_predecessors = self._get_preceeding_mappings(vx_mapping=vx_successor)
+                lst_mappings.extend(
+                    mapping
+                    | {
+                        "AffectedCodeModel": vx_predecessor["CodeModel"],
+                        "AffectedMapping": vx_predecessor["Name"],
+                    }
+                    for vx_predecessor in vs_predecessors
+                )
+        return lst_mappings
+
+    def _get_succeeding_mappings(self, vx_mapping: ig.Vertex) -> ig.VertexSeq:
+        """Geeft alle opvolgers van een mapping-knooppunt die van het type 'MAPPING' zijn.
+
+        Bepaalt de opvolgers van het opgegeven mapping-knooppunt in de ETL-DAG en retourneert deze als een VertexSeq.
+
+        Args:
+            vx_mapping (ig.Vertex): Het mapping-knooppunt waarvan de opvolgers worden bepaald.
+
+        Returns:
+            ig.VertexSeq: Een VertexSeq van opvolgende mapping-knooppunten.
+        """
+        id_vs_successors = [
+            id_vx
+            for id_vx in self.dag_simulation.subcomponent(vx_mapping, mode="out")
+            if id_vx != vx_mapping.index
+            and self.dag_simulation.vs[id_vx]["type"] == VertexType.MAPPING.name
+        ]
+        return self.dag_simulation.vs.select(id_vs_successors)
+
+    def _get_preceeding_mappings(self, vx_mapping: ig.Vertex) -> ig.VertexSeq:
+        """Geeft alle voorgangers van een mapping-knooppunt die van het type 'MAPPING' zijn.
+
+        Bepaalt de voorgangers van het opgegeven mapping-knooppunt in de ETL-DAG en retourneert deze als een VertexSeq.
+
+        Args:
+            vx_mapping (ig.Vertex): Het mapping-knooppunt waarvan de voorgangers worden bepaald.
+
+        Returns:
+            ig.VertexSeq: Een VertexSeq van voorgaande mapping-knooppunten.
+        """
+        id_vs_predecessors = [
+            id_vx
+            for id_vx in self.dag_simulation.subcomponent(vx_mapping, mode="in")
+            if id_vx != vx_mapping.index
+            and self.dag_simulation.vs[id_vx]["type"] == VertexType.MAPPING.name
+        ]
+        return self.dag_simulation.vs.select(id_vs_predecessors)
 
     def _format_failure_impact(self, dag: ig.Graph) -> None:
         """Formatteert de impact van falen in de ETL-DAG voor visualisatie.
@@ -239,13 +306,14 @@ class EtlSimulator(DagReporting):
             "vertex_label": dag_report.vs["label"],
             "vertex_color": dag_report.vs["color"],
             "vertex_label_dist": 2,
-            "vertex_label_angle": 0,
+            # "vertex_label_angle": 2,
         }
         ig.plot(
             dag_report,
             layout=layout,
             target=file_png,
             bbox=(0, 0, 1920, 1080),
+            margin=150,
             **visual_style,
         )
 
