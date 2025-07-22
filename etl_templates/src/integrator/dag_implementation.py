@@ -269,17 +269,16 @@ class DagImplementation(DagBuilder):
         return graph_conflicts
 
     def get_load_dependencies(self) -> List[dict]:
-        """Geeft van iedere knoop in het ETL-proces alle voorliggende (predecessors) of opvolgende (successors) vergelijkbare typen knopen terug
+        """Geeft een lijst van afhankelijkheden tussen mappings in de ETL-DAG.
 
-        Args:
-            vertex_type (VertexType, optional): Geeft aan welk type (mapping/entiteiten) afhankelijkheden moet worden teruggegeven.
-            Defaults naar VertexType.MAPPING.
-
-        Raises:
-            NoFlowError: Indien er geen ETL flow met mappings is
+        Deze functie retourneert voor elke mapping de bijbehorende voorgangers,
+        zodat de laadvolgorde en afhankelijkheden inzichtelijk zijn.
 
         Returns:
-            list: Lijst met dictionaries met voor iedere ETL-knoop de voorliggende en opvolgende knopen.
+            list: Een lijst van dictionaries met mapping- en afhankelijkheidsinformatie.
+
+        Raises:
+            NoFlowError: Indien er geen mappings zijn en dus geen ETL-flow kan worden bepaald.
         """
         lst_dependencies = []
         if not self.dag:
@@ -288,15 +287,15 @@ class DagImplementation(DagBuilder):
         dag_mappings = self.get_dag_mappings()
         for vx in dag_mappings.vs:
             vs_predecessors = dag_mappings.vs(dag_mappings.neighbors(vx, mode="in"))
-            for vx_preceding in vs_predecessors:
-                lst_dependencies.append(
-                    {
-                        "model": vx["CodeModel"],
-                        "name": vx["Name"],
-                        "model_preceding": vx_preceding["CodeModel"],
-                        "mapping_preceding": vx_preceding["Name"],
-                    }
-                )
+            lst_dependencies.extend(
+                {
+                    "model": vx["CodeModel"],
+                    "name": vx["Name"],
+                    "model_preceding": vx_preceding["CodeModel"],
+                    "mapping_preceding": vx_preceding["Name"],
+                }
+                for vx_preceding in vs_predecessors
+            )
         return lst_dependencies
 
     def get_mappings(self) -> List[dict]:
