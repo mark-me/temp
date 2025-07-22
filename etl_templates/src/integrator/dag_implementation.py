@@ -4,7 +4,7 @@ from typing import List
 from logtools import get_logger
 import igraph as ig
 
-from .dag_builder import DagBuilder, NoFlowError, VertexType, MappingRef, EntityRef
+from .dag_builder import DagBuilder, NoFlowError, VertexType
 
 logger = get_logger(__name__)
 
@@ -94,12 +94,12 @@ class DagImplementation(DagBuilder):
             Returns:
                 str: De stringrepresentatie van het attribuut voor de hashkey.
             """
-            hash_attrib = f"{separator}DA_MDDE.fn_IsNull("
+            hash_attrib = f"{separator}"
             if "Expression" in attr_mapping:
-                return f"{hash_attrib}{attr_mapping['Expression']})"
+                return f"{hash_attrib}{attr_mapping['Expression']}"
             entity_alias = attr_mapping["AttributesSource"]["EntityAlias"]
             attr_source = attr_mapping["AttributesSource"]["Code"]
-            return f"{hash_attrib}{entity_alias}.[{attr_source}])"
+            return f"{hash_attrib}{entity_alias}.[{attr_source}]"
 
         x_hashkey = "[X_HashKey] = CHECKSUM(CONCAT(N'',"
         for i, attr_mapping in enumerate(vx_mapping["AttributeMapping"]):
@@ -268,7 +268,7 @@ class DagImplementation(DagBuilder):
         )
         return graph_conflicts
 
-    def get_load_dependencies(self, vertex_type: VertexType = VertexType.MAPPING) -> List[dict]:
+    def get_load_dependencies(self) -> List[dict]:
         """Geeft van iedere knoop in het ETL-proces alle voorliggende (predecessors) of opvolgende (successors) vergelijkbare typen knopen terug
 
         Args:
@@ -285,65 +285,19 @@ class DagImplementation(DagBuilder):
         if not self.dag:
             raise NoFlowError("There are no mappings, so there is no ETL flow!")
 
-        vs_of_type = self.dag.vs.select(type_eq=vertex_type.name)
-        for vx in vs_of_type:
-            lst_dependencies.extend(self._get_predecessors_for_vertex(vx, vertex_type))
-            lst_dependencies.extend(self._get_successors_for_vertex(vx, vertex_type))
+        dag_mappings = self.get_dag_mappings()
+        for vx in dag_mappings.vs:
+            vs_predecessors = dag_mappings.vs(dag_mappings.neighbors(vx, mode="in"))
+            for vx_preceding in vs_predecessors:
+                lst_dependencies.append(
+                    {
+                        "model": vx["CodeModel"],
+                        "name": vx["Name"],
+                        "model_preceding": vx_preceding["CodeModel"],
+                        "mapping_preceding": vx_preceding["Name"],
+                    }
+                )
         return lst_dependencies
-
-    def _get_predecessors_for_vertex(self, vx: ig.Vertex, vertex_type: VertexType) -> List[dict]:
-        """Geeft de predecessors van een specifieke knoop van het opgegeven type terug.
-
-        Args:
-            vx (ig.Vertex): De knoop waarvoor predecessors worden gezocht.
-            vertex_type (VertexType): Het type knoop.
-
-        Returns:
-            list: Lijst met dictionaries van predecessors.
-        """
-        vs = [
-            self.dag.vs[vx_in]
-            for vx_in in self.dag.subcomponent(vx, mode="in")
-            if vx_in != vx.index
-        ]
-        return [
-            {
-                "model": vx["CodeModel"],
-                "name": vx["Name"],
-                "type_relation": "predecessor",
-                "model_related": vx_in["CodeModel"],
-                "name_related": vx_in["Name"],
-            }
-            for vx_in in vs
-            if vx_in["type"] == vertex_type.name
-        ]
-
-    def _get_successors_for_vertex(self, vx: ig.Vertex, vertex_type: VertexType) -> List[dict]:
-        """Geeft de successors van een specifieke knoop van het opgegeven type terug.
-
-        Args:
-            vx (ig.Vertex): De knoop waarvoor successors worden gezocht.
-            vertex_type (VertexType): Het type knoop.
-
-        Returns:
-            list: Lijst met dictionaries van successors.
-        """
-        vs_out = [
-            self.dag.vs[vx_out]
-            for vx_out in self.dag.subcomponent(vx, mode="out")
-            if vx_out != vx.index
-        ]
-        return [
-            {
-                "model": vx["CodeModel"],
-                "name": vx["Name"],
-                "type_relation": "successor",
-                "model_related": vx_out["CodeModel"],
-                "name_related": vx_out["Name"],
-            }
-            for vx_out in vs_out
-            if vx_out["type"] == vertex_type.name
-        ]
 
     def get_mappings(self) -> List[dict]:
         """Geeft een lijst terug van alle mapping-knopen in de huidige DAG.

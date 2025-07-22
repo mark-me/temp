@@ -21,14 +21,31 @@ Date(yyyy-mm-dd)    Author              Comments
 2025-04-22			Avinash Kalicharan 	Add debug to the procedure
 2025-05-22			Jeroen Poll			Add brackets to names and raise error in CATCH
 2025-06-19			Jeroen Poll			Fix param Runid id not correct insert statement.
+2025-07-21			Jeroen Poll			Added Code for loading with new key (Unique Key constraints)
 ***************************************************************************************************/
 BEGIN TRY
+	SET NOCOUNT ON;
 	DECLARE @sql NVARCHAR(MAX) = ''
+	DECLARE @sql_select NVARCHAR(MAX) = ''
+	DECLARE @sql_insert NVARCHAR(MAX) = ''
+	DECLARE @sql_insertnew NVARCHAR(MAX) = ''
+	DECLARE @sql_filter NVARCHAR(MAX) = ''
+	DECLARE @sql_filter2 NVARCHAR(MAX) = ''
+	DECLARE @sql_filter3 NVARCHAR(MAX) = ''
+	DECLARE @sql_update NVARCHAR(MAX) = ''
+	DECLARE @sql_updateExisting NVARCHAR(MAX) = ''
+	DECLARE @LoadType_UniqueKey INT
+	DECLARE @LoadType_BKey BIT
 	DECLARE @LogMessage NVARCHAR(MAX);
 	DECLARE @ExecutionId UNIQUEIDENTIFIER = newid()
-	/* Insert execution to config execution table */
-	EXEC  [DA_MDDE].[sp_InsertConfigExecution] @ExecutionId , @par_runid, @par_LayerName, @par_MappingName, @par_DestinationName
-	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadType', 1;
+	DECLARE @sqlNewRow NVARCHAR(50) = CHAR(13) + CHAR(10)
+	DECLARE @sqlRowcount NVARCHAR(MAX) = ''
+	DECLARE @rowcount_New BIGINT
+	DECLARE @rowcount_Update BIGINT
+	DECLARE @sel NVARCHAR(max)
+	DECLARE @ErrorMessage NVARCHAR(4000);
+	DECLARE @ErrorSeverity INT;
+	DECLARE @ErrorState INT;
 
 	IF (@par_Debug = 1)
 		BEGIN 
@@ -38,199 +55,202 @@ BEGIN TRY
 		BEGIN
 			EXEC sp_executesql @sql
 		END
-	BEGIN -- Loading new records for source view
-		DECLARE @sqlNewRow NVARCHAR(50) = CHAR(13) + CHAR(10)
-		DECLARE @sqlRowcount NVARCHAR(MAX) = ''
-		DECLARE @rowcount_New BIGINT
-		DECLARE @rowcount_Update BIGINT
-		DECLARE @rowcount_Update_Insert BIGINT
+	/* Check if table has Unique Key for loading */
+	SELECT @LoadType_UniqueKey = COUNT(*)
+	FROM information_schema.TABLE_CONSTRAINTS c
+	WHERE 1 = 1 AND c.TABLE_SCHEMA = @par_LayerName AND c.TABLE_NAME = @par_DestinationName AND c.CONSTRAINT_TYPE = 'UNIQUE'
 
-		/* Insert new rows. (BKey does not exist in target table) */
-		BEGIN
-			SELECT @sql =  sqlcode 
-			FROM (
-				SELECT CONCAT(
-						'INSERT INTO [',@par_LayerName,'].[',@par_DestinationName,']', CHAR(13),  CHAR(10)
-					, '(', CHAR(13),  CHAR(10)
-					, STRING_AGG(CHAR(9) + '[' + dest.[name] + ']' ,', '+ CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
-					, ')', CHAR(13),  CHAR(10)
-					, 'SELECT ', CHAR(13),  CHAR(10)
-					, STRING_AGG(CONCAT(CHAR(9),  '[' + dest.[name] + ']' , ' = ', CASE WHEN source.[name] = 'X_RunId' then '''' +  @par_runid + '''' else 'source.'+ '[' + source.[name] + ']' end ) , ', ' + CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
-					, CONCAT('FROM [',@par_LayerName,'].[',@par_SourceName,'] as source', CHAR(13),  CHAR(10))
-					, 'WHERE 1=1', CHAR(13),  CHAR(10)
-					, CONCAT('AND NOT EXISTS (SELECT 1 FROM [', @par_LayerName , '].[', @par_DestinationName ,'] AS destination WHERE destination.', @par_DestinationName, 'BKey =  source.', @par_DestinationName, 'BKey)')
-					) AS sqlcode
-				FROM sys.columns dest
-				LEFT JOIN sys.columns source ON source.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_SourceName))) and dest.[name]  =  source.[name] 
-				WHERE 
-				dest.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_DestinationName)))
-				AND dest.is_identity = 0
-			) a;
-		
-		
-			SELECT @sqlRowcount =  sqlcode 
-			FROM (
-				SELECT CONCAT(
-					  CONCAT('select @outputFromExec = count(*) FROM [',@par_LayerName,'].[',@par_SourceName,'] as source', CHAR(13),  CHAR(10))
-					, 'WHERE 1=1', CHAR(13),  CHAR(10)
-					, CONCAT('AND NOT EXISTS (SELECT 1 FROM [', @par_LayerName , '].[', @par_DestinationName ,'] AS destination WHERE destination.', @par_DestinationName, 'BKey =  source.', @par_DestinationName, 'BKey)')
-					) AS sqlcode
-				FROM sys.columns dest
-				LEFT JOIN sys.columns source ON source.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_SourceName))) and dest.[name]  =  source.[name] 
-				WHERE 
-				dest.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_DestinationName)))
-				AND dest.is_identity = 0
-			) a;
-		IF (@par_Debug = 1)
-			BEGIN 
-				EXEC [DA_MDDE].[sp_Logger] 'INFO', @sqlRowcount
+	/* Check if table has BKey for loading */
+	SELECT @LoadType_BKey = CASE 
+			WHEN COUNT(*) > 0
+				THEN 1
+			ELSE 0
 			END
-		ELSE
-			BEGIN
-				SET @rowcount_New = null
-				EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_New OUT
-			END
+	FROM information_schema.TABLES t
+	INNER JOIN information_schema.COLUMNS c ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME
+	WHERE 1 = 1 AND t.TABLE_SCHEMA = @par_LayerName AND t.TABLE_NAME = @par_DestinationName AND c.COLUMN_NAME = @par_DestinationName + 'BKey'
 
-			SET @LogMessage = CONCAT ('Rowcount to be inserted into ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' is: ', @rowcount_New)
+	/* 
+		Build Dynamic SQL statement: Insert INTO
+		For loading data, you need to define the table and the columns you want to load.
+		This code builds up the INSERT INTO part of this statement.
 
-			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+	*/
+	SELECT @sql_insert = sqlcode
+	FROM (
+		SELECT CONCAT (
+				'INSERT INTO [', @par_LayerName, '].[', @par_DestinationName, ']', CHAR(13), CHAR(10), '(', CHAR(13), CHAR(10), STRING_AGG(CHAR(9) + '[' + dest.[name] + ']', ', ' + CHAR(13) + CHAR(10)) WITHIN GROUP (
+						ORDER BY dest.column_id ASC
+						), CHAR(13), CHAR(10), ')', CHAR(13), CHAR(10)
+				) AS sqlcode
+		FROM sys.columns dest
+		LEFT JOIN sys.columns source ON source.object_id = OBJECT_ID(CONCAT (QUOTENAME(@par_LayerName), '.', QUOTENAME(@par_SourceName))) AND dest.[name] = source.[name]
+		WHERE dest.object_id = OBJECT_ID(CONCAT (QUOTENAME(@par_LayerName), '.', QUOTENAME(@par_DestinationName))) AND dest.is_identity = 0
+		) a;
 
-			SET @LogMessage = CONCAT ('Execute load command: ', @sqlNewRow, @sql, @sqlNewRow)
+	/* 
+		Build Dynamic SQL statement: SELECT
+		For loading data, you need to what data you want to load in to the table.
+		This code builds up the a dynamic select statement without filters.
 
-			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+	*/
+	SELECT @sql_select = sqlcode
+	FROM (
+		SELECT CONCAT (
+				'SELECT ', CHAR(13), CHAR(10), STRING_AGG(CONCAT (
+						CHAR(9), '[' + dest.[name] + ']', ' = ', CASE 
+							WHEN source.[name] = 'X_RunId'
+								THEN '''' + @par_runid + ''''
+							ELSE 'source.' + '[' + source.[name] + ']'
+							END
+						), ', ' + CHAR(13) + CHAR(10)) WITHIN GROUP (
+						ORDER BY dest.column_id ASC
+						), CHAR(13), CHAR(10), CONCAT ('FROM [', @par_LayerName, '].[', @par_SourceName, '] as source', CHAR(13), CHAR(10)), 'WHERE 1=1', CHAR(13), CHAR(10)
+				) AS sqlcode
+		FROM sys.columns dest
+		LEFT JOIN sys.columns source ON source.object_id = OBJECT_ID(CONCAT (QUOTENAME(@par_LayerName), '.', QUOTENAME(@par_SourceName))) AND dest.[name] = source.[name]
+		WHERE dest.object_id = OBJECT_ID(CONCAT (QUOTENAME(@par_LayerName), '.', QUOTENAME(@par_DestinationName))) AND dest.is_identity = 0
+		) a;
 
-			IF (@par_Debug = 1)
-				BEGIN 
-					EXEC [DA_MDDE].[sp_Logger] 'INFO', @sql
-				END
-			ELSE
-				BEGIN
-					EXEC sp_executesql @sql
-				END
-		END
+	/* 
+		Build Dynamic SQL statement: Insert INTO
+		For loading data, you need to define the table and the columns you want to load.
+		This code builds up the INSERT INTO part of this statement.
 
-		-- Update rows where BKey exist and X_HashKey not the same.
-		BEGIN
-			SET @sql = ''
-			SET @sql = @sql +  CONCAT('UPDATE ', '[', @par_LayerName, '].[', @par_DestinationName, ']', @sqlNewRow)
-			SET @sql = @sql +  CONCAT('SET [X_EndDate] = getdate()-1', @sqlNewRow)
-			SET @sql = @sql +  CONCAT('   ,[X_IsCurrent] = 0', @sqlNewRow)
-			SET @sql = @sql +  CONCAT('   ,[X_IsReplaced] = 1', @sqlNewRow)
-			SET @sql = @sql +  CONCAT('FROM ', '[', @par_LayerName, '].[', @par_SourceName , ']', ' AS source', @sqlNewRow)
-			SET @sql = @sql +  CONCAT('INNER JOIN ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' AS target',  @sqlNewRow)
-			SET @sql = @sql +  CONCAT('ON source.', @par_DestinationName, 'BKey' , ' = ', 'target.', @par_DestinationName, 'BKey', ' AND source.[X_HashKey] <> target.[X_HashKey] AND target.[X_IsCurrent] = 1', @sqlNewRow)
+	*/
+	IF (@LoadType_UniqueKey > 1)
+	BEGIN
+		SET @ErrorMessage = CONCAT (N'ERROR: More then 1 "UNIQUE" Key active on table :', QUOTENAME(@par_LayerName), '.', QUOTENAME(@par_DestinationName), CHAR(13), 'Use Query to show Keys: ', CHAR(13), 'SELECT * FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = ''', @par_LayerName, ''' AND TABLE_NAME = ''', @par_DestinationName, '''')
 
-
-			SET @sqlRowcount = ''
-			SET @sqlRowcount = CONCAT ('select @outputFromExec = count(*) FROM ', '[', @par_LayerName, '].[',  @par_SourceName, ']', ' AS source', @sqlNewRow)
-			SET @sqlRowcount = @sqlRowcount +  CONCAT('INNER JOIN ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' AS target',  @sqlNewRow)
-			SET @sqlRowcount = @sqlRowcount +  CONCAT('ON source.', @par_DestinationName, 'BKey' , ' = ', 'target.', @par_DestinationName, 'BKey', ' AND source.[X_HashKey] <> target.[X_HashKey] AND target.[X_IsCurrent] = 1', @sqlNewRow)
-			--PRINT(@sqlRowcount)
-			IF (@par_Debug = 1)
-				BEGIN 
-					EXEC [DA_MDDE].[sp_Logger] 'INFO', @sql
-				END
-			ELSE
-				BEGIN
-					SET @rowcount_Update = null
-					EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_Update OUT
-				END
-
-			SET @LogMessage = CONCAT ('Rowcount to be updated in  ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' is: ', @rowcount_Update)
-
-			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
-
-			SET @LogMessage = CONCAT ('Execute load command: ', @sqlNewRow, @sql, @sqlNewRow)
-
-			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
-
-			IF (@par_Debug = 1)
-				BEGIN 
-					EXEC [DA_MDDE].[sp_Logger] 'INFO', @sql
-				END
-			ELSE
-				BEGIN
-					EXEC sp_executesql @sql
-				END
-		END
-
-		-- Insert updated rows. (BKey exist in target table and X_HashKey not the same )
-		BEGIN
-			SELECT @sql =  sqlcode 
-			FROM (
-				SELECT CONCAT(
-						'INSERT INTO [', @par_LayerName , '].[', @par_DestinationName ,']', CHAR(13),  CHAR(10)
-					, '(', CHAR(13),  CHAR(10)
-					, STRING_AGG(CHAR(9)+ dest.[name]   ,', '+ CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
-					, ')', CHAR(13),  CHAR(10)
-					, 'SELECT ', CHAR(13),  CHAR(10)
-					, STRING_AGG(CONCAT(CHAR(9), dest.[name], ' = ', 'source.', source.[name]) , ', ' + CHAR(13) + CHAR(10)) WITHIN GROUP (ORDER BY dest.column_id ASC), CHAR(13),  CHAR(10)
-					, CONCAT('FROM [',@par_LayerName,'].[',@par_SourceName,'] as source', CHAR(13),  CHAR(10))
-					, 'WHERE 1=1', CHAR(13),  CHAR(10)
-					, CONCAT('AND EXISTS (SELECT 1 FROM [', @par_LayerName , '].[', @par_DestinationName ,'] AS destination WHERE destination.', @par_DestinationName, 'BKey =  source.', @par_DestinationName, 'BKey AND source.[X_HashKey] <> destination.[X_HashKey] AND destination.[X_IsCurrent] = 1)')
-					) AS sqlcode
-				FROM sys.columns dest
-				LEFT JOIN sys.columns source ON source.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_SourceName))) and dest.[name]  =  source.[name] 
-				WHERE 
-				dest.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_DestinationName)))
-				AND dest.is_identity = 0
-			) a;
-		
-		
-			SELECT @sqlRowcount =  sqlcode 
-			FROM (
-				SELECT CONCAT(
-					  CONCAT('select @outputFromExec = count(*) FROM [',@par_LayerName,'].[',@par_SourceName,'] as source', CHAR(13),  CHAR(10))
-					, 'WHERE 1=1', CHAR(13),  CHAR(10)
-					, CONCAT('AND EXISTS (SELECT 1 FROM [', @par_LayerName , '].[', @par_DestinationName ,'] AS destination WHERE destination.', @par_DestinationName, 'BKey =  source.', @par_DestinationName, 'BKey AND source.[X_HashKey] <> destination.[X_HashKey] AND destination.[X_IsCurrent] = 1)')
-					) AS sqlcode
-				FROM sys.columns dest
-				LEFT JOIN sys.columns source ON source.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_SourceName))) and dest.[name]  =  source.[name] 
-				WHERE 
-				dest.object_id = OBJECT_ID(CONCAT(QUOTENAME(@par_LayerName),'.',QUOTENAME(@par_DestinationName)))
-				AND dest.is_identity = 0
-			) a;
-			
-			IF (@par_Debug = 1)
-				BEGIN 
-					EXEC [DA_MDDE].[sp_Logger] 'INFO', @sql
-				END
-			ELSE
-				BEGIN
-					SET @rowcount_Update_Insert = null
-					EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_Update_Insert OUT
-				END
-			SET @LogMessage = CONCAT ('Rowcount to be inserted (for updated rows) into ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' is: ', @rowcount_Update_Insert)
-
-			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
-
-			SET @LogMessage = CONCAT ('Execute load command: ', @sqlNewRow, @sql, @sqlNewRow)
-
-			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
-
-			IF (@par_Debug = 1)
-				BEGIN 
-					EXEC [DA_MDDE].[sp_Logger] 'INFO', @sql
-				END
-			ELSE
-				BEGIN
-					EXEC sp_executesql @sql
-				END
-		END
+		RAISERROR (
+				@ErrorMessage,
+				-- Message text.
+				16,
+				-- Severity.
+				1 -- State.
+				);
 	END
-	DECLARE @Endtime datetime2 = GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time'
-	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'RowCountInsert', @rowcount_New;
-	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'RowCountUpdate', @rowcount_Update_Insert;
-	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'RowCountDelete', 0;
-	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'EndLoadDateTime', @Endtime
-	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadOutcome', 'Success'
+	ELSE IF @LoadType_UniqueKey = 1
+	BEGIN
+		SELECT @sql_filter = sqlcode, @sql_filter2 = sqlcode2, @sql_filter3 = sqlcode3
+		FROM (
+			SELECT CONCAT (
+					'AND NOT EXISTS (SELECT 1 FROM [', @par_LayerName, '].[', @par_DestinationName, '] AS destination WHERE ', STRING_AGG(CONCAT ('destination.[', cc.COLUMN_NAME, '] = source.[', cc.COLUMN_NAME, ']'), ' AND ') WITHIN GROUP (
+							ORDER BY cc.COLUMN_NAME ASC
+							), ')'
+					) AS sqlcode
+					,CONCAT (
+					'AND EXISTS (SELECT 1 FROM [', @par_LayerName, '].[', @par_DestinationName, '] AS destination WHERE ', STRING_AGG(CONCAT ('destination.[', cc.COLUMN_NAME, '] = source.[', cc.COLUMN_NAME, ']'), ' AND ') WITHIN GROUP (
+							ORDER BY cc.COLUMN_NAME ASC
+							), ' AND source.[X_HashKey] <> destination.[X_HashKey] AND destination.[X_IsCurrent] = 1)'
+					) AS sqlcode2
+					,CONCAT (
+					N' AND ', STRING_AGG(CONCAT ('destination.[', cc.COLUMN_NAME, '] = source.[', cc.COLUMN_NAME, ']'), ' AND ') WITHIN GROUP (
+							ORDER BY cc.COLUMN_NAME ASC
+							)
+					) AS sqlcode3
+			FROM information_schema.TABLE_CONSTRAINTS c
+			INNER JOIN information_schema.CONSTRAINT_COLUMN_USAGE cc ON c.TABLE_SCHEMA = cc.TABLE_SCHEMA AND c.TABLE_NAME = cc.TABLE_NAME AND c.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+			WHERE 1 = 1 AND c.TABLE_SCHEMA = @par_LayerName AND c.TABLE_NAME = @par_DestinationName AND c.CONSTRAINT_TYPE = 'UNIQUE'
+			) a;
+	END
+	ELSE IF @LoadType_BKey = 1
+	BEGIN
+		SELECT  @sql_filter = sqlcode, @sql_filter2 = sqlcode2, @sql_filter3 = sqlcode3
+		FROM (
+			SELECT CONCAT (
+					N'', CASE 
+						WHEN LOWER(left(@par_DestinationName, 4)) = 'aggr'
+							THEN N''
+						ELSE CONCAT ('AND NOT EXISTS (SELECT 1 FROM [', @par_LayerName, '].[', @par_DestinationName, '] AS destination WHERE destination.[', @par_DestinationName, 'BKey] =  source.[', @par_DestinationName, 'BKey] AND destination.[X_IsCurrent] = 1)')
+						END
+					) AS sqlcode
+					,CONCAT (
+					N'', CASE 
+						WHEN LOWER(left(@par_DestinationName, 4)) = 'aggr'
+							THEN N''
+						ELSE CONCAT ('AND EXISTS (SELECT 1 FROM [', @par_LayerName, '].[', @par_DestinationName, '] AS destination WHERE destination.[', @par_DestinationName, 'BKey] =  source.[', @par_DestinationName, 'BKey]  AND source.[X_HashKey] <> destination.[X_HashKey] AND destination.[X_IsCurrent] = 1)')
+						END
+					) AS sqlcode2
+					,CONCAT (
+					N'', CASE 
+						WHEN LOWER(left(@par_DestinationName, 4)) = 'aggr'
+							THEN N''
+						ELSE CONCAT ('AND destination.[', @par_DestinationName, 'BKey] =  source.[', @par_DestinationName, 'BKey] ')
+						END
+					) AS sqlcode3
+			) a;
+	END
+	ELSE
+		SET @sql_filter = N''
+
+	/* Build Dynamic SQL statement: Update existing records with defferent X_HashKey */
+	SET @sql_updateExisting = CONCAT ('UPDATE ', '[', @par_LayerName, '].[', @par_DestinationName, ']', CHAR(13), CHAR(9), 'SET [X_EndDate] = getdate()-1', CHAR(13), CHAR(9), CHAR(9), ',[X_IsCurrent] = 0', CHAR(13), CHAR(9), CHAR(9), ',[X_IsReplaced] = 0', CHAR(13), 'FROM ', '[', @par_LayerName, '].[', @par_SourceName, ']', ' AS source', CHAR(13), 'INNER JOIN ', '[', @par_LayerName, '].[', @par_DestinationName, ']', ' AS destination', CHAR(13), CHAR(9), 'ON source.[X_HashKey] <> destination.[X_HashKey] AND destination.[X_IsCurrent] = 1 ', CHAR(13), CHAR(9), @sql_filter3)
+	/* Insert New Rows (Unique Key does noet exist in destination) */
+	SET @sql_insertnew = CONCAT (@sql_insert, CHAR(13), @sql_select, @sql_filter, CHAR(13))
+	/* Insert Updated Rows (Unique Key does exist in destination, with different X_HashKey) */
+	SET @sql_update = CONCAT (@sql_insert, CHAR(13), @sql_select, CHAR(13), @sql_filter2, CHAR(13))
+
+	/* Get RowCount from queries */
+	BEGIN
+		SET @sqlRowcount = (SELECT CONCAT ('select @outputFromExec = count(*) FROM (', @sql_select, @sql_filter, ') a'))
+		SET @LogMessage = CONCAT(@par_runid,'¡', N'Run Query to get rowcount for new insert.')
+		EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+
+	END
+	IF (@par_Debug <> 1)
+		BEGIN
+			EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_New OUT
+			SET @LogMessage = CONCAT(@par_runid,'¡', N'RowCount for new records is: ' , @rowcount_New)
+			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+		END
+	BEGIN
+		SET @sqlRowcount = (SELECT CONCAT ('select @outputFromExec = count(*) FROM (', @sql_select, @sql_filter2, ') a'))
+		SET @LogMessage = CONCAT(@par_runid,'¡', N'Run Query to get rowcount for Updated records.')
+		EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+	END
+	IF (@par_Debug <> 1)
+		BEGIN
+			EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_Update OUT
+			SET @LogMessage = CONCAT(@par_runid,'¡', N'RowCount for Updated records is: ' , @rowcount_Update)
+			EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+		END
+
+	/* Update rowcount in Config table */
+	SET @LogMessage = CONCAT(@par_runid,'¡',N'Update Config table with Rowcounts.')
+	EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
+	EXEC [DA_MDDE].[sp_UpdateConfig_RowCount]  @par_runid , @par_LayerName , @par_MappingName , @rowcount_New, @rowcount_Update, 0	, @par_Debug 
+
+	/*Run Queries to load data*/
+	BEGIN
+		EXEC [DA_MDDE].[sp_Logger] 'INFO', N'Run Query to load for new records:'
+		PRINT ('********************')
+		PRINT (@sql_insertnew)
+		PRINT ('********************')
+	END
+	IF (@par_Debug <> 1)
+		EXEC sp_executesql @sql_insertnew 
+	BEGIN
+		EXEC [DA_MDDE].[sp_Logger] 'INFO', N'Run Query to update changed records:'
+		PRINT ('********************')
+		PRINT (@sql_updateExisting)
+		PRINT ('********************')
+		EXEC sp_executesql @sql_updateExisting
+	END
+	IF (@par_Debug <> 1)
+		EXEC sp_executesql @sql_updateExisting 
+	BEGIN
+		PRINT ('********************')
+		PRINT (@sql_update)
+		PRINT ('********************')
+		EXEC [DA_MDDE].[sp_Logger] 'INFO', N'Run Query to load changed records.'
+		EXEC sp_executesql @sql_update
+	END
+	IF (@par_Debug <> 1)
+		EXEC sp_executesql @sql_update 
 END TRY
 
 BEGIN CATCH
-	DECLARE @ErrorMessage NVARCHAR(4000),
-            @ErrorSeverity INT,
-            @ErrorState INT;
-
     SELECT @ErrorMessage = ERROR_MESSAGE(),
            @ErrorSeverity = ERROR_SEVERITY(),
            @ErrorState = ERROR_STATE();

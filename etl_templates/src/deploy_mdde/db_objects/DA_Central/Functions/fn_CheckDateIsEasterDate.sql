@@ -1,5 +1,4 @@
 ﻿CREATE FUNCTION [DA_Central].[fn_CheckDateIsEasterDate] (@date [date]) RETURNS bit
-WITH SCHEMABINDING
 AS
 BEGIN;
     --- Variables used:

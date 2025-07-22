@@ -7,19 +7,11 @@ from .dag_reporting import DagReporting, EntityRef, MappingRef, NoFlowError, Ver
 
 logger = get_logger(__name__)
 
-
-
 class EtlFailure(DagReporting):
     def __init__(self):
         super().__init__()
         self.dag = ig.Graph()
         self.impact = []
-        self.colors_status = {
-            "OK": "#92FA72",
-            "NOK": "#FA8072",
-            "DNR": "#72DAFA"
-        }
-
 
     def set_mappings_failed(self, mapping_refs: List[MappingRef]) -> None:
         """Markeert opgegeven mappings als gefaald in de ETL-DAG en registreert de impact.

@@ -1,6 +1,6 @@
 CREATE VIEW [{{mapping.EntityTarget.CodeModel}}].[vw_src_{{mapping.Name.replace(' ','_')}}] AS
 SELECT
-    {% for attr_mapping in mapping.attr_mapping %}
+    {% for attr_mapping in mapping.AttributeMapping %}
         {% if 'Expression' in attr_mapping %}
             [{{attr_mapping.AttributeTarget.Code}}] = {{ attr_mapping.Expression }}(
                 {{ attr_mapping.AttributesSource.EntityAlias }}.[{{attr_mapping.AttributesSource.Name}}]
@@ -42,7 +42,7 @@ SELECT
         {% endif %}
     {% endfor %}
 GROUP BY
-    {% for attr_mapping in mapping.attr_mapping %}
+    {% for attr_mapping in mapping.AttributeMapping %}
         {% if 'Expression' not in attr_mapping and not loop.first %},
             {{ attr_mapping.AttributesSource.EntityAlias }}.[{{attr_mapping.AttributesSource.Name}}] {% elif 'Expression' not in attr_mapping %}
             {{ attr_mapping.AttributesSource.EntityAlias }}.[{{attr_mapping.AttributesSource.Name}}]

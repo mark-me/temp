@@ -191,7 +191,7 @@ class Orchestrator:
         mapping_order = dag_etl.get_run_config(
             deadlock_prevention=DeadlockPrevention.TARGET
         )
-        mapping_dependencies = dag_etl.get_load_dependencies(vertex_type=VertexType.MAPPING)
+        mapping_dependencies = dag_etl.get_load_dependencies()
         return deploy_mdde.process(mapping_order=mapping_order, mapping_dependencies=mapping_dependencies)
 
     def _generate_code(self, dag_etl: DagImplementation) -> None:

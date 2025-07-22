@@ -10,12 +10,14 @@ Parameter(s):       - 	  @par_runid [NVARCHAR] (500)			= ETL RunID form the Syna
 						, @par_SourceName [NVARCHAR] (500)		= Source table or view Name. 
 						, @par_DestinationName [NVARCHAR] (500) = Desitination table or view Name. 
 						, @par_MappingName [NVARCHAR] (500)		= Mapping name from PowerDesigner. Is only used for logging.  
-						, @par_loadtype [int]   0 = Entity Full Load
+						, @par_loadtype [Tinyint]  	0 = Entity Full Load
 												1 = Entity Incremental Load
 												2 = Dimension Table Full Load
 												3 = Dimension Table Incremental Load
 												4 = Fact Table Full Load
 												5 = Fact Table Incremental Load 
+												90 = Load Sample Set
+												98 = Error Predecessor 
 												99 = Disabled
 						, @par_DisableCheckColumnsAndDatatypes  [bit]  1 = Disable check on datatypes 
 																	   0 = Check source and destination on loading
@@ -29,6 +31,7 @@ Date(yyyy-mm-dd)    Author              Comments
 2025-02-28	        Jeroen Poll         V2.0   Added Incremental load 
 2025-04-04	        Jeroen Poll         V2.1   Added checks and more load types
 2025-07-11			Jeroen Poll			v2.2   Added Load option 98 for Error on Predecessor
+2025-07-17			Jeroen Poll			v2.2   Added Load option 90 for sample sets
 ***************************************************************************************************/
 DECLARE @sql NVARCHAR(MAX) = ''
 DECLARE @LogMessage NVARCHAR(max);
@@ -84,7 +87,7 @@ BEGIN TRY
 	BEGIN
 		SET @sql = CASE @par_loadtype
 				WHEN 0 /* Full Load*/
-					THEN CONCAT ('EXEC [DA_MDDE].[sp_LoadEntityData_FullLoad] ', QUOTENAME(@par_runid, ''''), ',', QUOTENAME(@par_LayerName, ''''), ',', QUOTENAME(@par_SourceName, ''''), ',', QUOTENAME(@par_DestinationName, ''''), ',', QUOTENAME(@par_MappingName, ''''), ', 0')
+					THEN CONCAT ('EXEC [DA_MDDE].[sp_LoadEntityData_FullLoad] ', QUOTENAME(@par_runid, ''''), ',', QUOTENAME(@par_LayerName, ''''), ',', QUOTENAME(@par_SourceName, ''''), ',', QUOTENAME(@par_DestinationName, ''''), ',', QUOTENAME(@par_MappingName, ''''), ', 0 , 0')
 				WHEN 1 /* Incremental Load */
 					THEN CONCAT ('EXEC [DA_MDDE].[sp_LoadEntityData_IncrementalLoad] ', QUOTENAME(@par_runid, ''''), ',', QUOTENAME(@par_LayerName, ''''), ',', QUOTENAME(@par_SourceName, ''''), ',', QUOTENAME(@par_DestinationName, ''''), ',', QUOTENAME(@par_MappingName, ''''), ', 0')
 				WHEN 2 /* Dimension Table Full Load */
@@ -95,6 +98,8 @@ BEGIN TRY
 					THEN 'SELECT 1'
 				WHEN 5 /* Fact Table Incremental Load */
 					THEN 'SELECT 1'
+				WHEN 90 /* Sample set with Full Load*/
+					THEN CONCAT ('EXEC [DA_MDDE].[sp_LoadEntityData_FullLoad] ', QUOTENAME(@par_runid, ''''), ',', QUOTENAME(@par_LayerName, ''''), ',', QUOTENAME(@par_SourceName, ''''), ',', QUOTENAME(@par_DestinationName, ''''), ',', QUOTENAME(@par_MappingName, ''''), ', 1 , 0')
 				WHEN 98 /* Error Predecessor */
 					THEN 'SELECT 1'
 				WHEN 99 /*  Disabled */
@@ -102,6 +107,8 @@ BEGIN TRY
 				ELSE 'SELECT 1'
 				END
 		SET @LogMessage = CASE @par_loadtype
+				WHEN -1
+					THEN CONCAT (@par_runid,'¡','LoadType is set to: Sample Set (Full Load), with command: ', @sql)
 				WHEN 0
 					THEN CONCAT (@par_runid,'¡','LoadType is set to: Full Load, with command: ', @sql)
 				WHEN 1

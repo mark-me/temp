@@ -46,7 +46,7 @@ FROM (
 		, s.[NAME]
 		, schema_name(s.[schema_id]) AS SchemaNaam
 	FROM sys.tables s
-	INNER JOIN [DA_MDDE].[Config] c ON c.[LayerName] = schema_name(s.[schema_id]) AND c.[TargetName] = s.[NAME] AND c.[LoadType] = 0
+	INNER JOIN [DA_MDDE].[Config] c ON c.[LayerName] = schema_name(s.[schema_id]) AND c.[TargetName] = s.[NAME] AND c.[LoadType] IN( 0, 90)
 	GROUP BY s.[NAME]
 		, schema_name(s.[schema_id])
 	) A

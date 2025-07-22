@@ -737,6 +737,7 @@ class DagBuilder:
         dag_mappings = ig.Graph.DictList(
             vertices=lst_vertices, edges=lst_edges, directed=True
         )
+        dag_mappings = dag_mappings.simplify()
         return dag_mappings
 
     def _add_source_entity_edges(

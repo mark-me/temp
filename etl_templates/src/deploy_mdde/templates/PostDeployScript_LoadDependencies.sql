@@ -4,16 +4,14 @@ INSERT INTO
     [DA_MDDE].[LoadDependencies] (
         [Model],
         [Mapping],
-        [RelationType],
-        [ModelRelated],
-        [MappingRelated]
+        [PrecedingModel],
+        [PrecedingMapping]
     ) {%- for dependency in mapping_dependencies %}
     SELECT
         '{{dependency.model}}',
         '{{dependency.name}}',
-        '{{dependency.type_relation}}',
-        '{{dependency.model_related}}',
-        '{{dependency.name_related}}' {% if not loop.last %}
+        '{{dependency.model_preceding}}',
+        '{{dependency.mapping_preceding}}' {% if not loop.last %}
         UNION ALL
         {% endif %}
     {% endfor %}

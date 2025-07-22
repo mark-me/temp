@@ -1,4 +1,4 @@
-﻿CREATE PROC [DA_MDDE].[sp_LoadEntityData_FullLoad] @par_runid [NVARCHAR](500),@par_LayerName [NVARCHAR](500),@par_SourceName [NVARCHAR](500),@par_DestinationName [NVARCHAR](500),@par_MappingName [NVARCHAR](500),@par_Debug [Bit] AS
+﻿CREATE PROC [DA_MDDE].[sp_LoadEntityData_FullLoad] @par_runid [NVARCHAR](500),@par_LayerName [NVARCHAR](500),@par_SourceName [NVARCHAR](500),@par_DestinationName [NVARCHAR](500),@par_MappingName [NVARCHAR](500),@par_SampleSet [Bit] ,@par_Debug [Bit] AS
 /***************************************************************************************************
 Script Name         sp_LoadEntityData_FullLoad.sql
 Create Date:        2025-02-17
@@ -24,6 +24,7 @@ Date(yyyy-mm-dd)    Author              Comments
 2025-06-16			Jeroen Poll			Remove Truncate, Will be done in other PROC
 2025-06-19			Jeroen Poll			Fix param Runid id not correct insert statement.
 2025-07-03			Jeroen Poll			Add support for Loading with constraint info
+2025-07-17			Jeroen Poll			Add support for Loading sample sets
 ***************************************************************************************************/
 BEGIN TRY
 	SET NOCOUNT ON;
@@ -98,7 +99,10 @@ BEGIN TRY
 	SELECT @sql_select = sqlcode
 	FROM (
 		SELECT CONCAT (
-				'SELECT ', CHAR(13), CHAR(10), STRING_AGG(CONCAT (
+				CASE WHEN @par_SampleSet = 1 AND (LEFT(@par_MappingName,7) = 'Da_MDDE' OR LEFT(@par_DestinationName,4) = 'Aggr' ) THEN 'SELECT  '
+					 WHEN @par_SampleSet = 1 AND NOT (LEFT(@par_MappingName,7) = 'Da_MDDE' OR LEFT(@par_DestinationName,4) = 'Aggr' )   THEN 'SELECT TOP 100 ' 
+					 ELSE 'SELECT ' END
+				, CHAR(13), CHAR(10), STRING_AGG(CONCAT (
 						CHAR(9), '[' + dest.[name] + ']', ' = ', CASE 
 							WHEN source.[name] = 'X_RunId'
 								THEN '''' + @par_runid + ''''
@@ -218,4 +222,3 @@ BEGIN CATCH
     RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
 END CATCH
 GO
-
