@@ -37,7 +37,14 @@ class PDDocument:
         self.transform_objects = ObjectTransformer()
 
     def get_document_info(self) -> dict:
-        dict_info = {
+        """Geeft metadata terug over het ingelezen Power Designer logisch datamodel.
+
+        Deze functie retourneert een dictionary met informatie zoals bestandsnaam, maker, aanmaakdatum, en modelopties.
+
+        Returns:
+            dict: Metadata van het Power Designer LDM-bestand.
+        """
+        return {
             "Filename": str(self.file_pd_ldm),
             "FilenameRepo": self.content['a:RepositoryFilename'],
             "Creator": self.content["a:Creator"],
@@ -48,7 +55,6 @@ class PDDocument:
             "PackageOptions": self.content['a:PackageOptionsText'],
 
         }
-        return dict_info
 
     def get_filters(self) -> list:
         """Haalt alle filter objecten op uit het logisch data model
