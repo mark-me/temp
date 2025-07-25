@@ -1,9 +1,8 @@
-import datetime
+from datetime import datetime
 import json
 from pathlib import Path
 
 import xmltodict
-import yaml
 from logtools import get_logger
 
 from .pd_mapping_extractor import MappingExtractor
@@ -29,12 +28,27 @@ class PDDocument:
         self.file_pd_ldm = file_pd_ldm
         # Extracting data from the file
         self.content = self.read_file_model(file_pd_ldm=file_pd_ldm)
+        self.document_info = {}
         self.lst_models = []
         self.lst_filters = []
         self.lst_scalars = []
         self.lst_aggregates = []
         self.lst_mappings = []
         self.transform_objects = ObjectTransformer()
+
+    def get_document_info(self) -> dict:
+        dict_info = {
+            "Filename": str(self.file_pd_ldm),
+            "FilenameRepo": self.content['a:RepositoryFilename'],
+            "Creator": self.content["a:Creator"],
+            "DateCreated": datetime.fromtimestamp(int(self.content['a:CreationDate'])),
+            "Modifier": self.content['a:Modifier'],
+            "DateModified": datetime.fromtimestamp(int(self.content['a:ModificationDate'])),
+            "ModelOptions": self.content['a:ModelOptionsText'],
+            "PackageOptions": self.content['a:PackageOptionsText'],
+
+        }
+        return dict_info
 
     def get_filters(self) -> list:
         """Haalt alle filter objecten op uit het logisch data model
@@ -295,7 +309,7 @@ class PDDocument:
             Datetime: Geformatteerd in ISO-format
         """
 
-        if isinstance(obj, datetime.datetime):
+        if isinstance(obj, datetime):
             return obj.isoformat()
         raise TypeError("Type not serializable")
 
@@ -309,7 +323,7 @@ class PDDocument:
         """
 
         dict_document = {}
-
+        dict_info = self.get_document_info()
         lst_filters = self.get_filters()
         lst_scalars = self.get_scalars()
         lst_aggregates = self.get_aggregates()
