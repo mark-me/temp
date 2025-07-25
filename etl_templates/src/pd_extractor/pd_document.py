@@ -51,8 +51,8 @@ class PDDocument:
             "DateCreated": datetime.fromtimestamp(int(self.content['a:CreationDate'])),
             "Modifier": self.content['a:Modifier'],
             "DateModified": datetime.fromtimestamp(int(self.content['a:ModificationDate'])),
-            "ModelOptions": self.content['a:ModelOptionsText'],
-            "PackageOptions": self.content['a:PackageOptionsText'],
+            "ModelOptions": self.content['a:ModelOptionsText'].split("\n"),
+            "PackageOptions": self.content['a:PackageOptionsText'].split("\n"),
         }
 
     def get_filters(self) -> list:
@@ -327,8 +327,7 @@ class PDDocument:
             file_output (str): Het pad waar het resultaatbestand wordt opgeslagen.
         """
 
-        dict_document = {}
-        dict_info = self.get_document_info()
+        dict_document = {"Info": self.get_document_info()}
         lst_filters = self.get_filters()
         lst_scalars = self.get_scalars()
         lst_aggregates = self.get_aggregates()
