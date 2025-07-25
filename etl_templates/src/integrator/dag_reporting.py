@@ -169,7 +169,9 @@ class DagReporting(DagImplementation):
             ig.Graph: De grafiek met ingestelde visuele attributen.
         """
         logger.info("Setting graphical attributes of the graph")
+        test_attr = [vx.attributes() for vx in dag.vs]
         for node in dag.vs:
+            #test_attr = node.attributes()
             node["shape"] = self.node_type_shape[node["type"]]
             node["shadow"] = True
             node["color"] = self.node_type_color[node["type"]]
@@ -359,6 +361,23 @@ class DagReporting(DagImplementation):
         dag_files = self.get_dag_file_dependencies(include_entities=include_entities)
         dag_files = self._set_visual_attributes(dag=dag_files)
         self.plot_graph_html(dag=dag_files, file_html=file_html)
+
+    def plot_mappings(self, file_html: str) -> None:
+        """Genereert en slaat een netwerkvisualisatie op van de mappings.
+
+        Bouwt een grafiek van de mappings, stelt de visuele attributen in,
+        en slaat het resultaat op als een HTML-bestand.
+
+        Args:
+            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+
+        Returns:
+            None
+        """
+        logger.info( f"Creating a network plot, '{file_html}', showing only mappings")
+        dag = self.get_dag_mappings()
+        dag = self._set_visual_attributes(dag=dag)
+        self.plot_graph_html(dag=dag, file_html=file_html)
 
     def plot_entity_journey(self, entity: EntityRef, file_html: str) -> None:
         """Genereert en slaat een netwerkvisualisatie op van alle afhankelijkheden van een specifieke entiteit.

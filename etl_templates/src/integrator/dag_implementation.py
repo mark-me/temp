@@ -1,8 +1,9 @@
+from copy import deepcopy
 from enum import Enum, auto
-from typing import List
+from typing import List, Union
 
-from logtools import get_logger
 import igraph as ig
+from logtools import get_logger
 
 from .dag_builder import DagBuilder, NoFlowError, VertexType
 
@@ -32,7 +33,7 @@ class DagImplementation(DagBuilder):
     def __init__(self):
         super().__init__()
 
-    def build_dag(self, files_RETW):
+    def build_dag(self, files_RETW: Union[list, str]):
         """Bouwt de DAG op basis van de aangeleverde RETW-bestanden en verrijkt deze met afgeleide gegevens.
 
         Deze functie initialiseert de DAG-structuur en voegt extra modelinformatie en hashkeys toe.
@@ -269,16 +270,13 @@ class DagImplementation(DagBuilder):
         return graph_conflicts
 
     def get_load_dependencies(self) -> List[dict]:
-        """Geeft een lijst van afhankelijkheden tussen mappings in de ETL-DAG.
-
-        Deze functie retourneert voor elke mapping de bijbehorende voorgangers,
-        zodat de laadvolgorde en afhankelijkheden inzichtelijk zijn.
-
-        Returns:
-            list: Een lijst van dictionaries met mapping- en afhankelijkheidsinformatie.
+        """Geeft van iedere knoop in het ETL-proces alle voorliggende (predecessors) of opvolgende (successors) vergelijkbare typen knopen terug
 
         Raises:
-            NoFlowError: Indien er geen mappings zijn en dus geen ETL-flow kan worden bepaald.
+            NoFlowError: Indien er geen ETL flow met mappings is
+
+        Returns:
+            list: Lijst met dictionaries met voor iedere ETL-knoop de voorliggende en opvolgende knopen.
         """
         lst_dependencies = []
         if not self.dag:
@@ -287,15 +285,15 @@ class DagImplementation(DagBuilder):
         dag_mappings = self.get_dag_mappings()
         for vx in dag_mappings.vs:
             vs_predecessors = dag_mappings.vs(dag_mappings.neighbors(vx, mode="in"))
-            lst_dependencies.extend(
-                {
-                    "model": vx["CodeModel"],
-                    "name": vx["Name"],
-                    "model_preceding": vx_preceding["CodeModel"],
-                    "mapping_preceding": vx_preceding["Name"],
-                }
-                for vx_preceding in vs_predecessors
-            )
+            for vx_preceding in vs_predecessors:
+                lst_dependencies.append(
+                    {
+                        "model": vx["CodeModel"],
+                        "name": vx["Name"],
+                        "model_preceding": vx_preceding["CodeModel"],
+                        "mapping_preceding": vx_preceding["Name"],
+                    }
+                )
         return lst_dependencies
 
     def get_mappings(self) -> List[dict]:
@@ -329,3 +327,27 @@ class DagImplementation(DagBuilder):
             if vx["type"] == VertexType.ENTITY.name
         ]
         return vs_entities
+
+    def get_mapping_clusters(self, schemas: list[str]) -> list[dict]:
+        """
+        Bepalen van clusters van mappings in een datamart die met elkaar samenhangen, zodat men in samenhang met de status van de executie
+        van ETL kan bepalen of men de dimensies en feiten die samenhangen 'live' kan zetten.
+
+        Args:
+            schemas (list[str]): Geeft aan in welke schema(s) gekeken moet worden voor de bepaling van de data-mart
+
+        Returns:
+            list[dict]: Lijst met mappings en de cluster waartoe ze behoren.
+        """
+        dag_etl = self.get_dag_ETL()
+        vs_irrelevant = [vx for vx in dag_etl.vs if vx["CodeModel"] not in schemas]
+        dag_etl.delete_vertices(vs_irrelevant)
+        components = dag_etl.connected_components(mode="weak")
+        cluster_membership = zip(
+            [vx for vx in components._graph.vs], components.membership
+        )
+        lst_clusters = [
+            {"CodeModel": vx["CodeModel"], "Mapping": vx["Name"], "Cluster": membership}
+            for vx, membership in cluster_membership
+        ]
+        return lst_clusters

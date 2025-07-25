@@ -159,7 +159,6 @@ class RepositoryManager:
 
         Args:
             path_source (Path): De bron-map met te publiceren bestanden.
-            paths_post_deployment (list[Path]): Lijst met paden naar post-deployment scripts die toegevoegd moeten worden.
 
         Returns:
             None

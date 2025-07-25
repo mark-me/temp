@@ -82,7 +82,13 @@ class TransformStereotype(ObjectTransformer):
             list or None: De gesplitste SQL expressie of None als niet gesplitst kan worden.
         """
         if objects["Stereotype"] == "mdde_FilterBusinessRule":
-            return sqlexpression.split(" ", 1)
+            # if '=' in sqlexpression:
+            #     lst_expression = sqlexpression.split("=", 1)
+            #     lst_expression.insert(1, "=")
+            #     return lst_expression
+            # else:
+            lst_expression = sqlexpression.split(" ", 1)
+            return lst_expression
         elif objects["Stereotype"] == "mdde_ScalarBusinessRule":
             return sqlexpression.split("=", 1)
         else:

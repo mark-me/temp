@@ -62,6 +62,7 @@ class DeploymentMDDEConfigData:
     folder_data: str = "etl_templates/input/codeList"
     schema: str = "MDDE"
     folder_output: str = "DA_MDDE"
+    schemas_datamart: List[str] = field(default_factory=list)
 
 
 @dataclass

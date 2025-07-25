@@ -56,4 +56,4 @@ flowchart LR
 
 ## API referentie
 
-### ::: src.generator.ddl_views_source.DDLSourceViews.__build_x_hashkey
+### ::: src.integrator.dag_implementation.DagImplementation._mappings_add_hashkey

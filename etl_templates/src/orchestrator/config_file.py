@@ -375,6 +375,10 @@ class DeploymentMDDEConfig(BaseConfigComponent):
     def path_data_input(self) -> Path:
         return Path(self._data.folder_data)
 
+    @property
+    def schemas_datamart(self) -> list[str]:
+        return self._data.schemas_datamart
+
 
 class DevOpsConfig(BaseConfigComponent):
     def __init__(self, config: DevOpsConfigData, path_output_root: Path):

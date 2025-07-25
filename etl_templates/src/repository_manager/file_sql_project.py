@@ -95,7 +95,6 @@ class SqlProjEditor:
 
         Args:
             folder (Path): De map waarin gezocht wordt naar nieuwe .sql-bestanden.
-            item_type (str): Het type item-groep waarin de bestanden moeten worden toegevoegd (bijv. 'Build' of 'None').
 
         Returns:
             None

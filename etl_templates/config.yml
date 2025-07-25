@@ -1,13 +1,15 @@
-title: "first-dry-run"
+title: "usecase-poc"
 
 folder-intermediate-root: "./etl_templates/intermediate"
 
-ignore-warnings: True
+ignore-warnings: False
 
 power-designer:
-  folder: "./etl_templates/input"
+  folder: "./Data model/Central/UsecasePoC"
   files:
-    - "UsecaseV2.26a.ldm"
+    - "UsecaseV2.25b.ldm"
+    - "DM_FactPoC.ldm"
+    - "DM_DimPoC.ldm"
 
 extractor:
   folder-output: "RETW"
@@ -20,6 +22,9 @@ deployment-mdde:
   folder-output: "CentralLayer/DA_MDDE"
   schema: "MDDE"
   folder-data: "./etl_templates/input/codeList/"
+  schemas-datamart:
+    - DM_Fact
+    - DM_Dim
 
 devops:
   folder: "GIT_repo"

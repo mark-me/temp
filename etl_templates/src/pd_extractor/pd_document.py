@@ -26,7 +26,6 @@ class PDDocument:
         Args:
             file_pd_ldm (str): Power Designer logisch data model document (.ldm)
         """
-        logger.info("Ik ben er")
         self.file_pd_ldm = file_pd_ldm
         # Extracting data from the file
         self.content = self.read_file_model(file_pd_ldm=file_pd_ldm)
@@ -45,7 +44,7 @@ class PDDocument:
         """
         stereotype_input = "mdde_FilterBusinessRule"
         extractor = StereotypeExtractor(
-            pd_content=self.content, stereotype_input=stereotype_input
+            pd_content=self.content, stereotype_input=stereotype_input, file_pd_ldm=self.file_pd_ldm
         )
         logger.debug("Start filter extraction")
         lst_filters = extractor.objects()
@@ -61,7 +60,7 @@ class PDDocument:
         """
         stereotype_input = "mdde_ScalarBusinessRule"
         extractor = StereotypeExtractor(
-            pd_content=self.content, stereotype_input=stereotype_input
+            pd_content=self.content, stereotype_input=stereotype_input, file_pd_ldm=self.file_pd_ldm
         )
         logger.debug("Start scalar extraction")
         lst_scalars = extractor.objects()
@@ -77,7 +76,7 @@ class PDDocument:
         """
         stereotype_input = "mdde_AggregateBusinessRule"
         extractor = StereotypeExtractor(
-            pd_content=self.content, stereotype_input=stereotype_input
+            pd_content=self.content, stereotype_input=stereotype_input, file_pd_ldm=self.file_pd_ldm
         )
         logger.debug("Start aggregate extraction")
         lst_aggregates = extractor.objects()
@@ -342,19 +341,3 @@ class PDDocument:
                 dict_document, outfile, indent=4, default=self._serialize_datetime
             )
         logger.info(f"Document output is written to '{file_output}'")
-
-
-if __name__ == "__main__":
-    file_config = Path("./etl_templates/config.yml")
-    if file_config.exists():
-        with open(file_config) as f:
-            config = yaml.safe_load(f)
-    # Build params
-    file_model = config["power_designer_ldm"]
-    file_document_output = config["mdde_json"]
-    document = PDDocument(file_pd_ldm=file_model)
-    # Saving model objects
-    document.write_result(file_output=file_document_output)
-    logger.info(
-        f"Done extracting the logical data model and mappings of '{file_model}' written to '{file_document_output}'"
-    )

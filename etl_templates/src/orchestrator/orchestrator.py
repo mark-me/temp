@@ -1,9 +1,10 @@
 import os
+import sys
 from pathlib import Path
 
 from deploy_mdde import DeploymentMDDE
 from generator import DDLGenerator
-from integrator import DagImplementation, DagReporting, DeadlockPrevention, VertexType
+from integrator import DagImplementation, DagReporting, DeadlockPrevention
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
 from repository_manager import RepositoryManager
@@ -115,7 +116,10 @@ class Orchestrator:
             if self.config.ignore_warnings:
                 return
             answer = input("Waarschuwingen gevonden, wil je doorgaan? (J/n):")
-            if answer.upper() in ["", "J", "JA", "JAWOHL", "Y", "YES"]:
+
+            if answer.upper() in ["", "J", "JA", "JAWOHL", "Y", "YES", "Jeroen"]:
+                if answer.upper() == "JEROEN":
+                    print("That is such a Jeroen Poll thing to do!",file=sys.stdout)
                 return
             else:
                 error = True
@@ -168,6 +172,8 @@ class Orchestrator:
         dag.plot_etl_dag(file_html=path_output)
         path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
         dag.plot_file_dependencies(file_html=path_output)
+        path_output = str(self.config.extractor.path_output / "mappings.html")
+        dag.plot_mappings(file_html=path_output)
 
     def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> list:
         """
@@ -192,7 +198,12 @@ class Orchestrator:
             deadlock_prevention=DeadlockPrevention.TARGET
         )
         mapping_dependencies = dag_etl.get_load_dependencies()
-        return deploy_mdde.process(mapping_order=mapping_order, mapping_dependencies=mapping_dependencies)
+        mapping_clusters = dag_etl.get_mapping_clusters(schemas=self.config.deploy_mdde.schemas_datamart)
+        return deploy_mdde.process(
+            mapping_order=mapping_order,
+            mapping_dependencies=mapping_dependencies,
+            datamart_clusters=mapping_clusters
+        )
 
     def _generate_code(self, dag_etl: DagImplementation) -> None:
         """

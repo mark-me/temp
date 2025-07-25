@@ -2,5 +2,7 @@ PRINT N'Running PostDeploy: ..\DA_MDDE\PostDeployment\PostDeploy_MetaData_Config
 :r ..\DA_MDDE\PostDeployment\PostDeploy_MetaData_Config_CodeList.sql
 PRINT N'Running PostDeploy: ..\DA_MDDE\PostDeployment\PostDeploy_MetaData_Config_MappingOrder.sql'
 :r ..\DA_MDDE\PostDeployment\PostDeploy_MetaData_Config_MappingOrder.sql
+PRINT N'Running PostDeploy: ..\DA_MDDE\PostDeployment\PostDeploy_MetaData_ConfigMappingClusters.sql'
+:r ..\DA_MDDE\PostDeployment\PostDeploy_MetaData_ConfigMappingClusters.sql
 PRINT N'Running PostDeploy: ..\DA_MDDE\PostDeployment\PostDeploy_Dates.sql'
 :r ..\DA_MDDE\PostDeployment\PostDeploy_Dates.sql

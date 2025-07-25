@@ -253,9 +253,9 @@ class TransformModelInternal(ObjectTransformer):
         return self.clean_keys(identifiers)
 
     def _has_identifier_attributes(self, identifier: dict, entity: dict) -> bool:
-        """Controleert of de identifier attribuutinformatie bevat.
+        """Controleert of de identifier attribuut-informatie bevat.
 
-        Geeft True terug als de identifier attribuutdata heeft, logt anders een foutmelding en geeft False terug.
+        Geeft True terug als de identifier attribuut-data heeft, logt anders een foutmelding en geeft False terug.
 
         Args:
             identifier (dict): De identifier die gecontroleerd wordt op attributen.
@@ -273,13 +273,13 @@ class TransformModelInternal(ObjectTransformer):
         return True
 
     def _enrich_identifier_with_attributes(self, identifier: dict, dict_attrs: dict):
-        """Verrijkt een identifier met attribuutinformatie op basis van een attribuutdictionary.
+        """Verrijkt een identifier met attribuut-informatie op basis van een attribuut-dictionary.
 
         Deze functie voegt de bijbehorende attributen toe aan de identifier zodat deze eenvoudig verder verwerkt kan worden.
 
         Args:
             identifier (dict): De identifier die verrijkt moet worden.
-            dict_attrs (dict): Dictionary met referenties naar attribuutdata.
+            dict_attrs (dict): Dictionary met referenties naar attribuut-data.
         """
 
         lst_attr_id = identifier["c:Identifier.Attributes"]["o:EntityAttribute"]

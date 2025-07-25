@@ -19,6 +19,7 @@ class TemplateType(Enum):
     """
 
     POST_DEPLOY_CONFIG = "PostDeployScript_Config.sql"
+    POST_DEPLOY_MAPPING_CLUSTERS = "PostDeployScript_MappingClusters.sql"
     POST_DEPLOY_LOAD_DEPENDENCIES = "PostDeployScript_LoadDependencies.sql"
     POST_DEPLOY_CODELIST = "PostDeployScript_CodeList.sql"
 
@@ -39,7 +40,7 @@ class DeploymentMDDE:
         self._path_data = path_data
         self.post_deployment_scripts = []
 
-    def process(self, mapping_order: List[dict], mapping_dependencies: List[dict]) -> List[Path]:
+    def process(self, mapping_order: list[dict], mapping_dependencies: list[dict], datamart_clusters: list[dict]) -> list[Path]:
         """
         Voert het volledige post-deployment scriptgeneratieproces uit.
 
@@ -55,6 +56,7 @@ class DeploymentMDDE:
         self._generate_load_code_list()
         self._generate_load_config(mapping_order=mapping_order)
         self._generate_load_dependencies(mapping_dependencies=mapping_dependencies)
+        self._generate_load_config_mapping_clusters(mapping_clusters=datamart_clusters)
         self._generate_load_dates()
         self._copy_db_objects()
         self._generate_post_deploy_master()
@@ -138,6 +140,28 @@ class DeploymentMDDE:
             file_ddl.write(content)
         logger.info(
             f"Created MDDE Config post deployment script '{path_file_output.resolve()}'"
+        )
+
+        self.post_deployment_scripts.append(path_file_output)
+
+    def _generate_load_config_mapping_clusters(self, mapping_clusters: list[dict]) -> None:
+        """
+        Genereert het post-deploy script voor de mapping clusters voor het uitwisselen van feiten in dimensies bij het laden van datamarts.
+        Rendert het template met de mapping clusters en schrijft het resultaat naar het juiste outputbestand.
+
+        Args:
+            mapping_clusters (list[dict]): _description_
+        """
+        template = self._get_template(TemplateType.POST_DEPLOY_MAPPING_CLUSTERS)
+        content = template.render(mapping_clusters=mapping_clusters)
+
+        path_output = self._path_output / "PostDeployment"
+        path_output.mkdir(parents=True, exist_ok=True)
+        path_file_output = path_output / "PostDeploy_MetaData_ConfigMappingClusters.sql"
+        with open(str(path_file_output), mode="w", encoding="utf-8") as file_ddl:
+            file_ddl.write(content)
+        logger.info(
+            f"Created MDDE Config Mapping Clusters post deployment script '{path_file_output.resolve()}'"
         )
 
         self.post_deployment_scripts.append(path_file_output)

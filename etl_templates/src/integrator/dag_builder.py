@@ -727,17 +727,14 @@ class DagBuilder:
         vs_mappings = dag.vs.select(type_eq=VertexType.MAPPING.name)
         for vx_mapping in vs_mappings:
             dict_vertices |= {vx_mapping["name"]: vx_mapping.attributes()}
-            lst_edges.extend(
-                self._add_source_entity_edges(dag=dag, vx_mapping=vx_mapping)
-            )
-            lst_edges.extend(
-                self._add_target_entity_edges(dag=dag, vx_mapping=vx_mapping)
-            )
+            edges_source = self._add_source_entity_edges(dag=dag, vx_mapping=vx_mapping)
+            lst_edges.extend(edges_source)
+            edge_target = self._add_target_entity_edges(dag=dag, vx_mapping=vx_mapping)
+            lst_edges.extend(edge_target)
         lst_vertices = list(dict_vertices.values())
         dag_mappings = ig.Graph.DictList(
             vertices=lst_vertices, edges=lst_edges, directed=True
         )
-        dag_mappings = dag_mappings.simplify()
         return dag_mappings
 
     def _add_source_entity_edges(
@@ -761,12 +758,13 @@ class DagBuilder:
         for vx_entity_source in vs_entities_source:
             if idx_mapping_input := dag.neighbors(vx_entity_source, mode="in"):
                 vs_mapping_input = dag.vs(idx_mapping_input)[0]
-                lst_edges.append(
-                    {
-                        "source": vs_mapping_input["name"],
-                        "target": vx_mapping["name"],
-                    }
-                )
+                if vs_mapping_input["type"] == VertexType.MAPPING.name:
+                    lst_edges.append(
+                        {
+                            "source": vs_mapping_input["name"],
+                            "target": vx_mapping["name"],
+                        }
+                    )
         return lst_edges
 
     def _add_target_entity_edges(
@@ -794,5 +792,6 @@ class DagBuilder:
                 "target": vx_mapping_target["name"],
             }
             for vx_mapping_target in vs_mappings_target
+            if vx_mapping_target["type"] == VertexType.MAPPING.name
         ]
         return lst_edges

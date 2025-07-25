@@ -20,7 +20,6 @@ class DDLSourceViews(DDLViewBase):
 
         Args:
             mappings (dict): Bevat alle mappings uit een RETW bestand
-            identifiers (dict): De JSON (RETW Output) geconverteerd naar een dictionary
         """
         for mapping in tqdm(mappings, desc="Genereren Source Views", colour="#93c47d"):
             if mapping["EntityTarget"]["Stereotype"] == "mdde_AggregateBusinessRule":
