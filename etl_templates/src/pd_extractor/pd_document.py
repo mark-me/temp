@@ -53,7 +53,6 @@ class PDDocument:
             "DateModified": datetime.fromtimestamp(int(self.content['a:ModificationDate'])),
             "ModelOptions": self.content['a:ModelOptionsText'],
             "PackageOptions": self.content['a:PackageOptionsText'],
-
         }
 
     def get_filters(self) -> list:
