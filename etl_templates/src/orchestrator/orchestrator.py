@@ -50,17 +50,17 @@ class Orchestrator:
         """
         logger.info("Start Genesis verwerking")
         lst_files_RETW = self._extract()
-        self._handle_issues()  # Stop process if extraction results in issues
+        self._handle_issues(next_step="integreren RETW bestanden")  # Stop process if extraction results in issues
 
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
         dag_etl = self._integrate_files(files_RETW=lst_files_RETW)
-        self._handle_issues()  # Stop process if integration results in issues
+        self._handle_issues(next_step="genereren code")  # Stop process if integration results in issues
 
         # Genereer code voor doelschema's en mappings
         self._generate_code(dag_etl=dag_etl)
         # Genereer code voor ETL deployment
         self._generate_mdde_deployment(dag_etl=dag_etl)
-        self._handle_issues()  # Stop process when generating code result in issues
+        self._handle_issues(next_step="toevoegen aan repository")  # Stop process when generating code result in issues
 
         if not skip_devops:
             self._add_to_repository()
@@ -105,7 +105,7 @@ class Orchestrator:
             lst_files_RETW.append(file_RETW)
         return lst_files_RETW
 
-    def _handle_issues(self):
+    def _handle_issues(self, next_step: str):
         """
         Controleert op gevonden issues en onderbreekt de verwerking indien nodig.
 
@@ -117,7 +117,7 @@ class Orchestrator:
         if max_severity_level == "WARNING":
             if self.config.ignore_warnings:
                 return
-            answer = input("Waarschuwingen gevonden, wil je doorgaan? (J/n):")
+            answer = input(f"Waarschuwingen gevonden, wil je doorgaan met {next_step}? (J/n):")
 
             if answer.upper() in ["", "J", "JA", "JAWOHL", "Y", "YES", "Jeroen"]:
                 if answer.upper() == "JEROEN":
