@@ -50,17 +50,17 @@ class Orchestrator:
         """
         logger.info("Start Genesis verwerking")
         lst_files_RETW = self._extract()
-        self._handle_issues(next_step="integreren RETW bestanden")  # Stop process if extraction results in issues
+        self._handle_issues(next_step="integreren van de RETW bestanden")  # Stop process if extraction results in issues
 
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
         dag_etl = self._integrate_files(files_RETW=lst_files_RETW)
-        self._handle_issues(next_step="genereren code")  # Stop process if integration results in issues
+        self._handle_issues(next_step="genereren van code")  # Stop process if integration results in issues
 
         # Genereer code voor doelschema's en mappings
         self._generate_code(dag_etl=dag_etl)
         # Genereer code voor ETL deployment
         self._generate_mdde_deployment(dag_etl=dag_etl)
-        self._handle_issues(next_step="toevoegen aan repository")  # Stop process when generating code result in issues
+        self._handle_issues(next_step="toevoegen aan het repository")  # Stop process when generating code result in issues
 
         if not skip_devops:
             self._add_to_repository()
