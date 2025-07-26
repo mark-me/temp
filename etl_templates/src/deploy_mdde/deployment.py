@@ -104,12 +104,27 @@ class DeploymentMDDE:
         return environment.get_template(type_template.value)
 
     def _generate_load_model_info(self, info_models: list[dict]) -> None:
+        """
+        Genereert het post-deploy script voor de modelinformatie.
+        Rendert het template met de modelinformatie en schrijft het resultaat naar het juiste outputbestand.
+
+        Args:
+            info_models (list[dict]): De modelinformatie die in het script verwerkt moet worden.
+        """
         template = self._get_template(TemplateType.CONFIG_MODEL_INFO)
         content = template.render(info_models=info_models)
         file_output = TemplateType.CONFIG_MODEL_INFO.value
         self._write_generated_code(content, file_output)
 
     def _write_generated_code(self, content, file_output):
+        """
+        Schrijft de gegenereerde code naar een bestand in de PostDeployment directory.
+        Maakt de directory aan indien nodig en voegt het script toe aan de lijst van post-deployment scripts.
+
+        Args:
+            content (str): De inhoud van het te schrijven scriptbestand.
+            file_output (str): De naam van het outputbestand.
+        """
         path_output = self._path_output / "PostDeployment"
         path_output.mkdir(parents=True, exist_ok=True)
         path_file_output = path_output / file_output
