@@ -145,7 +145,7 @@ class DagBuilder:
             return False
 
         # Add file node information
-        id_file = self._add_file_vertex(file_RETW=file_RETW, dict_RETW=dict_RETW)
+        self._add_file_vertex(file_RETW=file_RETW, dict_RETW=dict_RETW)
 
         logger.info(
             f"Voegt de entiteiten die zijn 'gedefinieerd' in het RETW bestand '{file_RETW}'"
@@ -215,7 +215,7 @@ class DagBuilder:
         Returns:
             int: Maakt een stabiele hashwaarde voor een RETW bestand.
         """
-        return self._stable_hash(key=file.name)
+        return self._stable_hash(key=Path(file).name)
 
     def get_entity_id(self, entity_ref: EntityRef) -> int:
         """Genereer een stabiele hash-ID voor een entiteit.
@@ -261,7 +261,11 @@ class DagBuilder:
         # Determine document model
         model = [
             model for model in dict_RETW["Models"] if model["IsDocumentModel"] is True
-        ][0]
+        ]
+        if not model:
+            logger.error(f"No target model found in document '{file_RETW}")
+        else:
+            model = model[0]
         if "Entities" not in model:
             logger.warning(f"No entities for a document model in '{file_RETW}'")
             return
@@ -473,7 +477,11 @@ class DagBuilder:
         vs_mappings = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
         for vx in vs_mappings:
             vx_entity_target = self.dag.neighbors(vx, mode="out")
-            qty_mappings = len(self.dag.neighbors(vx_entity_target[0], mode="in"))
+            if vx_entity_target:
+                vx_entity_target = vx_entity_target[0]
+            else:
+                logger.error(f"Mapping heeft geen doelentiteit '{vx["Name"]}'")
+            qty_mappings = len(self.dag.neighbors(vx_entity_target, mode="in"))
             vx["multi_mapping"] = qty_mappings > 1
 
     def get_dag_total(self) -> ig.Graph:
@@ -775,8 +783,9 @@ class DagBuilder:
         lst_edges = []
         vs_entities_source = dag.vs(dag.neighbors(vx_mapping, mode="in"))
         for vx_entity_source in vs_entities_source:
-            if idx_mapping_input := dag.neighbors(vx_entity_source, mode="in"):
-                vs_mapping_input = dag.vs(idx_mapping_input)[0]
+            idx_mapping_inputs = dag.neighbors(vx_entity_source, mode="in")
+            for idx_mapping_input in idx_mapping_inputs:
+                vs_mapping_input = dag.vs[idx_mapping_input]
                 if vs_mapping_input["type"] == VertexType.MAPPING.name:
                     lst_edges.append(
                         {
