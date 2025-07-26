@@ -219,7 +219,7 @@ class DeploymentMDDE:
             self._path_output.parent / "PostDeployment" / "PostDeploy.sql"
         )
         path_output_master.parent.mkdir(parents=True, exist_ok=True)
-        with open(path_output_master, "w") as file:
+        with open(path_output_master, "w", encoding="utf-8") as file:
             for script in self.post_deployment_scripts:
                 script_path = self._get_relative_path(
                     path_base=path_output_master, path_relative=script
@@ -248,7 +248,7 @@ class DeploymentMDDE:
 
         is_part_in_common = True
         i = 0
-        while is_part_in_common and i < len(parts_output) and len(parts_compare):
+        while is_part_in_common and i < len(parts_output) and i < len(parts_compare):
             if parts_compare[i] != parts_output[i]:
                 is_part_in_common = False
             i += 1
