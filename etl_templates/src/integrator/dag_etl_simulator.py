@@ -50,7 +50,7 @@ class EtlSimulator(DagReporting):
         self.color_entity = "lemonchiffon"
         self.vs_mapping_failed: list[MappingRef] = []
 
-    def build_dag(self, files_RETW):
+    def build_dag(self, files_RETW) -> None:
         """Bouwt de ETL-DAG op basis van de opgegeven RETW-bestanden.
 
         Initialiseert de simulatie-DAG en wijst hiërarchieniveaus en standaardstatussen toe aan de knooppunten.
@@ -121,8 +121,14 @@ class EtlSimulator(DagReporting):
                         vs_run_stage=vs_run_stage, failure_strategy=failure_strategy
                     )
 
-    def _get_run_levels(self):
-        """Geeft de unieke run levels van mapping-knooppunten in de ETL-DAG terug."""
+    def _get_run_levels(self) -> dict:
+        """Geeft de unieke run levels terug van alle mapping-knopen in de simulatie-DAG.
+
+        Doorloopt alle mapping-knopen in de simulatie-DAG en verzamelt de unieke run levels voor verdere verwerking.
+
+        Returns:
+            dict: Een set van unieke run levels.
+        """
         return {
             vx["run_level"]
             for vx in self.dag_simulation.vs.select(type_eq=VertexType.MAPPING.name)
@@ -134,7 +140,7 @@ class EtlSimulator(DagReporting):
 
     def _apply_failure_strategy(
         self, vs_run_stage: ig.VertexSeq, failure_strategy: FailureStrategy
-    ):
+    ) -> None:
         """Past de geselecteerde faalstrategie toe op de ETL-DAG-simulatie.
 
         Werkt de run-status van knooppunten in de DAG bij op basis van de opgegeven faalstrategie,
@@ -200,8 +206,18 @@ class EtlSimulator(DagReporting):
             elif vx in self.vs_mapping_failed:
                 self._mark_successors_and_predecessors(vx)
 
-    def _mark_successors_and_predecessors(self, vx):
-        """Markeert opvolgers en hun voorgangers volgens de shared target strategie."""
+    def _mark_successors_and_predecessors(self, vx: ig.Vertex) -> None:
+        """Markeert opvolgers van een gefaalde mapping als 'Did not run' en hun voorgangers als 'Success, but needs restoring'.
+
+        Voor elke opvolger van de gefaalde mapping wordt de status aangepast, en indien van toepassing,
+        worden de voorgangers van deze opvolgers gemarkeerd als needing restore.
+
+        Args:
+            vx (ig.Vertex): De gefaalde mapping-knooppunt.
+
+        Returns:
+            None
+        """
         vs_successors = self._get_succeeding_mappings(vx_mapping=vx)
         for vx_successor in vs_successors:
             vx_successor["run_status"] = MappingStatus.DNR
@@ -333,7 +349,7 @@ class EtlSimulator(DagReporting):
             **visual_style,
         )
 
-    def _get_affected_components(self):
+    def _get_affected_components(self) -> ig.Graph:
         """Bepaalt en retourneert het subgraaf van de ETL-DAG met alleen de getroffen componenten.
 
         Selecteert alle knooppunten die direct of indirect zijn beïnvloed door falen en retourneert een subgraaf met alleen deze componenten.
