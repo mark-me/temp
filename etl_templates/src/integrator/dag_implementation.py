@@ -254,15 +254,21 @@ class DagImplementation(DagBuilder):
             ig.Graph: Een igraph-object dat de conflicten tussen mappings weergeeft.
         """
         lst_vertices = [{"name": mapping["mapping"]} for mapping in mapping_sources]
-        lst_edges = []
-        for a in mapping_sources:
-            for b in mapping_sources:
-                if a["mapping"] < b["mapping"]:
-                    qty_common = len(set(a["entity"]) & set(b["entity"]))
-                    if qty_common > 0:
-                        lst_edges.append(
-                            {"source": a["mapping"], "target": b["mapping"]}
-                        )
+        # Group mappings by entity
+        entity_to_mappings = {}
+        for mapping in mapping_sources:
+            for entity in mapping["entity"]:
+                entity_to_mappings.setdefault(entity, set()).add(mapping["mapping"])
+        # Build edges by connecting all mappings that share an entity
+        edge_set = set()
+        for mappings in entity_to_mappings.values():
+            mappings = list(mappings)
+            for i in range(len(mappings)):
+                for j in range(i + 1, len(mappings)):
+                    # Use tuple with sorted order to avoid duplicates
+                    edge = tuple(sorted((mappings[i], mappings[j])))
+                    edge_set.add(edge)
+        lst_edges = [{"source": source, "target": target} for source, target in edge_set]
         graph_conflicts = ig.Graph.DictList(
             vertices=lst_vertices, edges=lst_edges, directed=False
         )
@@ -284,15 +290,15 @@ class DagImplementation(DagBuilder):
         dag_mappings = self.get_dag_mappings()
         for vx in dag_mappings.vs:
             vs_predecessors = dag_mappings.vs(dag_mappings.neighbors(vx, mode="in"))
-            for vx_preceding in vs_predecessors:
-                lst_dependencies.append(
-                    {
-                        "model": vx["CodeModel"],
-                        "name": vx["Name"],
-                        "model_preceding": vx_preceding["CodeModel"],
-                        "mapping_preceding": vx_preceding["Name"],
-                    }
-                )
+            lst_dependencies.extend(
+                {
+                    "model": vx["CodeModel"],
+                    "name": vx["Name"],
+                    "model_preceding": vx_preceding["CodeModel"],
+                    "mapping_preceding": vx_preceding["Name"],
+                }
+                for vx_preceding in vs_predecessors
+            )
         return lst_dependencies
 
     def get_mappings(self) -> list[dict]:
@@ -346,8 +352,8 @@ class DagImplementation(DagBuilder):
         vs_files_cleaned = [{k: v for k, v in d.items() if v is not None} for d in vs_files]
         # Make sure all dictionaries have a consistent set of keys
         all_keys = set().union(*(d.keys() for d in vs_files_cleaned))
-        vs_files_cleaned = [{k: d.get(k, None) for k in all_keys} for d in vs_files_cleaned]
-        return vs_files_cleaned
+        vs_files_normalized = [{k: d.get(k, None) for k in all_keys} for d in vs_files_cleaned]
+        return vs_files_normalized
 
     def get_mapping_clusters(self, schemas: list[str]) -> list[dict]:
         """
