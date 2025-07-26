@@ -1,7 +1,6 @@
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List
 
 
 class ConfigFileError(Exception):
@@ -39,7 +38,7 @@ class PowerDesignerConfigData:
     """
 
     folder: str
-    files: List[str] = field(default_factory=list)
+    files: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -62,7 +61,7 @@ class DeploymentMDDEConfigData:
     folder_data: str = "etl_templates/input/codeList"
     schema: str = "MDDE"
     folder_output: str = "DA_MDDE"
-    schemas_datamart: List[str] = field(default_factory=list)
+    schemas_datamart: list[str] = field(default_factory=list)
 
 
 @dataclass

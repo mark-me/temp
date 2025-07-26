@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Union
 
 from logtools import get_logger
 
@@ -15,19 +14,19 @@ class ObjectTransformer:
     def __init__(self):
         self.__timestamp_fields = ["a:CreationDate", "a:ModificationDate"]
 
-    def clean_keys(self, content: Union[dict, list]):
-        """Hernoemt sleutels van Power Designer objecten (m.a.w. dictionaries) zodat prefixes als '@' en 'a:' worden verwijderd
+    def clean_keys(self, content: dict | list) -> dict | list:
+        """Verwijdert voorlooptekens '@' en 'a:' uit alle sleutels in een dict of lijst van dicts.
+
+        Deze functie normaliseert de sleutelnamen van Power Designer objecten zodat ze eenvoudiger te verwerken zijn in ETL-processen.
+        Het resultaat is een dict of lijst van dicts met opgeschoonde sleutelnamen.
 
         Args:
-            content (Union[dict, list]): Een dict of list van dicts met Power Designer objecten
+            content (dict | list): Een dictionary of lijst van dictionaries met mogelijk geneste sleutels.
 
         Returns:
-            _type_: List of dict met hernoemde sleutels (afhankelijk van welk type werd doorgegeven als parameter)
+            dict | list: Dezelfde structuur als input, maar met opgeschoonde sleutelnamen.
         """
-        if isinstance(content, dict):
-            lst_object = [content]
-        else:
-            lst_object = content
+        lst_object = [content] if isinstance(content, dict) else content
         for i in range(len(lst_object)):
             attrs = [key for key in list(lst_object[i].keys()) if key[:1] == "@"]
             for attr in attrs:
@@ -36,10 +35,7 @@ class ObjectTransformer:
             for attr in attrs:
                 lst_object[i][attr[2:]] = lst_object[i].pop(attr)
 
-        if isinstance(content, dict):
-            result = lst_object[0]
-        else:
-            result = lst_object
+        result = lst_object[0] if isinstance(content, dict) else lst_object
         return result
 
     def __convert_values_datetime(self, d: dict, convert_key: str) -> dict:
@@ -97,8 +93,6 @@ class ObjectTransformer:
             idx_end= len(extended_attrs_text) + 1
             value = extended_attrs_text[idx_start:idx_end]
             idx_start = value.find("=") + 1
-            value = value[idx_start:].upper()
-        else:
-            logger.warning(f"no values found in extended_attrs_text using: '{preceded_by}'")
-            value = ""
-        return value
+            return value[idx_start:].upper()
+        logger.warning(f"no values found in extended_attrs_text using: '{preceded_by}'")
+        return ""

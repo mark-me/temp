@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from typing import List, Union
 
 import igraph as ig
 from logtools import get_logger
@@ -32,13 +31,16 @@ class DagImplementation(DagBuilder):
     def __init__(self):
         super().__init__()
 
-    def build_dag(self, files_RETW: Union[list, str]):
-        """Bouwt de DAG op basis van de aangeleverde RETW-bestanden en verrijkt deze met afgeleide gegevens.
+    def build_dag(self, files_RETW: list[str] | str):
+        """Bouwt de DAG en verrijkt deze met extra informatie voor entiteiten en mappings.
 
-        Deze functie initialiseert de DAG-structuur en voegt extra modelinformatie en hashkeys toe.
+        Roept de basisimplementatie aan om de DAG te bouwen en voegt vervolgens aanvullende attributen toe aan de knopen.
 
         Args:
-            files_RETW: De inputbestanden voor het opbouwen van de DAG.
+            files_RETW (list[str] | str): Een lijst van of een enkel RETW-bestandspad(paden) om te verwerken.
+
+        Returns:
+            None
         """
         super().build_dag(files_RETW)
         self._add_dag_derived()
@@ -82,13 +84,13 @@ class DagImplementation(DagBuilder):
             vx_mapping (ig.Vertex): De mapping waarvoor de hashkey wordt toegevoegd.
         """
 
-        def build_hash_attrib(attr_mapping: list, separator: str) -> str:
+        def build_hash_attrib(attr_mapping: list[dict], separator: str) -> str:
             """Bouwt een hash-attribuutstring op basis van de attributenmapping en een scheidingsteken.
 
             Deze functie genereert een stringrepresentatie van een attribuut voor opname in een hashkey-expressie.
 
             Args:
-                attr_mapping (list): De mapping van het attribuut.
+                attr_mapping (list[dict]): De mapping van het attribuut.
                 separator (str): Het scheidingsteken voor concatenatie.
 
             Returns:
@@ -127,7 +129,7 @@ class DagImplementation(DagBuilder):
         else:
             vx_entity["type_entity"] = "Aggregate"
 
-    def get_run_config(self, deadlock_prevention: DeadlockPrevention) -> List[dict]:
+    def get_run_config(self, deadlock_prevention: DeadlockPrevention) -> list[dict]:
         """Bepaalt de uitvoeringsvolgorde en run-levels van mappings in de ETL-DAG.
 
         Deze functie berekent de run-levels en stages voor mappings op basis van de gekozen deadlock-preventiestrategie,
@@ -137,7 +139,7 @@ class DagImplementation(DagBuilder):
             deadlock_prevention (DeadlockPrevention): De gekozen strategie voor deadlock-preventie.
 
         Returns:
-            list: Een gesorteerde lijst van dictionaries met run-level, stage en mappinginformatie.
+            list[dict]: Een gesorteerde lijst van dictionaries met run-level, stage en mappinginformatie.
 
         Raises:
             InvalidDeadlockPrevention: Indien een ongeldige deadlock-preventiestrategie is opgegeven.
@@ -268,20 +270,22 @@ class DagImplementation(DagBuilder):
                     # Use tuple with sorted order to avoid duplicates
                     edge = tuple(sorted((mappings[i], mappings[j])))
                     edge_set.add(edge)
-        lst_edges = [{"source": source, "target": target} for source, target in edge_set]
+        lst_edges = [
+            {"source": source, "target": target} for source, target in edge_set
+        ]
         graph_conflicts = ig.Graph.DictList(
             vertices=lst_vertices, edges=lst_edges, directed=False
         )
         return graph_conflicts
 
-    def get_load_dependencies(self) -> List[dict]:
+    def get_load_dependencies(self) -> list[dict]:
         """Geeft van iedere knoop in het ETL-proces alle voorliggende (predecessors) of opvolgende (successors) vergelijkbare typen knopen terug
 
         Raises:
             NoFlowError: Indien er geen ETL flow met mappings is
 
         Returns:
-            list: Lijst met dictionaries met voor iedere ETL-knoop de voorliggende en opvolgende knopen.
+            list[dict]: Lijst met dictionaries met voor iedere ETL-knoop de voorliggende en opvolgende knopen.
         """
         lst_dependencies = []
         if not self.dag:
@@ -349,10 +353,14 @@ class DagImplementation(DagBuilder):
         ]
 
         # Remove empty dictionary entries
-        vs_files_cleaned = [{k: v for k, v in d.items() if v is not None} for d in vs_files]
+        vs_files_cleaned = [
+            {k: v for k, v in d.items() if v is not None} for d in vs_files
+        ]
         # Make sure all dictionaries have a consistent set of keys
         all_keys = set().union(*(d.keys() for d in vs_files_cleaned))
-        vs_files_normalized = [{k: d.get(k, None) for k in all_keys} for d in vs_files_cleaned]
+        vs_files_normalized = [
+            {k: d.get(k, None) for k in all_keys} for d in vs_files_cleaned
+        ]
         return vs_files_normalized
 
     def get_mapping_clusters(self, schemas: list[str]) -> list[dict]:
