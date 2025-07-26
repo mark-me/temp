@@ -46,7 +46,7 @@ class DeploymentMDDE:
         mapping_order: list[dict],
         mapping_dependencies: list[dict],
         datamart_clusters: list[dict],
-    ) -> list[Path]:
+    ) -> None:
         """
         Voert het volledige post-deployment scriptgeneratieproces uit.
 
@@ -55,9 +55,6 @@ class DeploymentMDDE:
         Args:
             mapping_order (list): De mapping order configuratie die in het script verwerkt moet worden.
             mapping_dependencies (list): Een lijst met alle mappings die voor en na een mapping worden verwerkt
-
-        Returns:
-            list: Een lijst met paden naar de gegenereerde post-deployment scripts.
         """
         self._generate_load_model_info(info_models=info_models)
         self._generate_load_config(mapping_order=mapping_order)
@@ -67,7 +64,6 @@ class DeploymentMDDE:
         self._generate_load_dates()
         self._copy_db_objects()
         self._generate_post_deploy_master()
-        return self.post_deployment_scripts
 
     def _copy_db_objects(self):
         """
