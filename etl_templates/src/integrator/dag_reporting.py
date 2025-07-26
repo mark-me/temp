@@ -169,7 +169,6 @@ class DagReporting(DagImplementation):
             ig.Graph: De grafiek met ingestelde visuele attributen.
         """
         logger.info("Setting graphical attributes of the graph")
-        test_attr = [vx.attributes() for vx in dag.vs]
         for node in dag.vs:
             #test_attr = node.attributes()
             node["shape"] = self.node_type_shape[node["type"]]
