@@ -66,9 +66,7 @@ class Orchestrator:
         else:
             get_logger().info("Repository afhandeling zijn overgeslagen door de 'skip_devops' flag.")
         # Write issues to file
-        file_issues = os.path.join(
-            self.config.path_intermediate, "extraction_issues.csv"
-        )
+        file_issues = self.config.path_intermediate / "extraction_issues.csv"
         issue_tracker.write_csv(file_csv=file_issues)
 
     def _extract(self) -> list[Path]:
