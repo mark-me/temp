@@ -1,5 +1,3 @@
-from typing import List
-
 import igraph as ig
 from logtools import get_logger
 
@@ -13,14 +11,14 @@ class EtlFailure(DagReporting):
         self.dag = ig.Graph()
         self.impact = []
 
-    def set_mappings_failed(self, mapping_refs: List[MappingRef]) -> None:
-        """Markeert opgegeven mappings als gefaald in de ETL-DAG en registreert de impact.
+    def set_mappings_failed(self, mapping_refs: list[MappingRef]) -> None:
+        """Sets the specified mappings as failed in the ETL DAG.
 
-        Deze functie zoekt de opgegeven mappings in de ETL-DAG, markeert ze als gefaald,
-        en bepaalt welke downstream componenten hierdoor worden beïnvloed. De impact wordt opgeslagen voor rapportage en visualisatie.
+        Marks the given mappings as failed and identifies all downstream components affected by these failures.
+        The impact of the failures (failed mapping and affected components) is stored for reporting and visualization.
 
         Args:
-            mapping_refs (list): Een lijst van MappingRef tuples, elk representerend een gefaalde mapping.
+            mapping_refs (list[MappingRef]): A list of MappingRef tuples, each representing a failed mapping.
 
         Returns:
             None
@@ -40,14 +38,14 @@ class EtlFailure(DagReporting):
                 continue
             self._set_affected(dag=dag, vx_failed=vx_failed)
 
-    def set_entities_failed(self, entity_refs: List[EntityRef]) -> None:
+    def set_entities_failed(self, entity_refs: list[EntityRef]) -> None:
         """Sets the specified entities as failed in the ETL DAG.
 
         Marks the given entities as failed and identifies all downstream components affected by these failures.
-        The impact of the failures (failed entity/mapping and affected components) is stored for reporting and visualization.
+        The impact of the failures (failed entity and affected components) is stored for reporting and visualization.
 
         Args:
-            entity_refs (list): A list of EntityRef tuples, each representing a failed entity.
+            entity_refs (list[EntityRef]): A list of EntityRef tuples, each representing a failed entity.
 
         Returns:
             None
@@ -88,12 +86,16 @@ class EtlFailure(DagReporting):
         )
 
     def _format_failure_impact(self, dag: ig.Graph) -> ig.Graph:
-        """Update the DAG to reflect the impact of failed nodes.
+        """Formats the ETL DAG to highlight failed nodes and their affected components.
 
-        Identifies and marks nodes affected by the failures, updating their visual attributes (color, shape) in the DAG.
+        Updates the graph visualization by marking failed nodes and all downstream affected nodes in red.
+        Failed nodes are also given a star shape for emphasis.
+
+        Args:
+            dag (ig.Graph): The ETL DAG to be formatted.
 
         Returns:
-            ig.Graph: The updated DAG.
+            ig.Graph: The formatted ETL DAG with highlighted failures and affected nodes.
         """
         for failure in self.impact:
             dag.vs.select(name=failure["failed"])["color"] = "red"
@@ -102,11 +104,14 @@ class EtlFailure(DagReporting):
                 dag.vs.select(name=affected)["color"] = "red"
         return dag
 
-    def get_report_fallout(self) -> List[dict]:
-        """Retrieves dictionary reporting on the affected ETL components
+    def get_report_fallout(self) -> list[dict]:
+        """Generates a report of the fallout from failed nodes in the ETL DAG.
+
+        Returns a list of dictionaries, each describing a failed node and the affected mappings and entities downstream.
+        This report can be used for further analysis or visualization of ETL failures.
 
         Returns:
-            list: Report on mappings and entities that failed or are affected by the failure
+            list[dict]: A list of fallout reports, each containing the failed node and its affected mappings and entities.
         """
         result = []
         dag = self.get_dag_ETL()
