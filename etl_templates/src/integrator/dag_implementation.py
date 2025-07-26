@@ -370,9 +370,7 @@ class DagImplementation(DagBuilder):
         vs_irrelevant = [vx for vx in dag_etl.vs if vx["CodeModel"] not in schemas]
         dag_etl.delete_vertices(vs_irrelevant)
         components = dag_etl.connected_components(mode="weak")
-        cluster_membership = zip(
-            [vx for vx in components._graph.vs], components.membership
-        )
+        cluster_membership = zip(list(components._graph.vs), components.membership)
         lst_clusters = [
             {"CodeModel": vx["CodeModel"], "Mapping": vx["Name"], "Cluster": membership}
             for vx, membership in cluster_membership
