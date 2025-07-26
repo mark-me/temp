@@ -402,14 +402,14 @@ class DagReporting(DagImplementation):
         dag.vs[vx_entity.index]["color"] = "#f296bf"
         self.plot_graph_html(dag=dag, file_html=file_html)
 
-    def get_entities_without_definition(self) -> list:
+    def get_entities_without_definition(self) -> list[dict]:
         """Geeft een lijst van entiteiten terug die geen definitie in een RETW-bestand hebben.
 
         Doorloopt alle entiteiten in de totale grafiek en selecteert die zonder inkomende RETW-bestandsknoop,
         zodat ontbrekende definities eenvoudig opgespoord kunnen worden.
 
         Returns:
-            list: Een lijst van attributen van entiteiten zonder definitie in een RETW-bestand.
+            list[dict]: Een lijst van attributen van entiteiten zonder definitie in een RETW-bestand.
         """
         lst_entities = []
         dag = self.get_dag_total()
