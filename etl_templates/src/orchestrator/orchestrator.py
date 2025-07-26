@@ -73,7 +73,7 @@ class Orchestrator:
         )
         issue_tracker.write_csv(file_csv=file_issues)
 
-    def _extract(self) -> list:
+    def _extract(self) -> list[Path]:
         """
         Extraheert data uit Power Designer bestanden en schrijft deze naar JSON-bestanden.
 
@@ -81,7 +81,7 @@ class Orchestrator:
         en slaat de resultaten op als JSON-bestanden in de opgegeven output directory.
 
         Returns:
-            list: Lijst van paden naar de geëxtraheerde JSON-bestanden.
+            list[Path]: Lijst van paden naar de geëxtraheerde JSON-bestanden.
         """
 
         lst_files_RETW = []
@@ -105,12 +105,21 @@ class Orchestrator:
             lst_files_RETW.append(file_RETW)
         return lst_files_RETW
 
-    def _handle_issues(self, next_step: str):
+    def _handle_issues(self, next_step: str) -> None:
         """
-        Controleert op gevonden issues en onderbreekt de verwerking indien nodig.
+        Controleert op gevonden issues en bepaalt of het verwerkingsproces moet worden gestopt.
 
-        Deze functie bekijkt het hoogste gevonden severity-niveau en vraagt bij waarschuwingen om bevestiging om door te gaan.
-        Bij fouten of als de gebruiker niet doorgaat, wordt het proces gestopt en een rapportbestand aangemaakt.
+        Deze functie bekijkt de ernst van de gevonden issues, vraagt de gebruiker om bevestiging bij waarschuwingen,
+        en stopt het proces bij fouten of als de gebruiker niet wil doorgaan.
+
+        Args:
+            next_step (str): De volgende stap in het proces waarvoor toestemming wordt gevraagd bij waarschuwingen.
+
+        Returns:
+            None
+
+        Raises:
+            ExtractionIssuesFound: Indien het proces gestopt moet worden vanwege gevonden issues.
         """
         error = False
         max_severity_level = issue_tracker.max_severity_level()
@@ -177,7 +186,7 @@ class Orchestrator:
         path_output = str(self.config.extractor.path_output / "mappings.html")
         dag.plot_mappings(file_html=path_output)
 
-    def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> list:
+    def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> None:
         """
         Genereert MDDE deployment scripts op basis van de ETL-DAG.
 
@@ -188,7 +197,7 @@ class Orchestrator:
             dag_etl (DagImplementation): De geïmplementeerde ETL-DAG.
 
         Returns:
-            list: Een lijst van resultaten van het MDDE deployment proces.
+            None
         """
         logger.info("Generating MDDE scripts")
         deploy_mdde = DeploymentMDDE(
@@ -204,7 +213,7 @@ class Orchestrator:
             schemas=self.config.deploy_mdde.schemas_datamart
         )
         models_info = dag_etl.get_files()
-        return deploy_mdde.process(
+        deploy_mdde.process(
             info_models=models_info,
             mapping_order=mapping_order,
             mapping_dependencies=mapping_dependencies,
@@ -228,10 +237,13 @@ class Orchestrator:
         ddl_generator = DDLGenerator(params=self.config.generator)
         ddl_generator.generate_ddls(dag_etl=dag_etl)
 
-    def _add_to_repository(self):
+    def _add_to_repository(self) -> None:
         """Voegt de gegenereerde code toe aan de DevOps repository.
 
         Deze functie beheert het klonen, opschonen, toevoegen en publiceren van de gegenereerde code naar de DevOps repository.
+
+        Returns:
+            None
         """
         devops_handler = RepositoryManager(config=self.config.devops)
         devops_handler.clone()

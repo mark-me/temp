@@ -142,7 +142,7 @@ class DeploymentMDDE:
         Rendert het template met de mapping order en schrijft het resultaat naar het juiste outputbestand.
 
         Args:
-            mapping_order (list): De mapping order configuratie die in het script verwerkt moet worden.
+            mapping_order (list[dict]): De mapping order configuratie die in het script verwerkt moet worden.
         """
         template = self._get_template(TemplateType.CONFIG_RUN_ORDER)
         content = template.render(config=mapping_order)
@@ -155,7 +155,7 @@ class DeploymentMDDE:
         Rendert het template met de mapping dependencies en schrijft het resultaat naar het juiste outputbestand.
 
         Args:
-            mapping_dependencies (list): De afhankelijkheden tussen de mappings die in het script verwerkt moet worden.
+            mapping_dependencies (list[dict]): De afhankelijkheden tussen de mappings die in het script verwerkt moet worden.
         """
         template = self._get_template(TemplateType.CONFIG_LOAD_DEPENDENCIES)
         content = template.render(mapping_dependencies=mapping_dependencies)
@@ -211,9 +211,6 @@ class DeploymentMDDE:
         """
         Voegt een post-deploy scriptbestand toe aan het masterbestand voor post-deployment scripts.
         Controleert of het bestand al is opgenomen en voegt het toe indien nodig.
-
-        Args:
-            path_file_output (Path): Het pad naar het toe te voegen post-deploy scriptbestand.
         """
         path_output_master = (
             self._path_output.parent / "PostDeployment" / "PostDeploy.sql"
