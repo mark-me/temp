@@ -48,13 +48,14 @@ class DeploymentMDDE:
         datamart_clusters: list[dict],
     ) -> None:
         """
-        Voert het volledige post-deployment scriptgeneratieproces uit.
-
-        Genereert en kopieert alle benodigde post-deployment scripts, waaronder codelijsten, configuratie, datums en database objecten. Voegt alle scripts samen in een master post-deploy scriptbestand.
+        Voert het volledige post-deployment proces uit voor MDDE.
+        Genereert en schrijft alle benodigde scripts en kopieert database objecten naar de output directory.
 
         Args:
-            mapping_order (list): De mapping order configuratie die in het script verwerkt moet worden.
-            mapping_dependencies (list): Een lijst met alle mappings die voor en na een mapping worden verwerkt
+            info_models (list[dict]): Modelinformatie voor het genereren van het model info script.
+            mapping_order (list[dict]): Mapping order configuratie voor het genereren van het mapping order script.
+            mapping_dependencies (list[dict]): Afhankelijkheden voor het genereren van het dependencies script.
+            datamart_clusters (list[dict]): Clusters voor het genereren van het mapping clusters script.
         """
         self._generate_load_model_info(info_models=info_models)
         self._generate_load_config(mapping_order=mapping_order)
