@@ -341,7 +341,13 @@ class DagImplementation(DagBuilder):
             for vx in self.dag.vs
             if vx["type"] == VertexType.FILE_RETW.name
         ]
-        return vs_files
+
+        # Remove empty dictionary entries
+        vs_files_cleaned = [{k: v for k, v in d.items() if v is not None} for d in vs_files]
+        # Make sure all dictionaries have a consistent set of keys
+        all_keys = set().union(*(d.keys() for d in vs_files_cleaned))
+        vs_files_cleaned = [{k: d.get(k, None) for k in all_keys} for d in vs_files_cleaned]
+        return vs_files_cleaned
 
     def get_mapping_clusters(self, schemas: list[str]) -> list[dict]:
         """

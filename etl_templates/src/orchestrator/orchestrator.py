@@ -119,7 +119,7 @@ class Orchestrator:
 
             if answer.upper() in ["", "J", "JA", "JAWOHL", "Y", "YES", "Jeroen"]:
                 if answer.upper() == "JEROEN":
-                    print("That is such a Jeroen Poll thing to do!",file=sys.stdout)
+                    print("That is such a Jeroen Poll thing to do!", file=sys.stdout)
                 return
             else:
                 error = True
@@ -198,11 +198,15 @@ class Orchestrator:
             deadlock_prevention=DeadlockPrevention.TARGET
         )
         mapping_dependencies = dag_etl.get_load_dependencies()
-        mapping_clusters = dag_etl.get_mapping_clusters(schemas=self.config.deploy_mdde.schemas_datamart)
+        mapping_clusters = dag_etl.get_mapping_clusters(
+            schemas=self.config.deploy_mdde.schemas_datamart
+        )
+        models_info = dag_etl.get_files()
         return deploy_mdde.process(
+            info_models=models_info,
             mapping_order=mapping_order,
             mapping_dependencies=mapping_dependencies,
-            datamart_clusters=mapping_clusters
+            datamart_clusters=mapping_clusters,
         )
 
     def _generate_code(self, dag_etl: DagImplementation) -> None:

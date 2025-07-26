@@ -145,22 +145,7 @@ class DagBuilder:
             return False
 
         # Add file node information
-        order_added = len(self.files_RETW)
-        id_file = self.get_file_id(file_RETW)
-        self.files_RETW |= {
-            id_file: {
-                "name": id_file,
-                "type": VertexType.FILE_RETW.name,
-                "Order": order_added,
-                "FileRETW": str(file_RETW),
-                "CreationDate": datetime.fromtimestamp(
-                    Path(file_RETW).stat().st_ctime
-                ).strftime("%Y-%m-%d %H:%M:%S"),
-                "ModificationDate": datetime.fromtimestamp(
-                    Path(file_RETW).stat().st_mtime
-                ).strftime("%Y-%m-%d %H:%M:%S"),
-            }
-        }
+        id_file = self._add_file_vertex(file_RETW=file_RETW, dict_RETW=dict_RETW)
 
         logger.info(
             f"Voegt de entiteiten die zijn 'gedefinieerd' in het RETW bestand '{file_RETW}'"
@@ -172,6 +157,38 @@ class DagBuilder:
         else:
             logger.warning(f"Geen mappings in het RETW bestand '{file_RETW}'")
         return True
+
+    def _add_file_vertex(self, file_RETW: str, dict_RETW: dict) -> int:
+        """Voegt een RETW-bestand toe als knoop aan de graaf.
+
+        Maakt een nieuwe knoop aan voor het opgegeven RETW-bestand en voegt deze toe aan de
+        interne opslagstructuur, inclusief metadata uit het bijbehorende PowerDesignerbestand.
+
+        Args:
+            file_RETW (str): Het pad naar het RETW-bestand.
+            dict_RETW (dict): De dictionary met informatie uit het RETW-bestand.
+
+        Returns:
+            int: De unieke identifier van het toegevoegde bestand.
+        """
+        order_added = len(self.files_RETW)
+        id_file = self.get_file_id(file=file_RETW)
+        self.files_RETW |= {
+            id_file: {
+                "name": id_file,
+                "type": VertexType.FILE_RETW.name,
+                "Order": order_added,
+                "FileRETW": str(file_RETW),
+                "FileRETWCreationDate": datetime.fromtimestamp(
+                    Path(file_RETW).stat().st_ctime
+                ).strftime("%Y-%m-%d %H:%M:%S"),
+                "FileRETWModificationDate": datetime.fromtimestamp(
+                    Path(file_RETW).stat().st_mtime
+                ).strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        }
+        self.files_RETW[id_file] |= dict_RETW["Info"]
+        return id_file
 
     def _stable_hash(self, key: str) -> int:
         """Genereer een stabiele hash van een string.
@@ -286,7 +303,9 @@ class DagBuilder:
         """
         for mapping_RETW in mappings:
             id_mapping = self.get_mapping_id(
-                MappingRef(mapping_RETW['EntityTarget']['CodeModel'], mapping_RETW["Code"])
+                MappingRef(
+                    mapping_RETW["EntityTarget"]["CodeModel"], mapping_RETW["Code"]
+                )
             )
             mapping_RETW.update(
                 {
