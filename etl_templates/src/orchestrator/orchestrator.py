@@ -64,7 +64,7 @@ class Orchestrator:
         if not skip_devops:
             self._add_to_repository()
         else:
-            get_logger().info("Repository afhandeling zijn overgeslagen door de 'skip_devops' flag.")
+            logger.info("Repository afhandeling zijn overgeslagen door de 'skip_devops' flag.")
         # Write issues to file
         file_issues = self.config.path_intermediate / "extraction_issues.csv"
         issue_tracker.write_csv(file_csv=file_issues)
