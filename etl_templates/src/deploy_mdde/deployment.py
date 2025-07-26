@@ -66,7 +66,7 @@ class DeploymentMDDE:
         self._copy_db_objects()
         self._generate_post_deploy_master()
 
-    def _copy_db_objects(self):
+    def _copy_db_objects(self) -> None:
         """
         Kopieert de database objecten van de bronmap naar de outputmap.
         Zorgt ervoor dat alle benodigde database objecten beschikbaar zijn in de output directory.

@@ -59,7 +59,7 @@ class DagImplementation(DagBuilder):
                 self._mappings_add_model(vx_mapping=vx)
                 self._mappings_add_hashkey(vx_mapping=vx)
 
-    def _mappings_add_model(self, vx_mapping: ig.Vertex):
+    def _mappings_add_model(self, vx_mapping: ig.Vertex) -> None:
         """Voegt modelinformatie toe aan een mapping op basis van de doelentiteit.
 
         Deze functie zoekt de doelentiteit van een mapping en vult de mapping aan met de bijbehorende CodeModel en NameModel attributen.
@@ -75,7 +75,7 @@ class DagImplementation(DagBuilder):
             vx_mapping["CodeModel"] = vs_target_entity[0]["CodeModel"]
             vx_mapping["NameModel"] = vs_target_entity[0]["NameModel"]
 
-    def _mappings_add_hashkey(self, vx_mapping: ig.Vertex):
+    def _mappings_add_hashkey(self, vx_mapping: ig.Vertex) -> None:
         """Voegt een hashkey toe aan een mapping op basis van de attributenmapping ten behoeve van delta bepaling
 
         Deze functie genereert een hashkey-expressie voor de mapping, gebaseerd op de opgegeven attributen en datasources.
