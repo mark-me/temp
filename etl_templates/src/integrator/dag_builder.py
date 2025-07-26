@@ -5,7 +5,6 @@ from copy import deepcopy
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
-from typing import List, Union, Tuple
 
 import igraph as ig
 from logtools import get_logger
@@ -75,7 +74,7 @@ class DagBuilder:
         self.dag: ig.Graph = None
         self._progress_description = "Integreren van PD bestanden"
 
-    def build_dag(self, files_RETW: Union[str, list]):
+    def build_dag(self, files_RETW: str | list):
         """Genereert een graaf met alle mappings, entiteiten en RETW bestanden.
 
         Bouwt een igraph graaf met de verzamelde mappings, entiteiten en bestanden als knopen,
@@ -590,18 +589,18 @@ class DagBuilder:
 
     def _get_mappings_for_file(
         self, dag: ig.Graph, vx_file: ig.Vertex
-    ) -> List[ig.Vertex]:
-        """Geeft alle mappings terug die bij een RETW-bestand horen.
+    ) -> list[ig.Vertex]:
+        """Geeft alle mappings terug die direct verbonden zijn aan een RETW-bestand.
 
-        Deze functie zoekt alle mapping-knopen die direct verbonden zijn aan het opgegeven RETW-bestand,
-        zodat afhankelijkheden tussen bestanden en mappings inzichtelijk worden.
+        Zoekt naar alle mapping knopen die als opvolgers van het opgegeven RETW-bestand in de graaf voorkomen.
+        Dit wordt gebruikt om te bepalen welke mappings bij een specifiek bestand horen.
 
         Args:
             dag (ig.Graph): De graaf waarin gezocht wordt.
             vx_file (ig.Vertex): Het RETW-bestand waarvoor mappings worden gezocht.
 
         Returns:
-            list: Een lijst van mapping knopen die bij het bestand horen.
+            list[ig.Vertex]: Een lijst van mapping knopen die bij het bestand horen.
         """
         return [
             vs
@@ -611,7 +610,7 @@ class DagBuilder:
 
     def _get_source_entities_for_mapping(
         self, dag: ig.Graph, vx_mapping: ig.Vertex
-    ) -> List[ig.Vertex]:
+    ) -> list[ig.Vertex]:
         """Geeft alle bron-entiteiten terug voor een mapping.
 
         Deze functie zoekt alle entiteiten die direct verbonden zijn als bron aan de opgegeven mapping,
@@ -629,19 +628,19 @@ class DagBuilder:
 
     def _get_file_source_for_entity(
         self, dag: ig.Graph, vx_source_entity: ig.Vertex, vx_file: ig.Vertex
-    ) -> List[ig.Vertex]:
-        """Geeft het RETW-bestand terug dat verbonden is aan een bron-entiteit, anders dan het huidige bestand.
+    ) -> list[ig.Vertex]:
+        """Geeft het bronbestand van een entiteit terug, exclusief het opgegeven doelbestand.
 
-        Deze functie zoekt naar RETW-bestanden die als bron dienen voor de opgegeven entiteit,
-        met uitzondering van het bestand dat momenteel wordt verwerkt.
+        Zoekt naar het RETW-bestand dat als bron dient voor de opgegeven entiteit, waarbij het doelbestand wordt uitgesloten.
+        Dit wordt gebruikt om afhankelijkheden tussen verschillende RETW-bestanden via gedeelde entiteiten te bepalen.
 
         Args:
             dag (ig.Graph): De graaf waarin gezocht wordt.
-            vx_source_entity (ig.Vertex): De bron-entiteit waarvoor het bestand wordt gezocht.
-            vx_file (ig.Vertex): Het huidige RETW-bestand dat wordt uitgesloten.
+            vx_source_entity (ig.Vertex): De bronentiteit waarvoor het bronbestand wordt gezocht.
+            vx_file (ig.Vertex): Het doelbestand dat uitgesloten moet worden.
 
         Returns:
-            list: Een lijst van RETW-bestand knopen die als bron dienen voor de entiteit.
+            list[ig.Vertex]: Een lijst met het bronbestand als igraph Vertex, exclusief het doelbestand.
         """
         return [
             vx
@@ -651,19 +650,19 @@ class DagBuilder:
 
     def _make_entity_edges(
         self, vx_file_source: ig.Vertex, vx_source_entity: ig.Vertex, vx_file: ig.Vertex
-    ) -> Tuple[dict]:
-        """Maakt de edges tussen een bronbestand, een entiteit en een doelbestand.
+    ) -> tuple[dict]:
+        """Maakt edges tussen een bronbestand, een bronentiteit en een doelbestand.
 
-        Deze functie genereert de randinformatie voor de afhankelijkheidsgraaf tussen een RETW-bronbestand,
-        een entiteit en een RETW-doelbestand, zodat de afhankelijkheden in de graaf correct worden weergegeven.
+        Genereert een tuple van dictionary's die de verbindingen voorstellen van het bronbestand naar de bronentiteit,
+        en van de bronentiteit naar het doelbestand. Dit wordt gebruikt om afhankelijkheden via entiteiten te modelleren.
 
         Args:
-            vx_file_source (ig.Vertex): Het bronbestand (RETW-bestand).
-            vx_source_entity (ig.Vertex): De entiteit die als tussenknoop fungeert.
-            vx_file (ig.Vertex): Het doelbestand (RETW-bestand).
+            vx_file_source (ig.Vertex): Het bronbestand als igraph Vertex.
+            vx_source_entity (ig.Vertex): De bronentiteit als igraph Vertex.
+            vx_file (ig.Vertex): Het doelbestand als igraph Vertex.
 
         Returns:
-            tuple: Een tuple met twee dictionary's die de edges representeren.
+            tuple[dict]: Een tuple met twee dictionary's die de edges voorstellen.
         """
         return (
             {
@@ -766,7 +765,7 @@ class DagBuilder:
 
     def _add_source_entity_edges(
         self, dag: ig.Graph, vx_mapping: ig.Vertex
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Voegt edges toe van mappings die bron-entiteiten vullen.
 
         Deze functie zoekt voor elke bron-entiteit van de mapping naar mappings die deze entiteit vullen,
@@ -797,7 +796,7 @@ class DagBuilder:
 
     def _add_target_entity_edges(
         self, dag: ig.Graph, vx_mapping: ig.Vertex
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Voegt edges toe van een mapping naar mappings die afhankelijk zijn van hun doeleenheid.
 
         Deze functie zoekt mappings die dezelfde doeleenheid delen en voegt edges toe van de huidige mapping naar deze mappings,
