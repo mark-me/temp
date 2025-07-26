@@ -280,13 +280,13 @@ class PowerDesignerConfig(BaseConfigComponent):
         super().__init__(config)
 
     @property
-    def files(self) -> list:
+    def files(self) -> list[Path]:
         """
         Geeft een lijst van paden naar de PowerDesigner-bestanden die in de configuratie zijn opgegeven.
         Controleert of alle opgegeven bestanden bestaan en geeft anders een foutmelding.
 
         Returns:
-            list: Een lijst van Path-objecten naar de PowerDesigner-bestanden.
+            list[Path]: Een lijst van Path-objecten naar de PowerDesigner-bestanden.
 
         Raises:
             ConfigFileError: Als een of meer PowerDesigner-bestanden ontbreken.
@@ -424,7 +424,7 @@ class DevOpsConfig(BaseConfigComponent):
         return f"{self.url_check}?version=GBfeature%2F{self._data.work_item}_{descr_work_item}_{user_login}"
 
     @property
-    def path_file_sql_project(self):
+    def path_file_sql_project(self) -> Path:
         return Path(self._data.file_sql_project)
 
     @property
