@@ -38,7 +38,7 @@ class ObjectTransformer:
         result = lst_object[0] if isinstance(content, dict) else lst_object
         return result
 
-    def __convert_values_datetime(self, d: dict, convert_key: str) -> dict:
+    def _convert_values_datetime(self, d: dict, convert_key: str) -> dict:
         """Converteert alle (geneste) dictionary records met een specifieke waarde van de naam die een Unix timestamp bevatten naar een datetime object
 
         Args:
@@ -54,12 +54,12 @@ class ObjectTransformer:
                 if key == convert_key:
                     d[key] = datetime.fromtimestamp(int(d[key]))
                 else:
-                    self.__convert_values_datetime(d[key], convert_key)
+                    self._convert_values_datetime(d[key], convert_key)
             return d
         elif isinstance(d, list):
             logger.debug("object is list; file:pd_transform_object; object:d")
             for i in range(len(d)):
-                d[i] = self.__convert_values_datetime(d[i], convert_key)
+                d[i] = self._convert_values_datetime(d[i], convert_key)
             return d
 
     def convert_timestamps(self, pd_content: dict) -> dict:
@@ -72,7 +72,7 @@ class ObjectTransformer:
             dict: Hetzelfde Power Designer document data, maar met geconverteerde timestamps
         """
         for field in self.__timestamp_fields:
-            pd_content = self.__convert_values_datetime(pd_content, field)
+            pd_content = self._convert_values_datetime(pd_content, field)
         return pd_content
 
     def extract_value_from_attribute_text(
