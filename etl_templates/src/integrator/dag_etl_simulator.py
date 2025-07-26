@@ -1,5 +1,5 @@
 from copy import deepcopy
-from enum import Enum, auto
+from enum import Enum
 
 import igraph as ig
 from logtools import get_logger
