@@ -64,6 +64,22 @@ class Orchestrator:
 
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
+            """
+            Omhult de gedecoreerde functie om issues tijdens verwerkingsstappen af te handelen.
+
+            Deze wrapper voert de functie uit, controleert op waarschuwingen of fouten,
+            en vraagt de gebruiker of het proces moet doorgaan of stoppen als er issues zijn gevonden.
+
+            Args:
+                *args: Positie-argumenten voor de gedecoreerde functie.
+                **kwargs: Keyword-argumenten voor de gedecoreerde functie.
+
+            Returns:
+                Any: Het resultaat van de gedecoreerde functie.
+
+            Raises:
+                ExtractionIssuesFound: Indien fouten zijn gevonden of de gebruiker kiest om te stoppen na waarschuwingen.
+            """
 
             func_result = func(self, *args, **kwargs)
 
