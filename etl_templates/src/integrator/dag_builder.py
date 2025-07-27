@@ -41,12 +41,22 @@ class EdgeType(Enum):
 
 
 class ErrorDagNotBuilt(Exception):
+    """Exception die wordt opgegooid wanneer de DAG nog niet is opgebouwd.
+
+    Deze exceptie geeft aan dat er geprobeerd wordt een operatie uit te voeren op een graaf die nog niet is aangemaakt.
+    """
+
     def __init__(self):
         self.message = "DAG nog niet opgebouwd"
         super().__init__(self.message)
 
 
 class NoFlowError(Exception):
+    """Exception die wordt opgegooid wanneer er geen flow in de DAG aanwezig is.
+
+    Deze exceptie geeft aan dat het niet mogelijk is om een geldige flow te bepalen binnen de gegenereerde graaf.
+    """
+
     def __init__(self, *args):
         self.message = "Geen flow in de DAG"
         super().__init__(self.message)
@@ -413,6 +423,13 @@ class DagBuilder:
         self.edges.append(edge_entity_mapping)
 
     def _add_dag_statistics(self):
+        """Voegt statistieken toe aan de graaf voor mappings, entiteiten en gedeelde doelentiteiten.
+
+        Deze functie berekent run-levels voor mappings, ETL-niveaus voor entiteiten en markeert mappings die dezelfde doelentiteit delen.
+
+        Returns:
+            None
+        """
         self._stats_mapping_run_level()
         self._stats_entity_level()
         self._mappings_share_target()
@@ -473,6 +490,14 @@ class DagBuilder:
             vx["etl_level"] = run_level_max
 
     def _mappings_share_target(self) -> None:
+        """Bepaalt of meerdere mappings dezelfde doelentiteit delen.
+
+        Voor elke mapping wordt gecontroleerd of de doelentiteit door meer dan één mapping wordt gebruikt,
+        en wordt deze informatie opgeslagen in het attribuut 'multi_mapping' van de mapping.
+
+        Returns:
+            None
+        """
         vs_mappings = self.dag.vs.select(type_eq=VertexType.MAPPING.name)
         for vx in vs_mappings:
             vx_entity_target = self.dag.neighbors(vx, mode="out")
