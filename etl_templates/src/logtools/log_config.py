@@ -5,13 +5,17 @@ LOGGING = {
         "json": {
             "format": "%(asctime)s %(levelname)s %(message)s %(module)s %(funcName)s %(process)d",
             "class": "pythonjsonlogger.jsonlogger.JsonFormatter",
-        }
+        },
+        "stdout": {
+            "format": "%(levelname)s | %(message)s | bestand: '%(module)s' | functie: '%(funcName)s'",
+            #"class": "pythonjsonlogger.jsonlogger.JsonFormatter",
+        },
     },
     "handlers": {
         "stdout": {
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
-            #"formatter": "json",
+            "formatter": "stdout",
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
