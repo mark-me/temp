@@ -15,6 +15,10 @@ logger = get_logger(__name__)
 
 
 class FailureStrategy(Enum):
+    """Definieert de verschillende faalstrategieën voor het simuleren van ETL-fouten.
+
+    Elke strategie bepaalt op een andere manier welke componenten in de ETL-DAG worden beïnvloed door een falende mapping.
+    """
     ONLY_SUCCESSORS = "Only successors"
     ALL_OF_SHARED_TARGET = "All shared targets"
     SIBLINGS_OF_MAPPINGS = "Sibling mappings"
@@ -24,6 +28,10 @@ class FailureStrategy(Enum):
 
 
 class MappingStatus(Enum):
+    """Definieert de mogelijke statussen van mappings tijdens ETL-simulatie.
+
+    Elke status geeft aan of een mapping succesvol is uitgevoerd, gefaald is, niet is uitgevoerd, of hersteld moet worden.
+    """
     NOK = "Failed"
     OK = "Success"
     DNR = "Did not run"

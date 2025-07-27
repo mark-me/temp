@@ -9,20 +9,20 @@ logger = get_logger(__name__)
 
 
 class InvalidDeadlockPrevention(Exception):
-    """Exception raised when an invalid deadlock prevention method is selected.
+    """Exception die wordt opgegooid wanneer een ongeldige deadlock-preventiestrategie is gekozen.
 
-    This exception is used to indicate that the provided deadlock prevention strategy is not supported or recognized.
+    Deze exceptie geeft aan dat de opgegeven strategie niet wordt ondersteund bij het bepalen van de uitvoeringsvolgorde van mappings.
     """
-
-    pass
+    def __init__(self):
+        self.message = "Invalide Deadlock provention strategie gekozen"
+        super().__init__(self.message)
 
 
 class DeadlockPrevention(Enum):
-    """Enumeration for deadlock prevention strategies in ETL DAG execution.
+    """Definieert de strategieën voor deadlock-preventie bij het bepalen van de uitvoeringsvolgorde van mappings.
 
-    This enum defines the available methods for preventing deadlocks, such as by source or target.
+    De opties SOURCE en TARGET bepalen of de deadlock-preventie gebaseerd is op bron- of doelentiteiten.
     """
-
     SOURCE = auto()
     TARGET = auto()
 

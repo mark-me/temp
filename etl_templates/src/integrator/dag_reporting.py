@@ -15,6 +15,10 @@ logger = get_logger(__name__)
 
 
 class ObjectPosition(Enum):
+    """Definieert de mogelijke posities van een knoop in de grafiek.
+
+    Elke positie geeft aan of een knoop een startpunt, eindpunt, tussenliggend punt of onbepaalde positie heeft in de DAG.
+    """
     START = auto()
     INTERMEDIATE = auto()
     END = auto()
@@ -71,6 +75,17 @@ class DagReporting(DagImplementation):
         }
 
     def _create_output_dir(self, file_path: str) -> None:
+        """Maakt de output directory aan als deze nog niet bestaat.
+
+        Deze functie zorgt ervoor dat de bovenliggende directorystructuur voor het opgegeven bestandspad wordt aangemaakt,
+        zodat bestanden veilig kunnen worden weggeschreven.
+
+        Args:
+            file_path (str): Het pad naar het bestand waarvoor de directory moet worden aangemaakt.
+
+        Returns:
+            None
+        """
         parent_directory = os.path.dirname(file_path)
         Path(parent_directory).mkdir(parents=True, exist_ok=True)
 

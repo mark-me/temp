@@ -6,6 +6,12 @@ from .dag_reporting import DagReporting, EntityRef, MappingRef, NoFlowError, Ver
 logger = get_logger(__name__)
 
 class EtlFailure(DagReporting):
+    """Beheert en rapporteert ETL-fouten en hun impact in de ETL-DAG.
+
+    Deze klasse markeert gefaalde mappings of entiteiten, bepaalt de impact op stroomafwaartse componenten,
+    en biedt methoden voor rapportage en visualisatie van de gevolgen van ETL-fouten.
+    """
+
     def __init__(self):
         super().__init__()
         self.dag = ig.Graph()
