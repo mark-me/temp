@@ -1,4 +1,4 @@
 from .config_file import ConfigFile
-from .orchestrator import Orchestrator
+from .orchestrator import Orchestrator, ExtractionIssuesFound
 
-__all__ = ["ConfigFile", "Orchestrator"]
+__all__ = ["ConfigFile", "Orchestrator", "ExtractionIssuesFound"]
