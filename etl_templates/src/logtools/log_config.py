@@ -7,8 +7,8 @@ LOGGING = {
             "class": "pythonjsonlogger.jsonlogger.JsonFormatter",
         },
         "stdout": {
-            "format": "%(levelname)s | %(message)s | bestand: '%(module)s' | functie: '%(funcName)s'",
-            #"class": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "format": "\033[1m%(levelname)s\033[0m: %(message)s | \033[1mBestand:\033[0m '%(module)s' | \033[1mFunctie:\033[0m '%(funcName)s'",
+            "()": "logtools.color_formatter.ColorFormatter",
         },
     },
     "handlers": {
