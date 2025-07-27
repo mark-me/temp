@@ -36,6 +36,61 @@ class Orchestrator:
         self.file_config = Path(file_config)
         self.config = ConfigFile(file_config=self.file_config)
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
+        self.process_steps = iter(
+            [
+                {"description": "Extraheren uit Power Desginer documenten"},
+                {"description": "Integreren van Power Desginer extracten"},
+                {"description": "Genereren model en mapping code"},
+                {"description": "Genereren MDDE schema"},
+                {"description": "Toevoegen aan DevOps repository"},
+            ]
+        )
+
+    @staticmethod
+    def _decorator_proces_issues(func):
+        """
+        Decorator die het verwerkingsproces van een stap omhult en issues afhandelt.
+
+        Deze decorator print de huidige processtap, voert de functie uit, en controleert op waarschuwingen of fouten.
+        Indien waarschuwingen of fouten worden gevonden, wordt de gebruiker gevraagd of het proces moet doorgaan of gestopt.
+
+        Args:
+            func (callable): De te decoreren functie.
+
+        Returns:
+            callable: De omhulde functie met issue-afhandeling.
+        """
+        def wrapper(self, *args, **kwargs):
+                step_description = next(self.process_steps)["description"]
+
+                res = func(self, *args, **kwargs)
+
+                error = False
+                max_severity_level = issue_tracker.max_severity_level()
+                if max_severity_level == "WARNING":
+                    if self.config.ignore_warnings:
+                        return res  # let op: return res, niet None
+                    answer = input(
+                        f"Waarschuwingen gevonden, wil je doorgaan met {step_description}? (J/n):"
+                    )
+                    if answer.upper() in ["", "J", "JA", "JAWOHL", "Y", "YES", "Jeroen"]:
+                        if answer.upper() == "JEROEN":
+                            print("That is such a Jeroen Poll thing to do!", file=sys.stdout)
+                        return res  # correcte return
+                    else:
+                        error = True
+
+                if max_severity_level == "ERROR" or error:
+                    file_issues = os.path.join(
+                        self.config.path_intermediate, "extraction_issues.csv"
+                    )
+                    issue_tracker.write_csv(file_csv=file_issues)
+                    raise ExtractionIssuesFound(
+                        f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}"
+                    )
+
+                return res
+        return wrapper
 
     def start_processing(self, skip_devops: bool = False) -> None:
         """Start het Genesis verwerkingsproces.
@@ -51,24 +106,25 @@ class Orchestrator:
         logger.info("Start Genesis verwerking")
         # Extraheert data uit de Power Designer ldm bestanden
         lst_files_RETW = self._extract()
-        self._handle_issues(info_next_step="integreren van de RETW bestanden")  # Stop process if extraction results in issues
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
         dag_etl = self._integrate_files(files_RETW=lst_files_RETW)
-        self._handle_issues(info_next_step="genereren van code")
         # Genereer code voor doelschema's en mappings
         self._generate_code(dag_etl=dag_etl)
         # Genereer code voor ETL deployment
         self._generate_mdde_deployment(dag_etl=dag_etl)
-        self._handle_issues(info_next_step="toevoegen aan het repository")  # Stop process when generating code result in issues
         # Voegt gegenereerde code en database objecten toe aan het repository
         if not skip_devops:
             self._add_to_repository()
+
         else:
-            logger.info("Repository afhandeling zijn overgeslagen door de 'skip_devops' flag.")
+            logger.info(
+                "Repository afhandeling zijn overgeslagen door de 'skip_devops' flag."
+            )
         # Write issues to file
         file_issues = self.config.path_intermediate / "extraction_issues.csv"
         issue_tracker.write_csv(file_csv=file_issues)
 
+    @_decorator_proces_issues
     def _extract(self) -> list[Path]:
         """
         Extraheert data uit Power Designer bestanden en schrijft deze naar JSON-bestanden.
@@ -101,44 +157,7 @@ class Orchestrator:
             lst_files_RETW.append(file_RETW)
         return lst_files_RETW
 
-    def _handle_issues(self, info_next_step: str) -> None:
-        """
-        Controleert op gevonden issues en bepaalt of het verwerkingsproces moet worden gestopt.
-
-        Deze functie bekijkt de ernst van de gevonden issues, vraagt de gebruiker om bevestiging bij waarschuwingen,
-        en stopt het proces bij fouten of als de gebruiker niet wil doorgaan.
-
-        Args:
-            next_step (str): De volgende stap in het proces waarvoor toestemming wordt gevraagd bij waarschuwingen.
-
-        Returns:
-            None
-
-        Raises:
-            ExtractionIssuesFound: Indien het proces gestopt moet worden vanwege gevonden issues.
-        """
-        error = False
-        max_severity_level = issue_tracker.max_severity_level()
-        if max_severity_level == "WARNING":
-            if self.config.ignore_warnings:
-                return
-            answer = input(f"Waarschuwingen gevonden, wil je doorgaan met {info_next_step}? (J/n):")
-
-            if answer.upper() in ["", "J", "JA", "JAWOHL", "Y", "YES", "Jeroen"]:
-                if answer.upper() == "JEROEN":
-                    print("That is such a Jeroen Poll thing to do!", file=sys.stdout)
-                return
-            else:
-                error = True
-        if max_severity_level == "ERROR" or error:
-            file_issues = os.path.join(
-                self.config.path_intermediate, "extraction_issues.csv"
-            )
-            issue_tracker.write_csv(file_csv=file_issues)
-            raise ExtractionIssuesFound(
-                f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}"
-            )
-
+    @_decorator_proces_issues
     def _integrate_files(self, files_RETW: list) -> DagImplementation:
         """
         Integreert de opgegeven RETW-bestanden en bouwt de ETL-DAG.
@@ -158,6 +177,7 @@ class Orchestrator:
         dag.build_dag(files_RETW=files_RETW)
         return dag
 
+    # @_decorator_proces_issues
     def _report_integration(self, files_RETW: list) -> None:
         """
         Rapporteert en visualiseert de afhankelijkheden tussen de opgegeven RETW-bestanden.
@@ -182,6 +202,7 @@ class Orchestrator:
         path_output = str(self.config.extractor.path_output / "mappings.html")
         dag.plot_mappings(file_html=path_output)
 
+    # @_decorator_proces_issues
     def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> None:
         """
         Genereert MDDE deployment scripts op basis van de ETL-DAG.
@@ -216,6 +237,7 @@ class Orchestrator:
             datamart_clusters=mapping_clusters,
         )
 
+    # @_decorator_proces_issues
     def _generate_code(self, dag_etl: DagImplementation) -> None:
         """
         Genereert de deployment code op basis van de opgegeven ETL-DAG.
@@ -233,6 +255,7 @@ class Orchestrator:
         ddl_generator = DDLGenerator(params=self.config.generator)
         ddl_generator.generate_ddls(dag_etl=dag_etl)
 
+    # @_decorator_proces_issues
     def _add_to_repository(self) -> None:
         """Voegt de gegenereerde code toe aan de DevOps repository.
 
