@@ -1,5 +1,4 @@
-import os
-import sys
+import functools
 from pathlib import Path
 
 from deploy_mdde import DeploymentMDDE
@@ -63,6 +62,7 @@ class Orchestrator:
             callable: De omhulde functie met issue-afhandeling.
         """
 
+        @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
 
             func_result = func(self, *args, **kwargs)
@@ -157,7 +157,7 @@ class Orchestrator:
                     f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
                 )
                 lst_files_RETW.append(file_RETW)
-            except Exception as e:
+            except (IOError, OSError, ValueError) as e:
                 logger.error(
                     f"Fout bij extractie van Power Designer bestand '{file_pd_ldm}': {e}",
                     exc_info=True
