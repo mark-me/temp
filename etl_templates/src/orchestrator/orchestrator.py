@@ -1,4 +1,5 @@
 import functools
+import sys
 from pathlib import Path
 
 from deploy_mdde import DeploymentMDDE
@@ -12,7 +13,6 @@ from tqdm import tqdm
 from .config_file import ConfigFile
 
 logger = get_logger(__name__)
-
 
 class ExtractionIssuesFound(Exception):
     """Exception raised when extraction issues are found and processing should stop."""
@@ -37,8 +37,8 @@ class Orchestrator:
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
         self.process_steps = iter(
             [
-                "Extraheren uit Power Desginer documenten",
-                "Integreren van Power Desginer extracten",
+                "Extraheren uit Power Designer documenten",
+                "Integreren van Power Designer extracten",
                 "Rapporteren over totale ETL",
                 "Genereren model en mapping code",
                 "Genereren MDDE schema",
@@ -80,39 +80,36 @@ class Orchestrator:
             Raises:
                 ExtractionIssuesFound: Indien fouten zijn gevonden of de gebruiker kiest om te stoppen na waarschuwingen.
             """
+            print(f"\033[0;34m-> {self.step_current}\033[0m", file=sys.stdout)
 
             func_result = func(self, *args, **kwargs)
 
+            try:
+                self.step_current = next(self.process_steps)
+            except StopIteration:
+                return func_result
+
             error = False
             max_severity_level = issue_tracker.max_severity_level()
-            if max_severity_level == "WARNING":
-                if self.config.ignore_warnings:
-                    return func_result
-                try:
-                    self.step_current = next(self.process_steps)
-                except StopIteration:
-                    return func_result
-                answer = input(
-                    f"Waarschuwingen gevonden, wil je doorgaan met {self.step_current}? (J/n):"
-                )
-                if answer.upper() in ["", "J", "JA", "JAWOHL", "Y", "YES"]:
-                    file_issues = (
-                        self.config.path_intermediate / "extraction_issues.csv"
-                    )
-                    issue_tracker.write_csv(file_csv=file_issues)
-                    return func_result
-                else:
-                    error = True
-
-            if max_severity_level == "ERROR" or error:
+            if max_severity_level in ["WARNING", "ERROR"]:
                 file_issues = self.config.path_intermediate / "extraction_issues.csv"
                 issue_tracker.write_csv(file_csv=file_issues)
+
+            if max_severity_level == "WARNING" and not self.config.ignore_warnings:
+                answer = input(
+                    f"\033[1;33mWaarschuwingen gevonden, wil je doorgaan met {self.step_current}? (J/n):\033[0m"
+                )
+                if answer.upper() not in ["", "J", "JA", "JAWOHL", "Y", "YES"]:
+                    raise ExtractionIssuesFound(
+                        f"Verwerking gestopt op verzoek van de gebruiker nadat er waarschuwingen zijn aangetroffen. Zie rapport: {file_issues}"
+                    )
+
+            if max_severity_level == "ERROR" or error:
                 raise ExtractionIssuesFound(
                     f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}"
                 )
 
             return func_result
-
         return wrapper
 
     def start_processing(self, skip_devops: bool = False) -> None:
@@ -163,11 +160,16 @@ class Orchestrator:
             )
         files_pd_ldm = self.config.power_designer.files
         for file_pd_ldm in tqdm(
-            files_pd_ldm, desc="Extracten Power Designer bestanden", colour="#d7f5cb"
+            files_pd_ldm,
+            desc="Extracten Power Designer bestanden",
+            colour="#d7f5cb",
+            disable=not sys.stdout.isatty(),
         ):
             try:
                 document = PDDocument(file_pd_ldm=file_pd_ldm)
-                file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
+                file_RETW = (
+                    self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
+                )
                 document.write_result(file_output=file_RETW)
                 logger.info(
                     f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
@@ -176,7 +178,7 @@ class Orchestrator:
             except (IOError, OSError, ValueError) as e:
                 logger.error(
                     f"Fout bij extractie van Power Designer bestand '{file_pd_ldm}': {e}",
-                    exc_info=True
+                    exc_info=True,
                 )
         return lst_files_RETW
 
