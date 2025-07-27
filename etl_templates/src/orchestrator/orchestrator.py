@@ -79,7 +79,7 @@ class Orchestrator:
                 answer = input(
                     f"Waarschuwingen gevonden, wil je doorgaan met {self.step_current}? (J/n):"
                 )
-                if answer.upper() in ["", "J", "JA", "JAWOHL", "Y", "YES", "Jeroen"]:
+                if answer.upper() in ["", "J", "JA", "JAWOHL", "Y", "YES"]:
                     file_issues = (
                         self.config.path_intermediate / "extraction_issues.csv"
                     )
@@ -122,14 +122,10 @@ class Orchestrator:
         # Voegt gegenereerde code en database objecten toe aan het repository
         if not skip_devops:
             self._add_to_repository()
-
         else:
             logger.info(
                 "Repository afhandeling zijn overgeslagen door de 'skip_devops' flag."
             )
-        # Write issues to file
-        file_issues = self.config.path_intermediate / "extraction_issues.csv"
-        issue_tracker.write_csv(file_csv=file_issues)
 
     @_decorator_proces_issues
     def _extract(self) -> list[Path]:
@@ -154,7 +150,6 @@ class Orchestrator:
             files_pd_ldm, desc="Extracten Power Designer bestanden", colour="#d7f5cb"
         ):
             try:
-                logger.info(f"Start extractie van Power Designer bestand '{file_pd_ldm}'")
                 document = PDDocument(file_pd_ldm=file_pd_ldm)
                 file_RETW = self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
                 document.write_result(file_output=file_RETW)
