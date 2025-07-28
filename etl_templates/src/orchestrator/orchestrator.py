@@ -14,8 +14,9 @@ from .config_file import ConfigFile
 
 logger = get_logger(__name__)
 
-BLUE = "\x1b[1;34m"
-YELLOW = "\x1b[1;33m"
+BOLD_BLUE = "\x1b[1;34m"
+UNDERLINE = "\x1b[4m"
+BOLD_YELLOW = "\x1b[1;33m"
 RESET = "\x1b[0m"
 
 
@@ -43,7 +44,6 @@ class Orchestrator:
         self.process_steps = iter(
             [
                 "1/5) Extraheren uit Power Designer documenten",
-                # "2/6) Rapporteren over totale ETL",
                 "2/5) Integreren van Power Designer extracten",
                 "3/5) Genereren model en mapping code",
                 "4/5) Genereren MDDE schema",
@@ -85,7 +85,7 @@ class Orchestrator:
             Raises:
                 ExtractionIssuesFound: Indien fouten zijn gevonden of de gebruiker kiest om te stoppen na waarschuwingen.
             """
-            print(f"{BLUE}{self.step_current}{RESET}", file=sys.stdout)
+            print(f"{BOLD_BLUE}{self.step_current}{RESET}", file=sys.stdout)
 
             func_result = func(self, *args, **kwargs)
 
@@ -102,7 +102,7 @@ class Orchestrator:
 
             if max_severity_level == "WARNING" and not self.config.ignore_warnings:
                 answer = input(
-                    f"{YELLOW}Waarschuwingen gevonden, wil je doorgaan met {self.step_current}? (J/n):{RESET}"
+                    f"{BOLD_YELLOW}Waarschuwingen gevonden, wil je doorgaan met {self.step_current}? (J/n):{RESET}"
                 )
                 if answer.upper() not in ["", "J", "JA", "JAWOHL", "Y", "YES"]:
                     raise ExtractionIssuesFound(
@@ -130,16 +130,24 @@ class Orchestrator:
             None
         """
         print(
-            f"{BLUE}\x1b[4mStart Genesis verwerking: {self.config.title} {self.config._version}.{RESET}\n",
+            f"{BOLD_BLUE}{UNDERLINE}Start Genesis verwerking: {self.config.title} {self.config._version}.{RESET}\n",
             file=sys.stdout,
         )
 
-        files_RETW = self._extract()                           # Extraheert data uit de Power Designer ldm bestanden
-        dag_etl = self._integrate_files(files_RETW=files_RETW) # Integreer alle data uit de verschillende bestanden
-        self._generate_code(dag_etl=dag_etl)                   # Genereer code voor doelschema's en mappings
-        self._generate_mdde_deployment(dag_etl=dag_etl)        # Genereer code voor ETL deployment
+        files_RETW = (
+            self._extract()
+        )  # Extraheert data uit de Power Designer ldm bestanden
+        dag_etl = self._integrate_files(
+            files_RETW=files_RETW
+        )  # Integreer alle data uit de verschillende bestanden
+        self._generate_code(
+            dag_etl=dag_etl
+        )  # Genereer code voor doelschema's en mappings
+        self._generate_mdde_deployment(
+            dag_etl=dag_etl
+        )  # Genereer code voor ETL deployment
         if not skip_devops:
-            self._add_to_repository()   # Voegt gegenereerde code en database objecten toe aan het repository
+            self._add_to_repository()  # Voegt gegenereerde code en database objecten toe aan het repository
         else:
             logger.info(
                 "Repository afhandeling zijn overgeslagen door de 'skip_devops' flag."
@@ -211,22 +219,24 @@ class Orchestrator:
 
     def _visualize_etl_flow(self, dag: DagReporting) -> None:
         """Genereert de ETL-flow visualisatie."""
-        print(f"{BLUE}\tRapporten over{RESET}")
-        path_output = str(self.config.extractor.path_output / "ETL_flow.html")
+        print(f"{BOLD_BLUE}\tReview rapporten over:{RESET}")
+        path_output = self.config.extractor.path_output / "ETL_flow.html"
         dag.plot_etl_dag(file_html=path_output)
-        print(f"{BLUE}\t* ETL-flow: {path_output}{RESET}")
+        print(f"{BOLD_BLUE}\t* ETL-flow: {UNDERLINE}{path_output}{RESET}")
 
     def _visualize_file_dependencies(self, dag: DagReporting) -> None:
         """Genereert de Power Designer bestandsafhankelijkheden visualisatie."""
-        path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
+        path_output = self.config.extractor.path_output / "RETW_dependencies.html"
         dag.plot_file_dependencies(file_html=path_output)
-        print(f"{BLUE}\t* Power Designer bestandsafhankelijkheden: {path_output}{RESET}")
+        print(
+            f"{BOLD_BLUE}\t* Power Designer bestandsafhankelijkheden: {UNDERLINE}{path_output}{RESET}"
+        )
 
     def _visualize_mappings(self, dag: DagReporting) -> None:
         """Genereert de mappings visualisatie."""
-        path_output = str(self.config.extractor.path_output / "mappings.html")
+        path_output = self.config.extractor.path_output / "mappings.html"
         dag.plot_mappings(file_html=path_output)
-        print(f"{BLUE}\t* Mappings: {path_output}{RESET}")
+        print(f"{BOLD_BLUE}\t* Mappings: {UNDERLINE}{path_output}{RESET}")
 
     @_decorator_proces_issues
     def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> None:

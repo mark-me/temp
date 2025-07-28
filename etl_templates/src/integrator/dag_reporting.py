@@ -192,7 +192,7 @@ class DagReporting(DagImplementation):
             self._set_node_tooltip(node)
         return dag
 
-    def plot_graph_html(self, dag: ig.Graph, file_html: str) -> None:
+    def plot_graph_html(self, dag: ig.Graph, file_html: Path | str) -> None:
         """Genereert en slaat een interactieve HTML-visualisatie van de grafiek op.
 
         Zet de grafiek om naar een networkx-formaat, stelt de visualisatieopties in,
@@ -200,11 +200,12 @@ class DagReporting(DagImplementation):
 
         Args:
             dag (ig.Graph): De grafiek die gevisualiseerd moet worden.
-            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+            file_html (Path | str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
 
         Returns:
             None
         """
+        file_html = file_html if isinstance(file_html, str) else str(file_html)
         self._create_output_dir(file_path=file_html)
         net = Network("900px", "1917px", directed=True, layout=True)
         dag = self._igraph_to_networkx(graph=dag)
@@ -316,13 +317,13 @@ class DagReporting(DagImplementation):
                 dag.vs[i]["level"] = level_max
         return dag
 
-    def plot_graph_total(self, file_html: str) -> None:
+    def plot_graph_total(self, file_html: Path) -> None:
         """Genereert en slaat een netwerkvisualisatie op van alle bestanden, entiteiten en mappings.
 
         Bouwt de volledige grafiek, stelt de visuele attributen in en slaat het resultaat op als een HTML-bestand.
 
         Args:
-            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+            file_html (Path): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
 
         Returns:
             None
@@ -334,7 +335,7 @@ class DagReporting(DagImplementation):
         dag = self._set_visual_attributes(dag=dag)
         self.plot_graph_html(dag=dag, file_html=file_html)
 
-    def plot_graph_retw_file(self, file_retw: str, file_html: str) -> None:
+    def plot_graph_retw_file(self, file_retw: str, file_html: Path) -> None:
         """Plot the graph for a specific RETW file.
 
         Builds the total graph, selects the subgraph related to a specific RETW file,
@@ -342,7 +343,7 @@ class DagReporting(DagImplementation):
 
         Args:
             file_retw (str): Path to the RETW file.
-            file_html (str): Path to the output HTML file.
+            file_html (Path): Path to the output HTML file.
 
         Returns:
             None
@@ -355,7 +356,7 @@ class DagReporting(DagImplementation):
         self.plot_graph_html(dag=dag, file_html=file_html)
 
     def plot_file_dependencies(
-        self, file_html: str, include_entities: bool = True
+        self, file_html: Path, include_entities: bool = True
     ) -> None:
         """Genereert en slaat een netwerkvisualisatie op van de afhankelijkheden tussen RETW-bestanden.
 
@@ -363,7 +364,7 @@ class DagReporting(DagImplementation):
         en slaat het resultaat op als een HTML-bestand.
 
         Args:
-            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+            file_html (Path): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
             include_entities (bool, optional): Of entiteiten moeten worden opgenomen in de visualisatie. Standaard True.
 
         Returns:
@@ -376,14 +377,14 @@ class DagReporting(DagImplementation):
         dag_files = self._set_visual_attributes(dag=dag_files)
         self.plot_graph_html(dag=dag_files, file_html=file_html)
 
-    def plot_mappings(self, file_html: str) -> None:
+    def plot_mappings(self, file_html: Path) -> None:
         """Genereert en slaat een netwerkvisualisatie op van de mappings.
 
         Bouwt een grafiek van de mappings, stelt de visuele attributen in,
         en slaat het resultaat op als een HTML-bestand.
 
         Args:
-            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+            file_html (Path): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
 
         Returns:
             None
@@ -393,7 +394,7 @@ class DagReporting(DagImplementation):
         dag = self._set_visual_attributes(dag=dag)
         self.plot_graph_html(dag=dag, file_html=file_html)
 
-    def plot_entity_journey(self, entity: EntityRef, file_html: str) -> None:
+    def plot_entity_journey(self, entity: EntityRef, file_html: Path) -> None:
         """Genereert en slaat een netwerkvisualisatie op van alle afhankelijkheden van een specifieke entiteit.
 
         Bouwt een grafiek van de afhankelijkheden van de opgegeven entiteit, stelt de visuele attributen in,
@@ -401,7 +402,7 @@ class DagReporting(DagImplementation):
 
         Args:
             entity (EntityRef): De entiteit waarvan de afhankelijkheden gevisualiseerd moeten worden.
-            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+            file_html (Path): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
 
         Returns:
             None
@@ -477,7 +478,7 @@ class DagReporting(DagImplementation):
                 vx["color"] = self.color_node_position[vx["position"]]
         return dag
 
-    def plot_etl_dag(self, file_html: str) -> None:
+    def plot_etl_dag(self, file_html: Path) -> None:
         """Genereert en slaat een netwerkvisualisatie op van de ETL-DAG.
 
         Bouwt de ETL-grafiek, verrijkt deze voor visualisatie en slaat het resultaat op als een HTML-bestand.
