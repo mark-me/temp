@@ -1,7 +1,8 @@
 import igraph as ig
 from logtools import get_logger
 
-from .dag_reporting import DagReporting, EntityRef, MappingRef, NoFlowError, VertexType
+from .dag_reporting import DagReporting, EntityRef, NoFlowError, VertexType
+from .dag_builder import MappingRef
 
 logger = get_logger(__name__)
 

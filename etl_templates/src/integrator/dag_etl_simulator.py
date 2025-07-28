@@ -6,10 +6,10 @@ from logtools import get_logger
 
 from .dag_reporting import (
     DagReporting,
-    DeadlockPrevention,
-    MappingRef,
     VertexType,
 )
+from .dag_builder import MappingRef
+from .dag_implementation import DeadlockPrevention
 
 logger = get_logger(__name__)
 

@@ -13,6 +13,7 @@ class InvalidDeadlockPrevention(Exception):
 
     Deze exceptie geeft aan dat de opgegeven strategie niet wordt ondersteund bij het bepalen van de uitvoeringsvolgorde van mappings.
     """
+
     def __init__(self):
         self.message = "Invalide Deadlock provention strategie gekozen"
         super().__init__(self.message)
@@ -23,6 +24,7 @@ class DeadlockPrevention(Enum):
 
     De opties SOURCE en TARGET bepalen of de deadlock-preventie gebaseerd is op bron- of doelentiteiten.
     """
+
     SOURCE = auto()
     TARGET = auto()
 
@@ -320,48 +322,6 @@ class DagImplementation(DagBuilder):
             if vx["type"] == VertexType.MAPPING.name
         ]
         return vs_mappings
-
-    def get_entities(self) -> list[dict]:
-        """Geeft een lijst terug van alle entiteit-knopen in de huidige DAG.
-
-        Deze functie selecteert en retourneert alle knopen van het type ENTITY,
-        zodat deze eenvoudig kunnen worden geraadpleegd of verwerkt.
-
-        Returns:
-            list: Een lijst van entiteit-knopen in de DAG.
-        """
-        vs_entities = [
-            vx.attributes()
-            for vx in self.dag.vs
-            if vx["type"] == VertexType.ENTITY.name
-        ]
-        return vs_entities
-
-    def get_files(self) -> list[dict]:
-        """Geeft een lijst terug van alle bestand-knopen in de huidige DAG.
-
-        Deze functie selecteert en retourneert alle knopen van het type FILE_RETW,
-        zodat deze eenvoudig kunnen worden geraadpleegd of verwerkt.
-
-        Returns:
-            list: Een lijst van bestand-knopen in de DAG.
-        """
-        vs_files = [
-            vx.attributes()
-            for vx in self.dag.vs
-            if vx["type"] == VertexType.FILE_RETW.name
-        ]
-
-        # Remove empty dictionary entries
-        vs_files_cleaned = [
-            {k: v for k, v in d.items() if v is not None} for d in vs_files
-        ]
-        # Make sure all dictionaries have a consistent set of keys
-        all_keys = set().union(*(d.keys() for d in vs_files_cleaned))
-        vs_files_normalized = [
-            {k: d.get(k, None) for k in all_keys} for d in vs_files_cleaned
-        ]
-        return vs_files_normalized
 
     def get_mapping_clusters(self, schemas: list[str]) -> list[dict]:
         """

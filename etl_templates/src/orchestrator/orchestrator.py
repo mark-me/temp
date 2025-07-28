@@ -18,6 +18,7 @@ BLUE = "\x1b[1;34m"
 YELLOW = "\x1b[1;33m"
 RESET = "\x1b[0m"
 
+
 class ExtractionIssuesFound(Exception):
     """Exception raised when extraction issues are found and processing should stop."""
 
@@ -42,7 +43,7 @@ class Orchestrator:
         self.process_steps = iter(
             [
                 "1/5) Extraheren uit Power Designer documenten",
-                #"2/6) Rapporteren over totale ETL",
+                # "2/6) Rapporteren over totale ETL",
                 "2/5) Integreren van Power Designer extracten",
                 "3/5) Genereren model en mapping code",
                 "4/5) Genereren MDDE schema",
@@ -105,7 +106,7 @@ class Orchestrator:
                 )
                 if answer.upper() not in ["", "J", "JA", "JAWOHL", "Y", "YES"]:
                     raise ExtractionIssuesFound(
-                        f"Verwerking gestopt op verzoek van de gebruiker nadat er waarschuwingen zijn aangetroffen.\nZie rapport: {file_issues}"
+                        f"""Verwerking gestopt op verzoek van de gebruiker nadat er waarschuwingen zijn aangetroffen.\nZie rapport: {file_issues}"""
                     )
 
             if max_severity_level == "ERROR" or error:
@@ -114,6 +115,7 @@ class Orchestrator:
                 )
 
             return func_result
+
         return wrapper
 
     def start_processing(self, skip_devops: bool = False) -> None:
