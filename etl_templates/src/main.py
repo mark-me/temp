@@ -4,6 +4,9 @@ from pathlib import Path
 
 from orchestrator import ExtractionIssuesFound, Orchestrator
 
+GREEN = "\x1b[1;32m"
+RED = "\x1b[1;31m"
+RESET = "\x1b[0m"
 
 def main():
     """
@@ -13,14 +16,14 @@ def main():
     """
     parser = argparse.ArgumentParser(description="De Genesis workflow orkestrator")
     print(
-        """\033[92m\n
+        f"""{GREEN}\n
      _____                      _
     / ____|                    (_)
    | |  __  ___ _ __   ___  ___ _ ___
    | | |_ |/ _ \\ '_ \\ / _ \\/ __| / __|
    | |__| |  __/ | | |  __/\\__ \\ \\__ \\
     \\_____|\\___|_| |_|\\___||___/_|___/
-                              MDDE Douane\033[0m
+                           MDDE Douane{RESET}
     """,
         file=sys.stdout,
     )
@@ -33,9 +36,9 @@ def main():
     try:
         genesis.start_processing(skip_devops=args.skip)
     except ExtractionIssuesFound as e:
-        print(f"\033[91m{e}\033[0m", file=sys.stdout)
+        print(f"{RED}{e}{RESET}", file=sys.stdout)
     else:
-        print(f"\033[92mAfgerond zonder fouten.\033[0m", file=sys.stdout)
+        print(f"{GREEN}Afgerond zonder fouten.{RESET}", file=sys.stdout)
 
 
 if __name__ == "__main__":
