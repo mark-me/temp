@@ -129,7 +129,10 @@ class Orchestrator:
         Returns:
             None
         """
-        logger.info("Start Genesis verwerking")
+        print(
+            f"{BLUE}\x1b[4mStart Genesis verwerking: {self.config.title} {self.config._version}.{RESET}\n",
+            file=sys.stdout,
+        )
         # Extraheert data uit de Power Designer ldm bestanden
         files_RETW = self._extract()
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
