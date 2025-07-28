@@ -6,16 +6,16 @@ LOGGING = {
             "format": "%(asctime)s %(levelname)s %(message)s %(module)s %(funcName)s %(process)d",
             "class": "pythonjsonlogger.jsonlogger.JsonFormatter",
         },
-        "stdout": {
+        "colored": {
             "format": "\033[1m%(levelname)s\033[0m: %(message)s | \033[1mBestand:\033[0m '%(module)s' | \033[1mFunctie:\033[0m '%(funcName)s'",
             "()": "logtools.color_formatter.ColorFormatter",
         },
     },
     "handlers": {
-        "stdout": {
-            "class": "logging.StreamHandler",
-            "stream": "ext://sys.stdout",
-            "formatter": "stdout",
+        "tqdm_stdout": {
+            "class": "logtools.tqdm_logging.TqdmLoggingHandler",  # Gebruik het juiste pad
+            "formatter": "colored",
+            "level": "DEBUG",  # of een andere drempel
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
@@ -25,5 +25,5 @@ LOGGING = {
             "backupCount": 10,
         },
     },
-    "loggers": {"": {"handlers": ["stdout", "file"], "level": "WARNING"}},
+    "loggers": {"": {"handlers": ["tqdm_stdout", "file"], "level": "WARNING"}},
 }
