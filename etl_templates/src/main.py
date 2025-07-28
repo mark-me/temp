@@ -4,6 +4,9 @@ from pathlib import Path
 
 from orchestrator import ExtractionIssuesFound, Orchestrator
 
+GREEN = "\033[0;34m"
+RED = "\033[1;33m"
+RESET = "\033[0m"
 
 def main():
     """
@@ -33,9 +36,9 @@ def main():
     try:
         genesis.start_processing(skip_devops=args.skip)
     except ExtractionIssuesFound as e:
-        print(f"\033[91m{e}\033[0m", file=sys.stdout)
+        print(f"{RED}{e}{RESET}", file=sys.stdout)
     else:
-        print(f"\033[92mAfgerond zonder fouten.\033[0m", file=sys.stdout)
+        print(f"{GREEN}Afgerond zonder fouten.{RESET}", file=sys.stdout)
 
 
 if __name__ == "__main__":
