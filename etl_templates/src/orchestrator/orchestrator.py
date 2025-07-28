@@ -14,6 +14,10 @@ from .config_file import ConfigFile
 
 logger = get_logger(__name__)
 
+BLUE = "\033[0;34m"
+YELLOW = "\033[1;33m"
+RESET = "\033[0m"
+
 class ExtractionIssuesFound(Exception):
     """Exception raised when extraction issues are found and processing should stop."""
 
@@ -37,12 +41,12 @@ class Orchestrator:
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
         self.process_steps = iter(
             [
-                "1/6) Extraheren uit Power Designer documenten",
-                "2/6) Rapporteren over totale ETL",
-                "3/6) Integreren van Power Designer extracten",
-                "4/6) Genereren model en mapping code",
-                "5/6) Genereren MDDE schema",
-                "6/6) Toevoegen aan DevOps repository",
+                "1/5) Extraheren uit Power Designer documenten",
+                #"2/6) Rapporteren over totale ETL",
+                "2/5) Integreren van Power Designer extracten",
+                "3/5) Genereren model en mapping code",
+                "4/5) Genereren MDDE schema",
+                "5/5) Toevoegen aan DevOps repository",
             ]
         )
         self.step_current = next(self.process_steps)
@@ -80,7 +84,7 @@ class Orchestrator:
             Raises:
                 ExtractionIssuesFound: Indien fouten zijn gevonden of de gebruiker kiest om te stoppen na waarschuwingen.
             """
-            print(f"\033[0;34m{self.step_current}\033[0m", file=sys.stdout)
+            print(f"{BLUE}{self.step_current}{RESET}", file=sys.stdout)
 
             func_result = func(self, *args, **kwargs)
 
@@ -97,16 +101,16 @@ class Orchestrator:
 
             if max_severity_level == "WARNING" and not self.config.ignore_warnings:
                 answer = input(
-                    f"\033[1;33mWaarschuwingen gevonden, wil je doorgaan met {self.step_current}? (J/n):\033[0m"
+                    f"{YELLOW}Waarschuwingen gevonden, wil je doorgaan met {self.step_current}? (J/n):{RESET}"
                 )
                 if answer.upper() not in ["", "J", "JA", "JAWOHL", "Y", "YES"]:
                     raise ExtractionIssuesFound(
-                        f"Verwerking gestopt op verzoek van de gebruiker nadat er waarschuwingen zijn aangetroffen. Zie rapport: {file_issues}"
+                        f"Verwerking gestopt op verzoek van de gebruiker nadat er waarschuwingen zijn aangetroffen.\nZie rapport: {file_issues}"
                     )
 
             if max_severity_level == "ERROR" or error:
                 raise ExtractionIssuesFound(
-                    f"Verwerking gestopt nadat er issues zijn aangetroffen. Zie rapport: {file_issues}"
+                    f"Verwerking gestopt nadat er issues zijn aangetroffen.\nZie rapport: {file_issues}"
                 )
 
             return func_result
@@ -126,8 +130,6 @@ class Orchestrator:
         logger.info("Start Genesis verwerking")
         # Extraheert data uit de Power Designer ldm bestanden
         files_RETW = self._extract()
-        # Rapport over de integratie van alle bestanden
-        self._report_integration(files_RETW=files_RETW)
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
         dag_etl = self._integrate_files(files_RETW=files_RETW)
         # Genereer code voor doelschema's en mappings
@@ -187,46 +189,32 @@ class Orchestrator:
     @_decorator_proces_issues
     def _integrate_files(self, files_RETW: list[Path]) -> DagImplementation:
         """
-        Integreert de opgegeven RETW-bestanden en bouwt de ETL-DAG.
+        Integreert de opgegeven RETW-bestanden tot een ETL-DAG en genereert visualisaties.
 
-        Deze functie voert eerst een rapportage uit over de afhankelijkheden en bouwt vervolgens de implementatie-DAG
-        die gebruikt wordt voor verdere verwerking en codegeneratie.
+        Deze functie bouwt een implementatie-DAG op basis van de RETW-bestanden en
+        genereert visualisaties van de ETL-flow, afhankelijkheden en mappings.
 
         Args:
             files_RETW (list[Path]): Lijst van paden naar de RETW-bestanden.
 
         Returns:
-            DagImplementation: De geïmplementeerde ETL-DAG voor verdere verwerking.
+            DagImplementation: De geïmplementeerde ETL-DAG.
         """
         logger.info("Create ETL Dag with implementation information")
-        dag = DagImplementation()
-        dag.build_dag(files_RETW=files_RETW)
-        return dag
-
-    @_decorator_proces_issues
-    def _report_integration(self, files_RETW: list[Path]) -> None:
-        """
-        Rapporteert en visualiseert de afhankelijkheden tussen de opgegeven RETW-bestanden.
-
-        Deze functie bouwt een rapportage-DAG en genereert een visualisatie van de ETL-flow
-        voor alle opgegeven RETW-bestanden, zodat afhankelijkheden inzichtelijk worden gemaakt.
-
-        Args:
-            files_RETW (list[Path]): Lijst van paden naar de RETW-bestanden.
-
-        Returns:
-            None
-        """
-        logger.info("Reporting on dependencies")
         dag = DagReporting()
         dag.build_dag(files_RETW=files_RETW)
         # Visualization of the ETL flow for all RETW files combined
+        print(f"{BLUE}\tRapporten over{RESET}")
         path_output = str(self.config.extractor.path_output / "ETL_flow.html")
         dag.plot_etl_dag(file_html=path_output)
+        print(f"{BLUE}\t* ETL-flow: {path_output}{RESET}")
         path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
         dag.plot_file_dependencies(file_html=path_output)
+        print(f"{BLUE}\t* Power Designer bestandsafhankelijkeden: {path_output}{RESET}")
         path_output = str(self.config.extractor.path_output / "mappings.html")
         dag.plot_mappings(file_html=path_output)
+        print(f"{BLUE}\t* Mappings: {path_output}{RESET}")
+        return dag
 
     @_decorator_proces_issues
     def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> None:
