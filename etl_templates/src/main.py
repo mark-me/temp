@@ -16,14 +16,14 @@ def main():
     """
     parser = argparse.ArgumentParser(description="De Genesis workflow orkestrator")
     print(
-        """\033[92m\n
+        """{GREEN}\n
      _____                      _
     / ____|                    (_)
    | |  __  ___ _ __   ___  ___ _ ___
    | | |_ |/ _ \\ '_ \\ / _ \\/ __| / __|
    | |__| |  __/ | | |  __/\\__ \\ \\__ \\
     \\_____|\\___|_| |_|\\___||___/_|___/
-                              MDDE Douane\033[0m
+                              MDDE Douane{RESET}
     """,
         file=sys.stdout,
     )
