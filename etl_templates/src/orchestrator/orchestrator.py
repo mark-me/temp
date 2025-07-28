@@ -220,7 +220,7 @@ class Orchestrator:
         """Genereert de Power Designer bestandsafhankelijkheden visualisatie."""
         path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
         dag.plot_file_dependencies(file_html=path_output)
-        print(f"{BLUE}\t* Power Designer bestandsafhankelijkeden: {path_output}{RESET}")
+        print(f"{BLUE}\t* Power Designer bestandsafhankelijkheden: {path_output}{RESET}")
 
     def _visualize_mappings(self, dag: DagReporting) -> None:
         """Genereert de mappings visualisatie."""
