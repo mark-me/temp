@@ -133,17 +133,13 @@ class Orchestrator:
             f"{BLUE}\x1b[4mStart Genesis verwerking: {self.config.title} {self.config._version}.{RESET}\n",
             file=sys.stdout,
         )
-        # Extraheert data uit de Power Designer ldm bestanden
-        files_RETW = self._extract()
-        # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
-        dag_etl = self._integrate_files(files_RETW=files_RETW)
-        # Genereer code voor doelschema's en mappings
-        self._generate_code(dag_etl=dag_etl)
-        # Genereer code voor ETL deployment
-        self._generate_mdde_deployment(dag_etl=dag_etl)
-        # Voegt gegenereerde code en database objecten toe aan het repository
+
+        files_RETW = self._extract()                           # Extraheert data uit de Power Designer ldm bestanden
+        dag_etl = self._integrate_files(files_RETW=files_RETW) # Integreer alle data uit de verschillende bestanden
+        self._generate_code(dag_etl=dag_etl)                   # Genereer code voor doelschema's en mappings
+        self._generate_mdde_deployment(dag_etl=dag_etl)        # Genereer code voor ETL deployment
         if not skip_devops:
-            self._add_to_repository()
+            self._add_to_repository()   # Voegt gegenereerde code en database objecten toe aan het repository
         else:
             logger.info(
                 "Repository afhandeling zijn overgeslagen door de 'skip_devops' flag."
@@ -208,18 +204,29 @@ class Orchestrator:
         logger.info("Create ETL Dag with implementation information")
         dag = DagReporting()
         dag.build_dag(files_RETW=files_RETW)
-        # Visualization of the ETL flow for all RETW files combined
+        self._visualize_etl_flow(dag)
+        self._visualize_file_dependencies(dag)
+        self._visualize_mappings(dag)
+        return dag
+
+    def _visualize_etl_flow(self, dag: DagReporting) -> None:
+        """Genereert de ETL-flow visualisatie."""
         print(f"{BLUE}\tRapporten over{RESET}")
         path_output = str(self.config.extractor.path_output / "ETL_flow.html")
         dag.plot_etl_dag(file_html=path_output)
         print(f"{BLUE}\t* ETL-flow: {path_output}{RESET}")
+
+    def _visualize_file_dependencies(self, dag: DagReporting) -> None:
+        """Genereert de Power Designer bestandsafhankelijkheden visualisatie."""
         path_output = str(self.config.extractor.path_output / "RETW_dependencies.html")
         dag.plot_file_dependencies(file_html=path_output)
         print(f"{BLUE}\t* Power Designer bestandsafhankelijkeden: {path_output}{RESET}")
+
+    def _visualize_mappings(self, dag: DagReporting) -> None:
+        """Genereert de mappings visualisatie."""
         path_output = str(self.config.extractor.path_output / "mappings.html")
         dag.plot_mappings(file_html=path_output)
         print(f"{BLUE}\t* Mappings: {path_output}{RESET}")
-        return dag
 
     @_decorator_proces_issues
     def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> None:
