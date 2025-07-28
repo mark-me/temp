@@ -302,7 +302,8 @@ class Orchestrator:
         """
         devops_handler = RepositoryManager(config=self.config.devops)
         devops_handler.clone()
-        path_source = self.config.generator.path_output
         devops_handler.clean_directory_in_repo()
-        devops_handler.add_directory_to_repo(path_source=path_source)
+        devops_handler.add_directory_to_repo(
+            path_source=self.config.generator.path_output
+        )
         devops_handler.publish()
