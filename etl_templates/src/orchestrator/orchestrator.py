@@ -14,9 +14,9 @@ from .config_file import ConfigFile
 
 logger = get_logger(__name__)
 
-BLUE = "\033[0;34m"
-YELLOW = "\033[1;33m"
-RESET = "\033[0m"
+BLUE = "\x1b[1;34m"
+YELLOW = "\x1b[1;33m"
+RESET = "\x1b[0m"
 
 class ExtractionIssuesFound(Exception):
     """Exception raised when extraction issues are found and processing should stop."""

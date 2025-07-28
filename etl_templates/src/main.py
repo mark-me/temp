@@ -4,9 +4,9 @@ from pathlib import Path
 
 from orchestrator import ExtractionIssuesFound, Orchestrator
 
-GREEN = "\033[0;34m"
-RED = "\033[1;33m"
-RESET = "\033[0m"
+GREEN = "\x1b[1;32m"
+RED = "\x1b[1;31m"
+RESET = "\x1b[0m"
 
 def main():
     """
@@ -16,14 +16,14 @@ def main():
     """
     parser = argparse.ArgumentParser(description="De Genesis workflow orkestrator")
     print(
-        """{GREEN}\n
+        f"""{GREEN}\n
      _____                      _
     / ____|                    (_)
    | |  __  ___ _ __   ___  ___ _ ___
    | | |_ |/ _ \\ '_ \\ / _ \\/ __| / __|
    | |__| |  __/ | | |  __/\\__ \\ \\__ \\
     \\_____|\\___|_| |_|\\___||___/_|___/
-                              MDDE Douane{RESET}
+                           MDDE Douane{RESET}
     """,
         file=sys.stdout,
     )
