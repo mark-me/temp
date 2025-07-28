@@ -8,34 +8,6 @@ Voor meer informatie over de laadprocedures in de MDDE deployment kan je vinden 
 
 ---
 
-```mermaid
-flowchart TD
-    A[Start deployment] --> B[_generate_load_model_info]
-    B --> C[_generate_load_config]
-    C --> D[_generate_load_dependencies]
-    D --> E[_generate_load_config_mapping_clusters]
-    E --> F[_generate_load_code_list]
-    F --> G[_generate_load_dates]
-    G --> H[_copy_db_objects]
-    H --> I[_generate_post_deploy_master]
-    I --> J[End]
-
-    subgraph Scripts genereren
-        B
-        C
-        D
-        E
-        F
-        G
-    end
-
-    subgraph Bestanden copieren en wegschrijven
-        H
-        I
-    end
-
-```
-
 ## Belangrijke Componenten
 
 **TemplateType (Enum):**

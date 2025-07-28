@@ -9,7 +9,7 @@ INSERT INTO
     SELECT
         '{{mapping_cluster.CodeModel}}',
         '{{mapping_cluster.Mapping}}',
-        {{mapping_cluster.Cluster}} {% if not loop.last %}
+        '{{mapping_cluster.Cluster}}' {% if not loop.last %}
         UNION ALL
         {% endif %}
     {% endfor %}

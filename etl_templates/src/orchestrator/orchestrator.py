@@ -37,12 +37,12 @@ class Orchestrator:
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
         self.process_steps = iter(
             [
-                "Extraheren uit Power Designer documenten",
-                "Integreren van Power Designer extracten",
-                "Rapporteren over totale ETL",
-                "Genereren model en mapping code",
-                "Genereren MDDE schema",
-                "Toevoegen aan DevOps repository",
+                "1/6) Extraheren uit Power Designer documenten",
+                "2/6) Rapporteren over totale ETL",
+                "3/6) Integreren van Power Designer extracten",
+                "4/6) Genereren model en mapping code",
+                "5/6) Genereren MDDE schema",
+                "6/6) Toevoegen aan DevOps repository",
             ]
         )
         self.step_current = next(self.process_steps)
@@ -80,7 +80,7 @@ class Orchestrator:
             Raises:
                 ExtractionIssuesFound: Indien fouten zijn gevonden of de gebruiker kiest om te stoppen na waarschuwingen.
             """
-            print(f"\033[0;34m-> {self.step_current}\033[0m", file=sys.stdout)
+            print(f"\033[0;34m{self.step_current}\033[0m", file=sys.stdout)
 
             func_result = func(self, *args, **kwargs)
 
@@ -125,9 +125,11 @@ class Orchestrator:
         """
         logger.info("Start Genesis verwerking")
         # Extraheert data uit de Power Designer ldm bestanden
-        lst_files_RETW = self._extract()
+        files_RETW = self._extract()
+        # Rapport over de integratie van alle bestanden
+        self._report_integration(files_RETW=files_RETW)
         # Integreer alle data uit de verschillende bestanden en voeg afgeleide data toe
-        dag_etl = self._integrate_files(files_RETW=lst_files_RETW)
+        dag_etl = self._integrate_files(files_RETW=files_RETW)
         # Genereer code voor doelschema's en mappings
         self._generate_code(dag_etl=dag_etl)
         # Genereer code voor ETL deployment
@@ -196,7 +198,6 @@ class Orchestrator:
         Returns:
             DagImplementation: De geïmplementeerde ETL-DAG voor verdere verwerking.
         """
-        self._report_integration(files_RETW=files_RETW)
         logger.info("Create ETL Dag with implementation information")
         dag = DagImplementation()
         dag.build_dag(files_RETW=files_RETW)

@@ -16,7 +16,7 @@ SELECT
     {% for sourceObject in mapping.SourceComposition %}
         {% if sourceObject.JoinType != 'APPLY' %}
             {{ sourceObject.JoinType }}
-            [{{ sourceObject.Entity.CodeModel }}].[{{ sourceObject.Entity.Name }}] AS {{ sourceObject.JoinAlias }}
+            [{{ sourceObject.Entity.CodeModel }}].[{{ sourceObject.Entity.Code }}] AS {{ sourceObject.JoinAlias }}
 
             {% if 'JoinConditions' in sourceObject %}
                 ON {% for joinCondition in sourceObject.JoinConditions %}

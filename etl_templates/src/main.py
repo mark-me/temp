@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from orchestrator import Orchestrator, ExtractionIssuesFound
+from orchestrator import ExtractionIssuesFound, Orchestrator
 
 
 def main():
@@ -33,7 +33,9 @@ def main():
     try:
         genesis.start_processing(skip_devops=args.skip)
     except ExtractionIssuesFound as e:
-        print(f"\033[91m -> {e}\033[0m", file=sys.stdout)
+        print(f"\033[91m{e}\033[0m", file=sys.stdout)
+    else:
+        print(f"\033[92mAfgerond zonder fouten.\033[0m", file=sys.stdout)
 
 
 if __name__ == "__main__":
