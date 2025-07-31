@@ -1,0 +1,5 @@
+Deze folder en subfolders bevatten datamodellen van de centrale laag. 
+
+Dit zijn de modellen zoals ze op de 'dedicated pool 2 (DataCenter)' of 'Zilver'- laag staan.
+
+De modellen uit de dedicated pool 1 (gebaseerd op TeraData en via TeraData ETL) staan in de folder 'Legacy data model'

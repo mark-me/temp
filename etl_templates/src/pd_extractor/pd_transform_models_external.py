@@ -1,4 +1,3 @@
-
 from logtools import get_logger
 
 from .pd_transform_object import ObjectTransformer
@@ -9,9 +8,10 @@ logger = get_logger(__name__)
 class TransformModelsExternal(ObjectTransformer):
     """Functions die gebruikt worden voor het transformeren van model data die gebruikt gaat worden voor de mapping van het model
     """
-    def __init__(self):
-        super().__init__()
-
+    def __init__(self, file_pd_ldm: str):
+        super().__init__(file_pd_ldm)
+        self.file_pd_ldm = file_pd_ldm
+        
     def models(self, lst_models: list, dict_entities: dict) -> list:
         """Doelmodellen bevatten verwijzingen naar entiteiten uit een ander model. Het doelmodel wordt verrijkt met deze entiteiten
 

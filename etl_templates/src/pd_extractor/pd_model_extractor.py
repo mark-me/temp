@@ -9,10 +9,11 @@ logger = get_logger(__name__)
 class ModelExtractor:
     """Collectie van functies die gebruikt worden om de relevante objecten uit een Power Designer LDM te extraheren"""
 
-    def __init__(self, pd_content):
+    def __init__(self, pd_content: dict, file_pd_ldm: str):
+        self.file_pd_ldm = file_pd_ldm
         self.content = pd_content
-        self.transform_model_internal = TransformModelInternal()
-        self.transform_models_external = TransformModelsExternal()
+        self.transform_model_internal = TransformModelInternal(file_pd_ldm)
+        self.transform_models_external = TransformModelsExternal(file_pd_ldm)
         self.dict_domains = self._domains()
 
     def models(self, lst_aggregates: list) -> list:
@@ -30,7 +31,7 @@ class ModelExtractor:
             lst_models_external = self._models_external()
         else:
             lst_models_external = []
-            logger.warning("o:Shortcut is missing in self.content")
+            logger.warning(f"o:Shortcut mist in self.content in {self.file_pd_ldm}")
         # dict_model_physical = self.__models_physical()
         # Combine models
         if not lst_models_external:
@@ -120,7 +121,7 @@ class ModelExtractor:
             lst_entities=lst_entities
         )
         for entity in lst_entities:
-            logger.debug(f"Found external entity shortcut for '{entity['Name']}'")
+            logger.debug(f"Externe entiteit shortcut gevonden '{entity['Name']} in {self.file_pd_ldm}'")
             dict_result[entity["Id"]] = entity
         return dict_result
 
@@ -139,11 +140,11 @@ class ModelExtractor:
                 )
             else:
                 logger.error(
-                    "Er is geen Domain gevonden tijdens het extraheren van een model, dit is nodig voor het maken van een werkend script"
+                    f"Er is geen Domain gevonden tijdens het extraheren van {self.file_pd_ldm}, dit is nodig voor het maken van een werkend script"
                 )
         else:
             logger.error(
-                "Er is geen gebruik van Domain geconstateerd binnen het extraheren van een model"
+                f"Er is geen gebruik van Domain geconstateerd binnen het extraheren van {self.file_pd_ldm}"
             )
         return dict_domains
 
@@ -162,11 +163,11 @@ class ModelExtractor:
                 )
             else:
                 logger.error(
-                    "Er is geen default data source gevonden tijdens het extraheren van het model"
+                    f"Er is geen default data source gevonden tijdens het extraheren van {self.file_pd_ldm}"
                 )
         else:
             logger.error(
-                "Er is geen data source gevonden tijdens het extraheren van het model"
+                f"Er is geen data source gevonden tijdens het extraheren van het {self.file_pd_ldm}"
             )
             dict_datasources = dict_datasources
         return dict_datasources
@@ -189,6 +190,6 @@ class ModelExtractor:
             )
         else:
             logger.warning(
-                "Het extraheren van de relaties tussen entiteiten is gefaald, er zijn geen relaties gevonden."
+                f"Het extraheren van de relaties tussen entiteiten is gefaald, er zijn geen relaties gevonden. Betreft: {self.file_pd_ldm}."
             )
         return lst_relationships

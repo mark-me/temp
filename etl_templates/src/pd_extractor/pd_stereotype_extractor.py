@@ -17,7 +17,7 @@ class StereotypeExtractor:
         """
         self.file_pd_ldm = file_pd_ldm
         self.content = pd_content
-        self.transform_stereotype = TransformStereotype()
+        self.transform_stereotype = TransformStereotype(file_pd_ldm)
         self.stereotype = stereotype_input
         self.dict_domains = self._domains()
 
@@ -79,13 +79,13 @@ class StereotypeExtractor:
         stereotype_object["CodeModel"] = model
         if "c:ExtendedCollections" in stereotype_object:
             stereotype_object.pop("c:ExtendedCollections")
-            logger.debug("Removed c:ExtendedCollections from lst_objects'")
+            logger.debug(f"Verwijderd c:ExtendedCollections voor lst_objects' in {self.file_pd_ldm}")
         if "c:ExtendedCompositions" in stereotype_object:
             stereotype_object.pop("c:ExtendedCompositions")
-            logger.debug("Removed c:ExtendedCompositions from lst_objects'")
+            logger.debug(f"Verwijderd c:ExtendedCompositions voor lst_objects' in {self.file_pd_ldm}")
         if "c:DefaultMapping" in stereotype_object:
             stereotype_object.pop("c:DefaultMapping")
-            logger.debug("Removed c:DefaultMapping from lst_objects'")
+            logger.debug(f"Verwijderd c:DefaultMapping voor lst_objects'in {self.file_pd_ldm}")
 
     def _domains(self) -> dict:
         """Haalt op en schoont domain data voor de objecten van het opgegeven stereotype
@@ -97,11 +97,11 @@ class StereotypeExtractor:
         if "c:Domains" in self.content:
             if "o:Domain" in self.content["c:Domains"]:
                 lst_domains = self.content["c:Domains"]["o:Domain"]
-                logger.debug("Start with collecting domains for stereotype")
+                logger.debug(f"Start met het extraheren van domains voor stereotype in {self.file_pd_ldm}")
                 dict_domains = self.transform_stereotype.domains(
                     lst_domains=lst_domains
                 )
-                logger.debug("Finished with collecting domains for stereotype")
+                logger.debug(f"Klaar met het extraheren van domains voor stereotype in {self.file_pd_ldm}")
             else:
                 logger.error(
                     f"Er is geen Domain gevonden tijdens het extraheren van een stereotype uit {self.file_pd_ldm}, dit is nodig voor het maken van een werkend script"

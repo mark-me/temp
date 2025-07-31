@@ -15,6 +15,7 @@ from .config_file import ConfigFile
 logger = get_logger(__name__)
 
 BOLD_BLUE = "\x1b[1;34m"
+BOLD_RED = "\x1b[1;31m"
 UNDERLINE = "\x1b[4m"
 BOLD_YELLOW = "\x1b[1;33m"
 RESET = "\x1b[0m"
@@ -86,6 +87,8 @@ class Orchestrator:
                 ExtractionIssuesFound: Indien fouten zijn gevonden of de gebruiker kiest om te stoppen na waarschuwingen.
             """
             print(f"{BOLD_BLUE}{self.step_current}{RESET}", file=sys.stdout)
+            lst_answers_yes = ["", "J", "JA", "JAWOHL", "Y", "YES"]
+            lst_answers_no = ["N", "NEE", "NEIN", "NO"]
 
             func_result = func(self, *args, **kwargs)
 
@@ -94,22 +97,28 @@ class Orchestrator:
             except StopIteration:
                 return func_result
 
-            error = False
             max_severity_level = issue_tracker.max_severity_level()
             if max_severity_level in ["WARNING", "ERROR"]:
                 file_issues = self.config.path_intermediate / "extraction_issues.csv"
                 issue_tracker.write_csv(file_csv=file_issues)
 
             if max_severity_level == "WARNING" and not self.config.ignore_warnings:
-                answer = input(
-                    f"{BOLD_YELLOW}Waarschuwingen gevonden, wil je doorgaan met {self.step_current}? (J/n):{RESET}"
-                )
-                if answer.upper() not in ["", "J", "JA", "JAWOHL", "Y", "YES"]:
-                    raise ExtractionIssuesFound(
-                        f"""Verwerking gestopt op verzoek van de gebruiker nadat er waarschuwingen zijn aangetroffen.\nZie rapport: {file_issues}"""
+                while True:
+                    answer = input(
+                        f"{BOLD_YELLOW}Waarschuwingen gevonden, wil je doorgaan met {self.step_current}? (J/n):{RESET}"
                     )
-
-            if max_severity_level == "ERROR" or error:
+                    if answer.upper() in lst_answers_no:
+                        raise ExtractionIssuesFound(
+                            f"""Verwerking gestopt op verzoek van de gebruiker nadat er waarschuwingen zijn aangetroffen.\nZie rapport: {file_issues}"""
+                        )
+                    elif answer.upper() in lst_answers_yes:
+                        break
+                    else:
+                        print(
+                            f"{BOLD_RED}'{answer}' behoort niet tot de mogelijke antwoorden (j/n).{RESET}",
+                            file=sys.stdout,
+                        )
+            elif max_severity_level == "ERROR":
                 raise ExtractionIssuesFound(
                     f"Verwerking gestopt nadat er issues zijn aangetroffen.\nZie rapport: {file_issues}"
                 )

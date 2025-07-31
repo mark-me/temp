@@ -25,7 +25,7 @@ class PDDocument:
         Args:
             file_pd_ldm (str): Power Designer logisch data model document (.ldm)
         """
-        self.file_pd_ldm = file_pd_ldm
+        
         # Extracting data from the file
         self.content = self.read_file_model(file_pd_ldm=file_pd_ldm)
         self.document_info = {}
@@ -34,7 +34,8 @@ class PDDocument:
         self.lst_scalars = []
         self.lst_aggregates = []
         self.lst_mappings = []
-        self.transform_objects = ObjectTransformer()
+        self.file_pd_ldm = file_pd_ldm
+        self.transform_objects = ObjectTransformer(file_pd_ldm)
 
     def get_document_info(self) -> dict:
         """Geeft metadata terug over het ingelezen Power Designer logisch datamodel.
@@ -109,7 +110,7 @@ class PDDocument:
         Returns:
             list: The Power Designer modellen zonder enige mappings
         """
-        extractor = ModelExtractor(pd_content=self.content)
+        extractor = ModelExtractor(pd_content=self.content, file_pd_ldm=self.file_pd_ldm)
         logger.debug("Start model extraction")
         lst_models = extractor.models(lst_aggregates=self.lst_aggregates)
         logger.debug("Finished model extraction")
@@ -125,7 +126,7 @@ class PDDocument:
         if len(self.lst_models) == 0:
             self.get_models()
 
-        extractor = MappingExtractor(pd_content=self.content)
+        extractor = MappingExtractor(pd_content=self.content, file_pd_ldm=self.file_pd_ldm)
         logger.debug("Start mapping extraction")
         dict_entities = self._all_entities()
         dict_filters = self._all_filters()

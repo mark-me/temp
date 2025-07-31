@@ -782,6 +782,7 @@ class DagBuilder:
             lst_edges.extend(edges_source)
             edge_target = self._add_target_entity_edges(dag=dag, vx_mapping=vx_mapping)
             lst_edges.extend(edge_target)
+        lst_edges = [dict(t) for t in {tuple(d.items()) for d in lst_edges}]
         lst_vertices = list(dict_vertices.values())
         dag_mappings = ig.Graph.DictList(
             vertices=lst_vertices, edges=lst_edges, directed=True

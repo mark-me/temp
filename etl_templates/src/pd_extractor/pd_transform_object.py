@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Union
 
 from logtools import get_logger
 
@@ -11,22 +12,23 @@ class ObjectTransformer:
     Het transformeren van structuren wordt gedaan om het 'querien' van data voor de ETL en DDL te versimpelen
     """
 
-    def __init__(self):
-        self.__timestamp_fields = ["a:CreationDate", "a:ModificationDate"]
-
-    def clean_keys(self, content: dict | list) -> dict | list:
-        """Verwijdert voorlooptekens '@' en 'a:' uit alle sleutels in een dict of lijst van dicts.
-
-        Deze functie normaliseert de sleutelnamen van Power Designer objecten zodat ze eenvoudiger te verwerken zijn in ETL-processen.
-        Het resultaat is een dict of lijst van dicts met opgeschoonde sleutelnamen.
+    def __init__(self, file_pd_ldm: str):
+        self._timestamp_fields = ["a:CreationDate", "a:ModificationDate"]
+        self.file_pd_ldm = file_pd_ldm
+        
+    def clean_keys(self, content: Union[dict, list]):
+        """Hernoemt sleutels van Power Designer objecten (m.a.w. dictionaries) zodat prefixes als '@' en 'a:' worden verwijderd
 
         Args:
-            content (dict | list): Een dictionary of lijst van dictionaries met mogelijk geneste sleutels.
+            content (Union[dict, list]): Een dict of list van dicts met Power Designer objecten
 
         Returns:
-            dict | list: Dezelfde structuur als input, maar met opgeschoonde sleutelnamen.
+            _type_: List of dict met hernoemde sleutels (afhankelijk van welk type werd doorgegeven als parameter)
         """
-        lst_object = [content] if isinstance(content, dict) else content
+        if isinstance(content, dict):
+            lst_object = [content]
+        else:
+            lst_object = content
         for i in range(len(lst_object)):
             attrs = [key for key in list(lst_object[i].keys()) if key[:1] == "@"]
             for attr in attrs:
@@ -35,7 +37,10 @@ class ObjectTransformer:
             for attr in attrs:
                 lst_object[i][attr[2:]] = lst_object[i].pop(attr)
 
-        result = lst_object[0] if isinstance(content, dict) else lst_object
+        if isinstance(content, dict):
+            result = lst_object[0]
+        else:
+            result = lst_object
         return result
 
     def _convert_values_datetime(self, d: dict, convert_key: str) -> dict:
@@ -49,7 +54,7 @@ class ObjectTransformer:
             dict: De dictionary zonder de sleutels
         """
         if isinstance(d, dict):
-            logger.debug("object is dictionary; file:pd_transform_object; object:d")
+            logger.debug("object is dictionary; file:pd_transform_object; object:d in {self.file_pd_ldm}")
             for key in list(d.keys()):
                 if key == convert_key:
                     d[key] = datetime.fromtimestamp(int(d[key]))
@@ -57,7 +62,7 @@ class ObjectTransformer:
                     self._convert_values_datetime(d[key], convert_key)
             return d
         elif isinstance(d, list):
-            logger.debug("object is list; file:pd_transform_object; object:d")
+            logger.debug("object is list; file:pd_transform_object; object:d in {self.file_pd_ldm}")
             for i in range(len(d)):
                 d[i] = self._convert_values_datetime(d[i], convert_key)
             return d
@@ -71,7 +76,7 @@ class ObjectTransformer:
         Returns:
             dict: Hetzelfde Power Designer document data, maar met geconverteerde timestamps
         """
-        for field in self.__timestamp_fields:
+        for field in self._timestamp_fields:
             pd_content = self._convert_values_datetime(pd_content, field)
         return pd_content
 
@@ -88,11 +93,13 @@ class ObjectTransformer:
         """
         idx_check = extended_attrs_text.find(preceded_by)
         if idx_check > 0:
-            logger.info(f"'{idx_check}' values found in extended_attrs_text using: '{preceded_by}'")
+            logger.info(f"'{idx_check}' Waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}")
             idx_start = extended_attrs_text.find(preceded_by) + len(preceded_by)
             idx_end= len(extended_attrs_text) + 1
             value = extended_attrs_text[idx_start:idx_end]
             idx_start = value.find("=") + 1
-            return value[idx_start:].upper()
-        logger.warning(f"no values found in extended_attrs_text using: '{preceded_by}'")
-        return ""
+            value = value[idx_start:].upper()
+        else:
+            logger.warning(f"Geen waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}")
+            value = ""
+        return value

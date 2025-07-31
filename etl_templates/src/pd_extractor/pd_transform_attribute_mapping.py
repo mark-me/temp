@@ -8,8 +8,9 @@ logger = get_logger(__name__)
 class TransformAttributeMapping(ObjectTransformer):
     """Collectie van functies om attribuut mappings conform het afgestemde JSON format op te bouwen om ETL generatie te faciliteren
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, file_pd_ldm: str):
+        super().__init__(file_pd_ldm)
+        self.file_pd_ldm = file_pd_ldm
 
     def attribute_mapping(self, dict_entity_target: dict, dict_attributes:dict) -> list:
         """Verrijkt, schoont en hangt attribuut mappings om ten behoeven van een mapping
@@ -38,7 +39,7 @@ class TransformAttributeMapping(ObjectTransformer):
             mapping.pop("c:StructuralFeatureMaps")
             lst_attribute_mapping = mapping
         else:
-            logger.error(f"attributemapping voor {mapping['Name']} niet gevonden")
+            logger.error(f"attributemapping voor {mapping['Name']} van {self.file_pd_ldm} niet gevonden")
         return lst_attribute_mapping
 
     def _process_attribute_map(self, attr_map: dict, dict_attributes: dict):
@@ -49,7 +50,7 @@ class TransformAttributeMapping(ObjectTransformer):
             index (int): De volgorde van de mapping in de lijst.
             dict_attributes (dict): Alle attributen van het Power Designer LDM.
         """
-        logger.debug(f"Starting attributemapping for {attr_map['Id']}")
+        logger.debug(f"Start attributemapping voor  {attr_map['Id']} van {self.file_pd_ldm} ")
 
         id_attr = attr_map["c:BaseStructuralFeatureMapping.Feature"]["o:EntityAttribute"]["@Ref"]
         if id_attr in dict_attributes:
@@ -58,7 +59,7 @@ class TransformAttributeMapping(ObjectTransformer):
 
             self._process_source_features(attr_map=attr_map, dict_attributes=dict_attributes)
         else:
-            logger.warning(f"{id_attr} is niet gevonden binnen target attributen")
+            logger.warning(f"{id_attr} van {self.file_pd_ldm} is niet gevonden binnen target attributen")
 
     def _extract_entity_alias(self, attr_map: dict):
         """Extraheert de entity alias uit de attribuut mapping indien aanwezig.
@@ -74,8 +75,8 @@ class TransformAttributeMapping(ObjectTransformer):
         if "c:ExtendedCollections" in attr_map:
             has_entity_alias = True
             id_entity_alias = attr_map["c:ExtendedCollections"]["o:ExtendedCollection"]["c:Content"]["o:ExtendedSubObject"]["@Ref"]
-            logger.info("unused object; file:pd_transform_attribute_mapping; object:id_entity_alias")
-            logger.info(f"object has following data: '{id_entity_alias}'")
+            logger.info("Ongebruikt object; file:pd_transform_attribute_mapping; object:id_entity_alias")
+            logger.info(f"Object bevat volgende data: '{id_entity_alias}'")
             attr_map.pop("c:ExtendedCollections")
         return has_entity_alias, id_entity_alias
 
@@ -106,8 +107,8 @@ class TransformAttributeMapping(ObjectTransformer):
                 if dict_attributes[id_attr]["StereotypeEntity"] == "mdde_ScalarBusinessRule" and has_entity_alias:
                     attr_map["EntityAlias"] = id_entity_alias
             else:
-                logger.warning(f"{id_attr} is niet gevonden binnen bron attributen")
+                logger.warning(f"{id_attr} van {self.file_pd_ldm}is niet gevonden binnen bron attributen")
             attr_map.pop("c:SourceFeatures")
         else:
-            logger.warning("Source attributes niet gevonden")
+            logger.warning(f"Source attributes van {self.file_pd_ldm} niet gevonden")
 

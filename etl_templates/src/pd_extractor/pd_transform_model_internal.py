@@ -8,8 +8,9 @@ logger = get_logger(__name__)
 class TransformModelInternal(ObjectTransformer):
     """Hangt om en schoont elk onderdeel van de metadata van het model dat omgezet wordt naar DDL en ETL generatie"""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, file_pd_ldm: str):
+        super().__init__(file_pd_ldm)
+        self.file_pd_ldm = file_pd_ldm
 
     def model(self, content: dict) -> dict:
         """Model generieke data
@@ -160,7 +161,7 @@ class TransformModelInternal(ObjectTransformer):
                     attr["Domain"] = attr_domain
                     attr.pop("c:Domain")
                 else:
-                    logger.error(f"[o:Domain] not found in attr for {attr['Code']}")
+                    logger.error(f"[o:Domain] niet gevonden in attribuut voor {attr['Code']} in {self.file_pd_ldm}")
             lst_attrs[i] = attr
             entity["Attributes"] = lst_attrs
         if "c:Attributes" in entity:
@@ -186,6 +187,10 @@ class TransformModelInternal(ObjectTransformer):
         lst_foreign_keys = []
 
         has_primary, primary_id = self._extract_primary_identifier(entity)
+        if not has_primary:
+            logger.error(
+                f"Entiteit '{entity['Name']}' uit '{self.file_pd_ldm}' heeft geen primaire sleutel"
+            )
 
         if "c:Identifiers" not in entity:
             return entity
@@ -225,7 +230,7 @@ class TransformModelInternal(ObjectTransformer):
         """
         has_primary = "c:PrimaryIdentifier" in entity
         primary_id = None
-        msg_missing = f"Entiteit '{entity['Name']}' heeft geen primary key."
+        msg_missing = f"Entiteit '{entity['Name']}' heeft geen primary key voor {self.file_pd_ldm}."
         if has_primary:
             primary_id = entity["c:PrimaryIdentifier"]["o:Identifier"]["@Ref"]
             entity.pop("c:PrimaryIdentifier")
@@ -267,7 +272,7 @@ class TransformModelInternal(ObjectTransformer):
 
         if "c:Identifier.Attributes" not in identifier:
             logger.error(
-                f"Geen attributes gevonden voor de identifier '{identifier['Name']}' in entiteit '{entity['Name']}'"
+                f"Geen attributes gevonden voor de identifier '{identifier['Name']}' in entiteit '{entity['Name']} in {self.file_pd_ldm}'"
             )
             return False
         return True
@@ -353,7 +358,7 @@ class TransformModelInternal(ObjectTransformer):
             relationship.pop("c:Object1")
         else:
             logger.warning(
-                f"{id_entity} for relationship[Entity1] not in dict_entities"
+                f"{id_entity} voor relationship[Entity1] niet in dict_entities in {self.file_pd_ldm}"
             )
         if "o:Entity" in relationship["c:Object2"]:
             id_entity = relationship["c:Object2"]["o:Entity"]["@Ref"]
@@ -364,7 +369,7 @@ class TransformModelInternal(ObjectTransformer):
             relationship.pop("c:Object2")
         else:
             logger.warning(
-                f"{id_entity} for relationship[Entity2] not in dict_entities"
+                f"{id_entity} voor relationship[Entity2] niet in dict_entities in {self.file_pd_ldm} "
             )
         return relationship
 
@@ -390,29 +395,29 @@ class TransformModelInternal(ObjectTransformer):
                 elif "o:Shortcut" in lst_joins[i]["c:Object1"]:
                     id_attr = lst_joins[i]["c:Object1"]["o:Shortcut"]["@Ref"]
                     logger.warning(
-                        f"Relationship:{relationship['Name']} , missing relationship join"
+                        f"Relationship:{relationship['Name']}, join relatie ontbreekt in {self.file_pd_ldm}"
                     )
                 else:
-                    logger.warning(f"{relationship['Name']} missing relationship join")
+                    logger.warning(f"{relationship['Name']} join relatie ontbreekt in {self.file_pd_ldm}")
                 if id_attr in dict_attributes:
-                    join |= {"Entity1Attribute": dict_attributes[id_attr] }
+                    join |= {"Entity1Attribute": dict_attributes[id_attr]}
                 else:
                     logger.warning(
-                        f"{id_attr} for join[Entity1Attribute] not in dict_acttributes"
+                        f"{id_attr} voor join[Entity1Attribute] niet in dict_acttributes"
                     )
                 id_attr = lst_joins[i]["c:Object2"]["o:EntityAttribute"]["@Ref"]
                 if id_attr in dict_attributes:
-                    join |= {"Entity2Attribute": dict_attributes[id_attr] }
+                    join |= {"Entity2Attribute": dict_attributes[id_attr]}
                     lst_joins[i] = join
                 else:
                     logger.warning(
-                        f"{id_attr} for join[Entity2Attribute] not in dict_acttributes"
+                        f"{id_attr} voor join[Entity2Attribute] niet in dict_acttributes in {self.file_pd_ldm}"
                     )
             relationship["Joins"] = lst_joins
             relationship.pop("c:Joins")
         else:
             logger.warning(
-                f"Relationship:{relationship['Name']} , missing relationship join"
+                f"Relationship:{relationship['Name']}, join relatie ontbreekt in {self.file_pd_ldm}"
             )
         return relationship
 
@@ -439,15 +444,15 @@ class TransformModelInternal(ObjectTransformer):
                     ]
                 else:
                     logger.warning(
-                        f"{lst_identifier_id} for relationship[Identifiers] not in dict_acttributes"
+                        f"{lst_identifier_id} voor relationship[Identifiers] niet in dict_acttributes in {self.file_pd_ldm}"
                     )
             else:
                 logger.warning(
-                    f"{relationship['Name']} : missing identifier for relationship"
+                    f"{relationship['Name']} : identifier mist voor relatie in {self.file_pd_ldm}"
                 )
             relationship.pop("c:ParentIdentifier")
         else:
             logger.warning(
-                f"{relationship['Name']} : missing parent for relationship join"
+                f"{relationship['Name']} : parent mist voor relatie join in {self.file_pd_ldm}"
             )
         return relationship

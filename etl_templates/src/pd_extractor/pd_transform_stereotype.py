@@ -10,8 +10,9 @@ logger = get_logger(__name__)
 class TransformStereotype(ObjectTransformer):
     """Verrijken, schonen en transformeren van stereotype objecten (filters, scalars en aggregaten)"""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, file_pd_ldm: str):
+        super().__init__(file_pd_ldm)
+        self.file_pd_ldm = file_pd_ldm
 
     def domains(self, lst_domains: list) -> dict:
         """Verrijk de stereotypes met domain data
@@ -44,12 +45,12 @@ class TransformStereotype(ObjectTransformer):
         lst_objects = self.clean_keys(lst_objects)
         for i in range(len(lst_objects)):
             objects = lst_objects[i]
-            logger.debug(f"Start creating object definition for '{objects['Name']}'")
+            logger.debug(f"Start met het definieren van object '{objects['Name']}' in {self.file_pd_ldm}")
             objects = self._object_variables(object=objects, dict_domains=dict_domains)
             if objects["Stereotype"] == "mdde_AggregateBusinessRule":
                 objects = self._object_identifiers(object=objects)
             self._process_sql_expression(objects=objects)
-            logger.debug(f"Finished creating object definition for {objects['Name']}")
+            logger.debug(f"Klaar met het definieren van object {objects['Name']} in {self.file_pd_ldm}")
             lst_objects[i] = objects
         return lst_objects
 
@@ -81,6 +82,14 @@ class TransformStereotype(ObjectTransformer):
         Returns:
             list or None: De gesplitste SQL expressie of None als niet gesplitst kan worden.
         """
+        # pattern_incorrect = r"@\w+\s*=\s*@\w+"
+        # matches_incorrect = re.findall(
+        #     string=sqlexpression, pattern=pattern_incorrect
+        # )
+        # if matches_incorrect:
+        #     logger.error(
+        #         f"Invalide expressie gevonden {', '.join(matches_incorrect)} in {objects["Name"]} in bestand {self.file_pd_ldm}"
+        #     )
         if objects["Stereotype"] == "mdde_FilterBusinessRule":
             # if '=' in sqlexpression:
             #     lst_expression = sqlexpression.split("=", 1)
@@ -93,7 +102,7 @@ class TransformStereotype(ObjectTransformer):
             return sqlexpression.split("=", 1)
         else:
             logger.error(
-                f"SqlExpression_split cannot be determined for SqlExpression '{sqlexpression}' "
+                f"SqlExpression_split kan niet bepaald worden voor SqlExpression '{sqlexpression}' in {self.file_pd_ldm} "
             )
             return None
 
@@ -109,7 +118,7 @@ class TransformStereotype(ObjectTransformer):
         if objects["Stereotype"] == "mdde_ScalarBusinessRule":
             sqlexpression = sqlexpression_split[1].strip()
             lst_expression_variables = self._extract_expression_variables(
-               sqlexpression=sqlexpression
+                sqlexpression=sqlexpression
             )
             if lst_expression_variables is not None:
                 objects["SqlExpressionVariables"] = lst_expression_variables
@@ -124,12 +133,12 @@ class TransformStereotype(ObjectTransformer):
         Returns:
             dict: Geschoond en verrijkt stereotype object
         """
-        logger.debug(f"Start collecting variables for object:  {object['Name']}")
+        logger.debug(f"Start met het verzamelen van variabelen voor object in {self.file_pd_ldm}:  {object['Name']}")
         lst_variables = self._extract_and_clean_variables(object)
         lst_variables = self._enrich_variables_with_domains(
             lst_variables=lst_variables, dict_domains=dict_domains
         )
-        logger.debug(f"Finished collecting variables for object: {object['Name']}")
+        logger.debug(f"Klaar met het verzamelen van variabelen voor object in {self.file_pd_ldm}: {object['Name']}")
         object["Variables"] = lst_variables
         object.pop("c:Attributes")
         return object
@@ -191,7 +200,7 @@ class TransformStereotype(ObjectTransformer):
         has_primary = "c:PrimaryIdentifier" in object
         if has_primary:
             primary_id = object["c:PrimaryIdentifier"]["o:Identifier"]["@Ref"]
-        logger.debug(f"Start collecting identifiers for {object['Name']}")
+        logger.debug(f"Start met het verzamelen van identifiers voor object {object['Name']} for {self.file_pd_ldm}")
         # Reroute identifiers
         if "c:Identifiers" in object:
             identifiers = object["c:Identifiers"]["o:Identifier"]
@@ -206,7 +215,7 @@ class TransformStereotype(ObjectTransformer):
                 identifier["EntityCode"] = object["Code"]
                 if "c:Identifier.Attributes" not in identifier:
                     logger.error(
-                        f"No attributes included in the identifier {identifier['Name']}'"
+                        f"Geen attributen toegevoegd in identifier {identifier['Name']} voor {self.file_pd_ldm}'"
                     )
                 else:
                     lst_var_id = identifier["c:Identifier.Attributes"][
@@ -216,7 +225,7 @@ class TransformStereotype(ObjectTransformer):
                         lst_var_id = [lst_var_id]
                     lst_var_id = [dict_vars[d["@Ref"]] for d in lst_var_id]
                     identifier["Variables"] = lst_var_id
-                    #identifier.pop("c:Identifier.Attributes")
+                    # identifier.pop("c:Identifier.Attributes")
                 # Set primary identifier attribute
                 if has_primary:
                     identifier["IsPrimary"] = primary_id == identifier["Id"]
@@ -224,7 +233,7 @@ class TransformStereotype(ObjectTransformer):
             object["Identifiers"] = identifiers
             #object.pop("c:Identifiers")
             #object.pop("c:PrimaryIdentifier")
-            logger.debug(f"Finished collecting identifiers for {object['Name']}")
+            logger.debug(f"Klaar met het verzamelen van identifiers voor {object['Name']} in {self.file_pd_ldm}")
         return object
 
     def _extract_expression_variables(self, sqlexpression: str) -> list:

@@ -15,16 +15,17 @@ class MappingExtractor:
     toe te voegen.
     """
 
-    def __init__(self, pd_content: dict):
+    def __init__(self, pd_content: dict, file_pd_ldm: str):
         """Initialiseren voor het extraheren van de mapping informatie
 
         Args:
             pd_content (dict): Power Designer LDM bestand inhoud (gerepresenteerd als een dictionary)
         """
+        self.file_pd_ldm = file_pd_ldm
         self.content = pd_content
-        self.transform_attribute_mapping = TransformAttributeMapping()
-        self.transform_source_composition = TransformSourceComposition()
-        self.transform_target_entity = TransformTargetEntity()
+        self.transform_attribute_mapping = TransformAttributeMapping(file_pd_ldm)
+        self.transform_source_composition = TransformSourceComposition(file_pd_ldm)
+        self.transform_target_entity = TransformTargetEntity(file_pd_ldm)
 
     def mappings(
         self, dict_objects: list, dict_attributes: list, dict_variables: list, dict_datasources: list
@@ -62,9 +63,9 @@ class MappingExtractor:
         lst_mappings_def = []
         for i in range(len(lst_mappings)):
             mapping = lst_mappings[i]
-            logger.debug(f"Mapping starting for '{mapping['a:Name']}")
+            logger.debug(f"Start mapping voor '{mapping['a:Name']} uit {self.file_pd_ldm}")
             if ' ' in mapping['a:Name']:
-                logger.warning(f"Er staan spatie(s) in de mapping naam staan voor '{mapping['a:Name']}'.")
+                logger.warning(f"Er staan spatie(s) in de mapping naam staan voor '{mapping['a:Name']}' uit {self.file_pd_ldm}.")
                 mapping['a:Name'] = mapping['a:Name'].replace(" ", "_")
             # Select all Target entities with their identifier
             lst_entity_target = self.transform_target_entity.target_entities(

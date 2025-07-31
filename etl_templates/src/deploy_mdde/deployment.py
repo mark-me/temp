@@ -19,6 +19,7 @@ class TemplateType(Enum):
 
     CONFIG_MODEL_INFO = "ConfigModelInfo.sql"
     CONFIG_RUN_ORDER = "ConfigRunOrder.sql"
+    CONFIG_RUN_ORDERBASE = "ConfigRunOrderBase.sql"
     CONFIG_MAPPING_CLUSTERS = "ConfigMappingClusters.sql"
     CONFIG_LOAD_DEPENDENCIES = "ConfigLoadDependencies.sql"
     CODELIST = "CodeList.sql"
@@ -59,6 +60,7 @@ class DeploymentMDDE:
         """
         self._create_load_config_model_info(info_models=info_models)
         self._create_load_config(mapping_order=mapping_order)
+        self._create_load_configbase(mapping_order=mapping_order)
         self._create_load_config_dependencies(mapping_dependencies=mapping_dependencies)
         self._create_load_config_mapping_clusters(mapping_clusters=datamart_clusters)
         self._create_load_code_list()
@@ -148,6 +150,19 @@ class DeploymentMDDE:
         file_output = TemplateType.CONFIG_RUN_ORDER.value
         self._write_generated_code(content, file_output)
 
+    def _create_load_configbase(self, mapping_order: list[dict]) -> None:
+        """
+        Genereert het post-deploy script voor de mapping order configuratie.
+        Rendert het template met de mapping order en schrijft het resultaat naar het juiste outputbestand.
+
+        Args:
+            mapping_orderbase (list[dict]): De mapping order configuratie die in het script verwerkt moet worden.
+        """
+        template = self._get_template(TemplateType.CONFIG_RUN_ORDERBASE)
+        content = template.render(config=mapping_order)
+        file_output = TemplateType.CONFIG_RUN_ORDERBASE.value
+        self._write_generated_code(content, file_output)
+    
     def _create_load_config_dependencies(self, mapping_dependencies: list[dict]) -> None:
         """
         Genereert het post-deploy script voor de mapping dependencies voor conditioneel laden van entiteiten.

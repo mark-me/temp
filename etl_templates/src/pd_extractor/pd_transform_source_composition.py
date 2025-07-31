@@ -8,9 +8,10 @@ logger = get_logger(__name__)
 
 
 class TransformSourceComposition(ObjectTransformer):
-    def __init__(self):
-        super().__init__()
-
+    def __init__(self, file_pd_ldm: str):
+        super().__init__(file_pd_ldm)
+        self.file_pd_ldm = file_pd_ldm
+        
     def source_composition(
         self,
         lst_attribute_mapping: list,
@@ -34,7 +35,7 @@ class TransformSourceComposition(ObjectTransformer):
             list: Versie van mapping data waar compositie data is geschoond en verrijkt
         """
         mapping = lst_attribute_mapping
-        logger.debug(f"Starting compositions transform for mapping '{mapping['Name']}'")
+        logger.debug(f"Start composities voor het extraheren van mapping '{mapping['Name']}' for {self.file_pd_ldm}")
 
         composition = mapping["c:ExtendedCompositions"]["o:ExtendedComposition"]
         if isinstance(composition, dict):
@@ -63,7 +64,7 @@ class TransformSourceComposition(ObjectTransformer):
                 "c:ExtendedCollections"
             ]
         else:
-            logger.warning("Mapping without content")
+            logger.warning(f"Mapping zonder inhoud voor {self.file_pd_ldm}")
         if isinstance(lst_composition_items, dict):
             lst_composition_items = [lst_composition_items]
 
@@ -78,7 +79,7 @@ class TransformSourceComposition(ObjectTransformer):
             if "c:ExtendedCompositions" in composition_item:
                 composition_item.pop("c:ExtendedCompositions")
                 logger.info(
-                    "c:ExtendedCompositions has been removed from composition_item"
+                    f"c:ExtendedCompositions is verwijderd van composition_item voor {self.file_pd_ldm}"
                 )
             lst_composition_items[i] = composition_item
 
@@ -122,7 +123,7 @@ class TransformSourceComposition(ObjectTransformer):
                 ):
                     lst_compositions_new.append(item)
             else:
-                logger.warning("No 'ExtendedBaseCollection.CollectionName'")
+                logger.warning(f"Geen 'ExtendedBaseCollection.CollectionName' voor {self.file_pd_ldm}")
         # We assume there is only one composition per mapping, which is why we fill lst
         composition = lst_compositions_new[0]
         return composition
@@ -165,10 +166,10 @@ class TransformSourceComposition(ObjectTransformer):
                 preceded_by="mdde_JoinType,",
             )
             logger.debug(
-                f"Composition {composition['JoinType']} for '{composition['Name']}'"
+                f"Compositie {composition['JoinType']} voor '{composition['Name']}' in {self.file_pd_ldm}"
             )
         else:
-            logger.warning("No 'ExtendedAttributesText")
+            logger.warning(f"Geen 'ExtendedAttributesText' voor {self.file_pd_ldm}")
 
     def _handle_composition_conditions(self, composition: dict, dict_attributes: dict):
         """Handelt de verschillende condities van de compositie af, zoals join, source en scalar condities.
@@ -207,7 +208,7 @@ class TransformSourceComposition(ObjectTransformer):
             dict: Een geschoonde en verrijkte versie van compositie data
         """
         logger.debug(
-            f"Starting entity transform for composition '{composition['Name']}'"
+            f"Start met transformeren entiteit voor compositie '{composition['Name']} for {self.file_pd_ldm}'"
         )
 
         if "c:ExtendedComposition.Content" in composition:
@@ -230,7 +231,7 @@ class TransformSourceComposition(ObjectTransformer):
             ][0]
             id_entity = entity["c:Content"][type_entity]["@Ref"]
             entity = dict_objects[id_entity]
-            logger.debug(f"Composition entity '{entity['Name']}'")
+            logger.debug(f"Composition entiteit '{entity['Name']}'voor {self.file_pd_ldm}")
         composition["Entity"] = entity
         composition.pop(root_data)
         return composition
@@ -248,7 +249,7 @@ class TransformSourceComposition(ObjectTransformer):
             dict: Een geschoonde en verrijkte versie van join conditie data
         """
         logger.debug(
-            f"Join conditions transform for composition '{composition['Name']}'"
+            f"Join conditities transformeren voor compositie '{composition['Name']} for {self.file_pd_ldm}'"
         )
         lst_conditions = self._extract_conditions_from_composition(composition)
         lst_conditions = self.clean_keys(lst_conditions)
@@ -294,7 +295,7 @@ class TransformSourceComposition(ObjectTransformer):
             dict_attributes (dict): Alle attributen (in- en external).
         """
         condition["Order"] = index
-        logger.debug(f"Join conditions transform for {index} '{condition['Name']}'")
+        logger.debug(f"Join conditities transformeren voor {index} '{condition['Name']}' voor {self.file_pd_ldm}")
         self._set_condition_operator_and_literal(condition)
         self._set_condition_components(condition, composition, dict_attributes)
 
@@ -334,7 +335,7 @@ class TransformSourceComposition(ObjectTransformer):
         """
         if "c:ExtendedCollections" not in condition:
             logger.warning(
-                "There are no c:ExtendedCollections,check in model for invalid mapping "
+                f"Er zijn geen c:ExtendedCollections, controleer model voor ongeldige mapping in {self.file_pd_ldm} "
             )
         lst_components = condition["c:ExtendedCollections"]["o:ExtendedCollection"]
         if isinstance(lst_components, dict):
@@ -378,7 +379,7 @@ class TransformSourceComposition(ObjectTransformer):
                 )
             else:
                 logger.warning(
-                    f"Unhandled kind of join item in condition '{type_component}'"
+                    f"Ongeldige join item in conditie '{type_component}' for {self.file_pd_ldm}"
                 )
 
         if len(dict_parent) > 0:
@@ -400,7 +401,7 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             dict: Een kopie van het child attribute dictionary.
         """
-        logger.debug("Added child attribute")
+        logger.debug(f"Child attribute toegevoegd voor {self.file_pd_ldm}")
         type_entity = [
             value
             for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
@@ -418,7 +419,7 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             str: De alias van het parent source object.
         """
-        logger.debug("Added parent entity alias")
+        logger.debug(f"Parent entity alias toegevoegd voor {self.file_pd_ldm}")
         return component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
 
     def _extract_join_parent_attribute(self, component, dict_attributes):
@@ -431,7 +432,7 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             dict: Een kopie van het parent attribute dictionary.
         """
-        logger.debug("Added parent attribute")
+        logger.debug(f"Parent attribute toegevoegd voor {self.file_pd_ldm}")
         type_entity = [
             value
             for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
@@ -453,7 +454,7 @@ class TransformSourceComposition(ObjectTransformer):
             dict: Een geschoonde en verrijkte versie van source conditie data
         """
         logger.debug(
-            f"Source conditions transform for composition  {composition['Name']}"
+            f"Source conditie transformeren voor compositie  {composition['Name']} for {self.file_pd_ldm}"
         )
         lst_conditions = self._extract_source_conditions_from_composition(composition)
         lst_conditions = self.clean_keys(lst_conditions)
@@ -513,7 +514,7 @@ class TransformSourceComposition(ObjectTransformer):
             condition["SourceConditionVariable"] = parent_literal
         else:
             logger.warning(
-                f"Geen SourceConditionVariable gevonden voor condition {condition.get('Code', '')} in compositie{composition.get('Name', '')}"
+                f"Geen SourceConditionVariable gevonden voor condition {condition.get('Code', '')} in compositie{composition.get('Name', '')} voor {self.file_pd_ldm}"
             )
         condition.pop("c:ExtendedCollections")
 
@@ -564,10 +565,10 @@ class TransformSourceComposition(ObjectTransformer):
         lst_components = self.clean_keys(lst_components)
         for component in lst_components:
             if component["Name"] == "mdde_ParentSourceObject":
-                logger.debug("Added SourceConditionAttribute alias")
+                logger.debug(f"SourceConditionAttribute alias toegevoegd voor {self.file_pd_ldm}")
                 alias_parent = component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
             elif component["Name"] == "mdde_ParentAttribute":
-                logger.debug("Added SourceConditionAttribute")
+                logger.debug(f"SourceConditionAttribute alias toegevoegd voor {self.file_pd_ldm}")
                 type_entity = [
                     value
                     for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
@@ -614,7 +615,7 @@ class TransformSourceComposition(ObjectTransformer):
             dict: Een geschoonde en verrijkte versie van de scalar conditie dat gebruikt wordt in de attribute mapping
         """
         logger.debug(
-            f"Source conditions transform for composition  {composition['Name']}"
+            f"Source conditions transformeren voor compositie  {composition['Name']} voor {self.file_pd_ldm}"
         )
         lst_conditions = self._extract_scalar_conditions_from_composition(
             composition=composition
@@ -730,7 +731,7 @@ class TransformSourceComposition(ObjectTransformer):
                     pattern = r"" + variable + r"\b"
                     sql_expression = re.sub(pattern, source_variable, sql_expression)
                 else:
-                    logger.info("Er is geen sql_expression gevonden")
+                    logger.info(f"Er is geen sql_expression gevonden voor {self.file_pd_ldm}")
         return sql_expression
 
     def _scalar_condition_components(
@@ -818,7 +819,7 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             dict: Een kopie van het child attribute dictionary.
         """
-        logger.debug("Added child attribute")
+        logger.debug(f"Child attribute toegevoegd voor {self.file_pd_ldm}")
         type_entity = [
             value
             for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
@@ -838,7 +839,7 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             str: De alias van het parent source object.
         """
-        logger.debug("Added ScalarConditionAttribute alias")
+        logger.debug(f"ScalarConditionAttribute alias toegevoegd voor {self.file_pd_ldm}")
         return component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
 
     def _extract_parent_attribute(self, component: dict, dict_attributes: dict) -> dict:
@@ -854,7 +855,7 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             dict: Een kopie van het parent attribute dictionary.
         """
-        logger.debug("Added ScalarConditionAttribute")
+        logger.debug(f"ScalarConditionAttribute toegevoegd voor {self.file_pd_ldm}")
         type_entity = [
             value
             for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
@@ -903,7 +904,7 @@ class TransformSourceComposition(ObjectTransformer):
                     map.pop("EntityAlias")
         else:
             logger.warning(
-                f"Attributemapping van {mapping['Name']} ontbreekt voor update"
+                f"Attributemapping van {mapping['Name']} in {self.file_pd_ldm} ontbreekt voor update"
             )
         return mapping
 
@@ -923,7 +924,7 @@ class TransformSourceComposition(ObjectTransformer):
         idx_check = extended_attrs_text.find(preceded_by)
         if idx_check > 0:
             logger.info(
-                f"'{idx_check}' values found in extended_attrs_text using: '{preceded_by}'"
+                f"'{idx_check}' waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
             )
             idx_start = extended_attrs_text.find(preceded_by) + len(preceded_by)
             idx_end = extended_attrs_text.find("\n", idx_start)
@@ -933,7 +934,7 @@ class TransformSourceComposition(ObjectTransformer):
             value = value[idx_start:].upper()
         else:
             logger.info(
-                f"no values found in extended_attrs_text using: '{preceded_by}'"
+                f"Geen waardes gevonden in extended_attrs_text voor {self.file_pd_ldm} bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
             )
             value = ""
         return value

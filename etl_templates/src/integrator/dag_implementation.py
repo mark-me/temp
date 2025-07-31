@@ -15,7 +15,7 @@ class InvalidDeadlockPrevention(Exception):
     """
 
     def __init__(self):
-        self.message = "Invalide Deadlock provention strategie gekozen"
+        self.message = "Invalide Deadlock prevention strategie gekozen"
         super().__init__(self.message)
 
 
@@ -33,7 +33,7 @@ class DagImplementation(DagBuilder):
     def __init__(self):
         super().__init__()
 
-    def build_dag(self, files_RETW: list[str] | str):
+    def build_dag(self, files_RETW: list[str] | str) -> None:
         """Bouwt de DAG en verrijkt deze met extra informatie voor entiteiten en mappings.
 
         Roept de basisimplementatie aan om de DAG te bouwen en voegt vervolgens aanvullende attributen toe aan de knopen.
@@ -47,10 +47,10 @@ class DagImplementation(DagBuilder):
         super().build_dag(files_RETW)
         self._add_dag_derived()
 
-    def _add_dag_derived(self):
+    def _add_dag_derived(self) -> None:
         """Verrijkt de DAG met extra informatie voor entiteiten en mappings.
 
-        Deze functie voegt entiteittype, modelinformatie en hashkeys toe aan de knopen in de DAG.
+        Deze functie voegt entiteit-type, modelinformatie en hash-keys toe aan de knopen in de DAG.
         """
         for vx in self.dag.vs:
             # Add data to entities
@@ -78,7 +78,7 @@ class DagImplementation(DagBuilder):
             vx_mapping["NameModel"] = vs_target_entity[0]["NameModel"]
 
     def _mappings_add_hashkey(self, vx_mapping: ig.Vertex) -> None:
-        """Voegt een hashkey toe aan een mapping op basis van de attributenmapping ten behoeve van delta bepaling
+        """Voegt een hashkey toe aan een mapping op basis van de attributen-mapping ten behoeve van delta bepaling
 
         Deze functie genereert een hashkey-expressie voor de mapping, gebaseerd op de opgegeven attributen en datasources.
 
@@ -87,7 +87,7 @@ class DagImplementation(DagBuilder):
         """
 
         def build_hash_attrib(attr_mapping: list[dict], separator: str) -> str:
-            """Bouwt een hash-attribuutstring op basis van de attributenmapping en een scheidingsteken.
+            """Bouwt een hash-attribuutstring op basis van de attributen-mapping en een scheidingsteken.
 
             Deze functie genereert een stringrepresentatie van een attribuut voor opname in een hashkey-expressie.
 
@@ -116,7 +116,7 @@ class DagImplementation(DagBuilder):
 
     def _set_entity_type(self, vx_entity: ig.Vertex) -> None:
         """
-        Bepaalt en stelt het entiteittype in op basis van het 'Stereotype' attribuut.
+        Bepaalt en stelt het entiteit-type in op basis van het 'Stereotype' attribuut.
 
         Deze functie wijst het type 'Regular' toe als er geen stereotype is, anders 'Aggregate'.
 
@@ -141,7 +141,7 @@ class DagImplementation(DagBuilder):
             deadlock_prevention (DeadlockPrevention): De gekozen strategie voor deadlock-preventie.
 
         Returns:
-            list[dict]: Een gesorteerde lijst van dictionaries met run-level, stage en mappinginformatie.
+            list[dict]: Een gesorteerde lijst van dictionaries met run-level, stage en mapping-informatie.
 
         Raises:
             InvalidDeadlockPrevention: Indien een ongeldige deadlock-preventiestrategie is opgegeven.

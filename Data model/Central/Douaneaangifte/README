@@ -1,0 +1,5 @@
+De procesketen ‘Behandelen Douaneaangifte’ bevat niet alleen de werkprocessen Invoer en Uitvoer, maar ook de periodieke aangifte voor vergunninghouders en de opslagaangifte.
+							
+Het werkproces ‘Waarde’ kan ondersteunend zijn aan de procesketen ‘Behandelen Douaneaangifte’. Binnen deze procesketen kan via het werkproces ‘Adviseren vaststellen douanewaarde’ extra informatie worden verkregen over de douanewaarde van de aangifte.
+
+De procesketen start met de ontvangst van de Douaneaangifte.
