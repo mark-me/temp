@@ -11,19 +11,18 @@ class TransformSourceComposition(ObjectTransformer):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
         self.file_pd_ldm = file_pd_ldm
-        
+
     def source_composition(
         self,
-        lst_attribute_mapping: list,
+        lst_attribute_mapping: list[dict],
         dict_objects: dict,
         dict_attributes: dict,
         dict_datasources: dict,
     ) -> dict:
-        """Schoont de composities van de bron entiteiten data
+        """Schoont en verrijkt de composities van de bron entiteiten data.
 
-            In deze functie starten we met het een lijst van composities omdat elke mapping een voorbeeld compositie bevat die gegeneerd
-            wordt door een MDDE extensie. Wij verwijderen deze voorbeelden en doen de aanname dat we te maken hebben met 1 compositie per
-            mapping. Daarom wordt er in de functie gewisseld tussen een lijst met composities naar het verwerken van 1 compositie per keer
+        Deze functie verwerkt de composities van een mapping, verwijdert voorbeeldcomposities,
+        extraheert en transformeert de relevante compositie-items, en verrijkt de mapping met geschoonde source composition data.
 
         Args:
             lst_attribute_mapping (list): De mappings
@@ -35,40 +34,62 @@ class TransformSourceComposition(ObjectTransformer):
             list: Versie van mapping data waar compositie data is geschoond en verrijkt
         """
         mapping = lst_attribute_mapping
-        logger.debug(f"Start composities voor het extraheren van mapping '{mapping['Name']}' for {self.file_pd_ldm}")
+        logger.debug(
+            f"Start composities voor het extraheren van mapping '{mapping['Name']}' for {self.file_pd_ldm}"
+        )
 
+        composition = self._get_composition_list(mapping)
+        composition = self.compositions_remove_mdde_examples(composition)
+        lst_composition_items = self._extract_composition_items(composition)
+        lst_composition_items = self._transform_composition_items(
+            lst_composition_items, dict_objects, dict_attributes
+        )
+
+        mapping["SourceComposition"] = lst_composition_items
+        mapping.pop("c:ExtendedCompositions")
+        if "c:DataSource" in mapping:
+            mapping = self._mapping_datasource(
+                mapping=mapping, dict_datasources=dict_datasources
+            )
+            mapping.pop("c:DataSource")
+        mapping = self._mapping_update(mapping=mapping)
+        lst_source_composition_items = mapping["SourceComposition"]
+        lst_source_composition_items = [
+            item
+            for item in lst_source_composition_items
+            if item["Entity"]["Stereotype"] != "mdde_ScalarBusinessRule"
+        ]
+        mapping.pop("SourceComposition")
+        mapping["SourceComposition"] = lst_source_composition_items
+        return mapping
+
+    def _get_composition_list(self, mapping: dict) -> list[dict]:
+        """Haalt de lijst van composities op uit de mapping."""
         composition = mapping["c:ExtendedCompositions"]["o:ExtendedComposition"]
         if isinstance(composition, dict):
             composition = [composition]
+        return self.clean_keys(composition)
 
-        composition = self.clean_keys(composition)
-
-        # Removing example compositions, assuming one composition left
-        composition = self.compositions_remove_mdde_examples(composition)
-
-        # Searching for the composition items (FROM, JOIN, etc clauses)
+    def _extract_composition_items(self, composition: dict) -> list[dict]:
         lst_composition_items = []
+        content = composition["c:ExtendedComposition.Content"]
         if (
-            "c:ExtendedCollections"
-            in composition["c:ExtendedComposition.Content"]["o:ExtendedSubObject"]
+            "c:ExtendedCollections" in content["o:ExtendedSubObject"]
+            or "o:ExtendedSubObject" in content
         ):
-            lst_composition_items = composition["c:ExtendedComposition.Content"][
-                "o:ExtendedSubObject"
-            ]
-        elif "o:ExtendedSubObject" in composition["c:ExtendedComposition.Content"]:
-            lst_composition_items = composition["c:ExtendedComposition.Content"][
-                "o:ExtendedSubObject"
-            ]
-        elif "c:ExtendedCollections" in composition["c:ExtendedComposition.Content"]:
-            lst_composition_items = composition["c:ExtendedComposition.Content"][
-                "c:ExtendedCollections"
-            ]
+            lst_composition_items = content["o:ExtendedSubObject"]
+        elif "c:ExtendedCollections" in content:
+            lst_composition_items = content["c:ExtendedCollections"]
         else:
             logger.warning(f"Mapping zonder inhoud voor {self.file_pd_ldm}")
         if isinstance(lst_composition_items, dict):
             lst_composition_items = [lst_composition_items]
+        return lst_composition_items
 
-        # Transforming individual composition items
+    def _transform_composition_items(
+        self, lst_composition_items: list[dict], dict_objects: dict, dict_attributes: dict
+    ) -> list[dict]:
+        """Transformeert en verrijkt individuele compositie-items."""
         for i, composition_item in enumerate(lst_composition_items):
             composition_item = self._composition(
                 composition_item,
@@ -82,33 +103,13 @@ class TransformSourceComposition(ObjectTransformer):
                     f"c:ExtendedCompositions is verwijderd van composition_item voor {self.file_pd_ldm}"
                 )
             lst_composition_items[i] = composition_item
+        return lst_composition_items
 
-        mapping["SourceComposition"] = lst_composition_items
-        mapping.pop("c:ExtendedCompositions")
-        if "c:DataSource" in mapping:
-            mapping = self._mapping_datasource(
-                mapping=mapping, dict_datasources=dict_datasources
-            )
-            mapping.pop("c:DataSource")
-        # Additional function to update the attribute mapping for target attributes with a scalar as source
-        mapping = self._mapping_update(mapping=mapping)
-        lst_source_composition_items = mapping["SourceComposition"]
-        # remove all source_composition items where stereotype = mdde_ScalarBusinessRule from mapping
-        lst_source_composition_items = [
-            item
-            for item in lst_source_composition_items
-            if item["Entity"]["Stereotype"] != "mdde_ScalarBusinessRule"
-        ]
-        # we'll replace SourceComposition with the new lst_source_composition_items
-        mapping.pop("SourceComposition")
-        mapping["SourceComposition"] = lst_source_composition_items
-        return mapping
-
-    def compositions_remove_mdde_examples(self, lst_compositions: list) -> dict:
+    def compositions_remove_mdde_examples(self, lst_compositions: list[dict]) -> dict:
         """Verwijderd de MDDE voorbeeld compositie veronderstelt dat er 1 compositie overblijft
 
         Args:
-            lst_compositions (list): Composities, inclusief MDDE voorbeeld composities
+            lst_compositions (list[dict]): Composities, inclusief MDDE voorbeeld composities
 
         Returns:
             dict: Composities zonder de MDDE extensie voorbeelden
@@ -123,7 +124,9 @@ class TransformSourceComposition(ObjectTransformer):
                 ):
                     lst_compositions_new.append(item)
             else:
-                logger.warning(f"Geen 'ExtendedBaseCollection.CollectionName' voor {self.file_pd_ldm}")
+                logger.warning(
+                    f"Geen 'ExtendedBaseCollection.CollectionName' voor {self.file_pd_ldm}"
+                )
         # We assume there is only one composition per mapping, which is why we fill lst
         composition = lst_compositions_new[0]
         return composition
@@ -231,7 +234,9 @@ class TransformSourceComposition(ObjectTransformer):
             ][0]
             id_entity = entity["c:Content"][type_entity]["@Ref"]
             entity = dict_objects[id_entity]
-            logger.debug(f"Composition entiteit '{entity['Name']}'voor {self.file_pd_ldm}")
+            logger.debug(
+                f"Composition entiteit '{entity['Name']}'voor {self.file_pd_ldm}"
+            )
         composition["Entity"] = entity
         composition.pop(root_data)
         return composition
@@ -295,7 +300,9 @@ class TransformSourceComposition(ObjectTransformer):
             dict_attributes (dict): Alle attributen (in- en external).
         """
         condition["Order"] = index
-        logger.debug(f"Join conditities transformeren voor {index} '{condition['Name']}' voor {self.file_pd_ldm}")
+        logger.debug(
+            f"Join conditities transformeren voor {index} '{condition['Name']}' voor {self.file_pd_ldm}"
+        )
         self._set_condition_operator_and_literal(condition)
         self._set_condition_components(condition, composition, dict_attributes)
 
@@ -391,7 +398,7 @@ class TransformSourceComposition(ObjectTransformer):
             dict_components["AttributeChild"] = dict_child
         return dict_components
 
-    def _extract_join_child_attribute(self, component, dict_attributes):
+    def _extract_join_child_attribute(self, component: dict, dict_attributes: dict) -> dict:
         """Haalt het child attribute dictionary op voor een join conditie component.
 
         Args:
@@ -410,7 +417,7 @@ class TransformSourceComposition(ObjectTransformer):
         id_attr = component["c:Content"][type_entity]["@Ref"]
         return dict_attributes[id_attr].copy()
 
-    def _extract_join_parent_source_object(self, component):
+    def _extract_join_parent_source_object(self, component: dict) -> str:
         """Haalt de alias van het parent source object op voor een join conditie component.
 
         Args:
@@ -422,7 +429,7 @@ class TransformSourceComposition(ObjectTransformer):
         logger.debug(f"Parent entity alias toegevoegd voor {self.file_pd_ldm}")
         return component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
 
-    def _extract_join_parent_attribute(self, component, dict_attributes):
+    def _extract_join_parent_attribute(self, component: dict, dict_attributes: dict) -> dict:
         """Haalt het parent attribute dictionary op voor een join conditie component.
 
         Args:
@@ -519,12 +526,12 @@ class TransformSourceComposition(ObjectTransformer):
         condition.pop("c:ExtendedCollections")
 
     def _source_condition_components(
-        self, lst_components: list, dict_attributes: dict, parent_literal: str
+        self, lst_components: list[dict], dict_attributes: dict, parent_literal: str
     ) -> dict:
         """Vormt om, schoont en verrijkt component data van 1 source conditie
 
         Args:
-            lst_components (list): source conditie component
+            lst_components (list[dict]): source conditie component
             dict_attributes (dict): Alle attributen (in- en external)
 
         Returns:
@@ -565,10 +572,14 @@ class TransformSourceComposition(ObjectTransformer):
         lst_components = self.clean_keys(lst_components)
         for component in lst_components:
             if component["Name"] == "mdde_ParentSourceObject":
-                logger.debug(f"SourceConditionAttribute alias toegevoegd voor {self.file_pd_ldm}")
+                logger.debug(
+                    f"SourceConditionAttribute alias toegevoegd voor {self.file_pd_ldm}"
+                )
                 alias_parent = component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
             elif component["Name"] == "mdde_ParentAttribute":
-                logger.debug(f"SourceConditionAttribute alias toegevoegd voor {self.file_pd_ldm}")
+                logger.debug(
+                    f"SourceConditionAttribute alias toegevoegd voor {self.file_pd_ldm}"
+                )
                 type_entity = [
                     value
                     for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
@@ -579,12 +590,12 @@ class TransformSourceComposition(ObjectTransformer):
         return dict_parent, alias_parent
 
     def _get_source_child_attribute(
-        self, lst_components: list, dict_attributes: dict
+        self, lst_components: list[dict], dict_attributes: dict
     ) -> dict:
         """Haalt het child attribute dictionary op uit de source conditie componenten.
 
         Args:
-            lst_components (list): Lijst van componenten.
+            lst_components (list[dict]): Lijst van componenten.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:
@@ -679,11 +690,11 @@ class TransformSourceComposition(ObjectTransformer):
         )
         condition.pop("c:ExtendedCollections")
 
-    def _build_scalar_conditions_dict(self, lst_scalar_conditions: list) -> dict:
+    def _build_scalar_conditions_dict(self, lst_scalar_conditions: list[dict]) -> dict:
         """Bouwt een dictionary van scalar condities op basis van hun Id.
 
         Args:
-            lst_scalar_conditions (list): Lijst van scalar conditie dictionaries.
+            lst_scalar_conditions (list[dict]): Lijst van scalar conditie dictionaries.
 
         Returns:
             dict: Dictionary met scalar conditie Id's als sleutel en relevante variabelen als waarde.
@@ -705,18 +716,22 @@ class TransformSourceComposition(ObjectTransformer):
     def _replace_sql_expression_variables(
         self,
         sql_expression: str,
-        lst_sql_expression_variables: list,
+        lst_sql_expression_variables: tuple,
         dict_scalar_conditions: dict,
     ) -> str:
-        """Vervangt variabelen in de SQL expressie door de juiste source variabelen.
+        """
+        Vervangt variabelen in een SQL-expressie door de bijbehorende source variabelen uit de scalar condities.
+
+        Deze functie zoekt naar target variabelen in de SQL-expressie en vervangt deze door de juiste source variabelen,
+        op basis van de mapping in dict_scalar_conditions.
 
         Args:
-            sql_expression (str): De SQL expressie waarin variabelen vervangen moeten worden.
-            lst_sql_expression_variables (list): Lijst van variabelen in de SQL expressie.
-            dict_scalar_conditions (dict): Dictionary met scalar conditie variabelen.
+            sql_expression (str): De SQL-expressie waarin variabelen vervangen moeten worden.
+            lst_sql_expression_variables (tuple): Tuple van variabelen die in de expressie voorkomen.
+            dict_scalar_conditions (dict): Dictionary met target en source variabelen per conditie.
 
         Returns:
-            str: De aangepaste SQL expressie.
+            str: De aangepaste SQL-expressie met vervangen variabelen.
         """
         for condition in dict_scalar_conditions:
             target_variable = dict_scalar_conditions[condition][
@@ -731,16 +746,18 @@ class TransformSourceComposition(ObjectTransformer):
                     pattern = r"" + variable + r"\b"
                     sql_expression = re.sub(pattern, source_variable, sql_expression)
                 else:
-                    logger.info(f"Er is geen sql_expression gevonden voor {self.file_pd_ldm}")
+                    logger.info(
+                        f"Er is geen sql_expression gevonden voor {self.file_pd_ldm}"
+                    )
         return sql_expression
 
     def _scalar_condition_components(
-        self, lst_components: list, dict_attributes: dict
+        self, lst_components: list[dict], dict_attributes: dict
     ) -> dict:
         """Vormt om, schoont en verrijkt component data van 1 scalar conditie
 
         Args:
-            lst_components (list): scalar conditie component
+            lst_components (list[dict]): scalar conditie component
             dict_attributes (dict): Alle attributen (in- en external)
 
         Returns:
@@ -764,12 +781,12 @@ class TransformSourceComposition(ObjectTransformer):
         return dict_scalar_condition_attribute
 
     def _get_scalar_child_attribute(
-        self, lst_components: list, dict_attributes: dict
+        self, lst_components: list[dict], dict_attributes: dict
     ) -> dict:
         """Haalt het child attribute dictionary op uit de scalar conditie componenten.
 
         Args:
-            lst_components (list): Lijst van componenten.
+            lst_components (list[dict]): Lijst van componenten.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:
@@ -784,12 +801,12 @@ class TransformSourceComposition(ObjectTransformer):
         return {}
 
     def _get_scalar_parent_attribute_and_alias(
-        self, lst_components: list, dict_attributes: dict
+        self, lst_components: list[dict], dict_attributes: dict
     ) -> tuple:
         """Haalt het parent attribute dictionary en alias op uit de scalar conditie componenten.
 
         Args:
-            lst_components (list): Lijst van componenten.
+            lst_components (list[dict]): Lijst van componenten.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:
@@ -839,7 +856,9 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             str: De alias van het parent source object.
         """
-        logger.debug(f"ScalarConditionAttribute alias toegevoegd voor {self.file_pd_ldm}")
+        logger.debug(
+            f"ScalarConditionAttribute alias toegevoegd voor {self.file_pd_ldm}"
+        )
         return component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
 
     def _extract_parent_attribute(self, component: dict, dict_attributes: dict) -> dict:

@@ -14,11 +14,11 @@ class TransformStereotype(ObjectTransformer):
         super().__init__(file_pd_ldm)
         self.file_pd_ldm = file_pd_ldm
 
-    def domains(self, lst_domains: list) -> dict:
+    def domains(self, lst_domains: list[dict]) -> dict:
         """Verrijk de stereotypes met domain data
 
         Args:
-            lst_domains (list): Domain data
+            lst_domains (list[dict]): Domain data
 
         Returns:
             dict: Objecten met het opgegeven stereotype zijn verrijkt met domain data
@@ -32,7 +32,7 @@ class TransformStereotype(ObjectTransformer):
             dict_domains[domain["Id"]] = domain
         return dict_domains
 
-    def objects(self, lst_objects: list, dict_domains: dict) -> list:
+    def objects(self, lst_objects: list[dict], dict_domains: dict) -> list[dict]:
         """Schoont en verrijkt de stereotype objecten die zijn opgenomen in het Power Designer LDM document
 
         Args:
@@ -72,7 +72,7 @@ class TransformStereotype(ObjectTransformer):
                     objects=objects, sqlexpression_split=sqlexpression_split
                 )
 
-    def _split_sql_expression(self, objects: dict, sqlexpression: str) -> list:
+    def _split_sql_expression(self, objects: dict, sqlexpression: str) -> list[str] | None:
         """Splitst de SQL expressie op basis van het stereotype.
 
         Args:
@@ -80,7 +80,7 @@ class TransformStereotype(ObjectTransformer):
             sqlexpression (str): De SQL expressie.
 
         Returns:
-            list or None: De gesplitste SQL expressie of None als niet gesplitst kan worden.
+            list[str] or None: De gesplitste SQL expressie of None als niet gesplitst kan worden.
         """
         # pattern_incorrect = r"@\w+\s*=\s*@\w+"
         # matches_incorrect = re.findall(
@@ -106,7 +106,7 @@ class TransformStereotype(ObjectTransformer):
             )
             return None
 
-    def _assign_sql_expression_fields(self, objects: dict, sqlexpression_split: list):
+    def _assign_sql_expression_fields(self, objects: dict, sqlexpression_split: list[str]):
         """Wijs de juiste velden toe aan het stereotype object op basis van de gesplitste SQL expressie.
 
         Args:
@@ -123,7 +123,7 @@ class TransformStereotype(ObjectTransformer):
             if lst_expression_variables is not None:
                 objects["SqlExpressionVariables"] = lst_expression_variables
 
-    def _object_variables(self, object: dict, dict_domains: list) -> dict:
+    def _object_variables(self, object: dict, dict_domains: dict) -> dict:
         """Schoont de variabelen van een object en verrijkt deze met domain data
 
         Args:
@@ -143,14 +143,14 @@ class TransformStereotype(ObjectTransformer):
         object.pop("c:Attributes")
         return object
 
-    def _extract_and_clean_variables(self, object: dict) -> list:
+    def _extract_and_clean_variables(self, object: dict) -> list[dict]:
         """Extraheert en schoont de variabelen van een object.
 
         Args:
             object (dict): Stereotype object
 
         Returns:
-            list: Geschoonde variabelen
+            list[dict]: Geschoonde variabelen
         """
         lst_variables = object["c:Attributes"]["o:EntityAttribute"]
         if isinstance(lst_variables, dict):
@@ -159,16 +159,16 @@ class TransformStereotype(ObjectTransformer):
         return lst_variables
 
     def _enrich_variables_with_domains(
-        self, lst_variables: list, dict_domains: dict
-    ) -> list:
+        self, lst_variables: list[dict], dict_domains: dict
+    ) -> list[dict]:
         """Verrijkt de variabelen met domain data.
 
         Args:
-            lst_variables (list): Geschoonde variabelen
+            lst_variables (list[dict]): Geschoonde variabelen
             dict_domains (dict): Domain data
 
         Returns:
-            list: Verrijkte variabelen
+            list[dict]: Verrijkte variabelen
         """
         for i in range(len(lst_variables)):
             variables = lst_variables[i]
@@ -236,14 +236,14 @@ class TransformStereotype(ObjectTransformer):
             logger.debug(f"Klaar met het verzamelen van identifiers voor {object['Name']} in {self.file_pd_ldm}")
         return object
 
-    def _extract_expression_variables(self, sqlexpression: str) -> list:
+    def _extract_expression_variables(self, sqlexpression: str) -> list[str]:
         """Split de sqlexpression van een scalar in 1 of meerdere variabelen
         Args:
             object (dict): Stereotype object
             sqlexpression (string): volledige sqlexpression van de scalar
 
         Returns:
-            list: de individuele variabelen die samen de sqlexpression vormen
+            list[str]: de individuele variabelen die samen de sqlexpression vormen
         """
         lst_expression_variables = []
         # Count the number of placeholder variables in the SqlExpression

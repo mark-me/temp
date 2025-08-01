@@ -11,16 +11,16 @@ class TransformModelsExternal(ObjectTransformer):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
         self.file_pd_ldm = file_pd_ldm
-        
-    def models(self, lst_models: list, dict_entities: dict) -> list:
+
+    def models(self, lst_models: list[dict], dict_entities: dict) -> list[dict]:
         """Doelmodellen bevatten verwijzingen naar entiteiten uit een ander model. Het doelmodel wordt verrijkt met deze entiteiten
 
         Args:
-            lst_models (list): Data van de doelmodellen
+            lst_models (list[dict]): Data van de doelmodellen
             dict_entities (dict): Bevat alle externe entiteiten
 
         Returns:
-            list: Doelmodellen met entiteit data
+            list[dict]: Doelmodellen met entiteit data
         """
         lst_result = []
         lst_models = self.clean_keys(lst_models)
@@ -44,14 +44,18 @@ class TransformModelsExternal(ObjectTransformer):
                     model.pop("c:FullShortcutModel")
         return lst_result
 
-    def entities(self, lst_entities: list) -> list:
-        """Vormt om en schoont de Power Designer document data van externe entiteiten
+    def entities(self, lst_entities: list[dict] | dict) -> list[dict]:
+        """
+        Transformeert en schoont externe entiteiten uit het Power Designer model.
+
+        Deze functie verwerkt een lijst van externe entiteiten, verwijdert overbodige attributen,
+        transformeert de attribuutdata en retourneert een geschoonde lijst van entiteiten.
 
         Args:
-            lst_entities (list): Het deel van het Power Designer document dat de externe entiteiten beschrijft
+            lst_entities (list[dict] | dict): Externe entiteiten of een enkele entiteit.
 
         Returns:
-            list: De geschoonde versie van de externe entiteit data
+            list[dict]: Geschoonde en getransformeerde entiteiten.
         """
         if isinstance(lst_entities, dict):
             lst_entities = [lst_entities]
@@ -65,11 +69,11 @@ class TransformModelsExternal(ObjectTransformer):
             lst_entities[i] = entity
         return lst_entities
 
-    def _entity_attribute(self, entity: dict) -> dict:
+    def _entity_attribute(self, entity: list[dict] | dict) -> dict:
         """Vormt om en schoont attributen van een entiteit
 
         Args:
-            entity (dict): Power Designer content dat een entiteit vertegenwoordigd
+            entity (list[dict] | dict): Power Designer content dat een entiteit vertegenwoordigd
 
         Returns:
             dict: Entiteit data met omgevormde en geschoonde attribuut data

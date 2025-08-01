@@ -16,35 +16,33 @@ class ModelExtractor:
         self.transform_models_external = TransformModelsExternal(file_pd_ldm)
         self.dict_domains = self._domains()
 
-    def models(self, lst_aggregates: list) -> list:
-        """ Haalt alle modellen en hun bijbehorende objecten op die gebruikt worden in het Power Designer LDM
+    def models(self) -> list[dict]:
+        """Haalt alle modellen en hun bijbehorende objecten op die gebruikt worden in het Power Designer LDM
 
         Args:
             lst_aggregates (list): Aggregaten die onderdeel zijn van het doelmodel en gebruikt worden in de ETL
 
         Returns:
-            list: lijst van modellen die gebruikt worden in het Power Designer LDM document
+            list[dict]: lijst van modellen die gebruikt worden in het Power Designer LDM document
         """
-        dict_model_internal = self._model_internal(lst_aggregates=lst_aggregates)
+        dict_model_internal = self._model_internal()
         # TODO: need to add the condition for c:Packages if we encounter models that use packages
         if "o:Shortcut" in self.content["c:Entities"]:
             lst_models_external = self._models_external()
         else:
             lst_models_external = []
             logger.warning(f"o:Shortcut mist in self.content in {self.file_pd_ldm}")
-        # dict_model_physical = self.__models_physical()
         # Combine models
         if not lst_models_external:
-            lst_models = [dict_model_internal]  # + [dict_model_physical]
+            return [dict_model_internal]
         else:
-            lst_models = lst_models_external + [dict_model_internal]
-        return lst_models
+            return lst_models_external + [dict_model_internal]
 
-    def _model_internal(self, lst_aggregates: list) -> dict:
+    def _model_internal(self) -> dict:
         """Haalt alle vastgelegde data van het model op vanuit het geladen Power Designer document
 
         Args:
-            lst_aggregates (list): Aggregaten die onderdeel zijn van het doelmodel en gebruikt worden in de ETL
+            lst_aggregates (list[dict]): Aggregaten die onderdeel zijn van het doelmodel en gebruikt worden in de ETL
 
         Returns:
             dict: In het Power Designer LDM ontworpen model (niet geïmporteerd voor ETL)
@@ -55,18 +53,16 @@ class ModelExtractor:
         if isinstance(self.lst_entity, dict):
             self.lst_entity = [self.lst_entity]
         model["Entities"] = self.lst_entity
-        model["Relationships"] = self._relationships(
-            lst_entity=self.lst_entity, lst_aggregates=lst_aggregates
-        )
+        model["Relationships"] = self._relationships(lst_entity=self.lst_entity)
         model["DataSources"] = self._datasources()
         return model
 
-    def _entities_internal(self) -> list:
+    def _entities_internal(self) -> list[dict]:
         """Geeft alle entiteiten uit het Power Designer model terug met al zijn attributen en identifiers
 
 
         Returns:
-            list: Entities
+            list[dict]: Entities
         """
         lst_entity = self.content["c:Entities"]["o:Entity"]
 
@@ -84,12 +80,12 @@ class ModelExtractor:
         )
         return lst_entity
 
-    def _models_external(self) -> list:
+    def _models_external(self) -> list[dict]:
         """Haalt alle data van modellen op die worden onderhouden buiten het geladen Power Designer document en die gebruikt
         worden voor horizontale lineage
 
         Returns:
-            list: Lijst van externe modellen met al hun bijbehorende elementen
+            list[dict]: Lijst van externe modellen met al hun bijbehorende elementen
         """
         # The models will be derived by looking up the TargetModels associated with the entity shortcuts
         # External entity (shortcut) data
@@ -121,7 +117,9 @@ class ModelExtractor:
             lst_entities=lst_entities
         )
         for entity in lst_entities:
-            logger.debug(f"Externe entiteit shortcut gevonden '{entity['Name']} in {self.file_pd_ldm}'")
+            logger.debug(
+                f"Externe entiteit shortcut gevonden '{entity['Name']} in {self.file_pd_ldm}'"
+            )
             dict_result[entity["Id"]] = entity
         return dict_result
 
@@ -172,15 +170,18 @@ class ModelExtractor:
             dict_datasources = dict_datasources
         return dict_datasources
 
-    def _relationships(self, lst_entity: list, lst_aggregates: list) -> list:
-        """Extraheert relaties tussen entiteiten
+    def _relationships(self, lst_entity: list[dict]) -> list[dict]:
+        """
+        Extraheert en transformeert de relaties tussen entiteiten uit het Power Designer model.
+
+        Deze functie haalt de relaties op uit het model, transformeert deze met behulp van de interne transformer,
+        en retourneert een lijst van gestructureerde relatie-objecten.
 
         Args:
-            lst_entity (list): Entiteiten die worden gebruikt in de relatiebeschrijving
-            lst_aggregates (list): Aggregaten die worden gebruikt in de relatiebeschrijving
+            lst_entity (list[dict]): Lijst van entiteiten uit het model.
 
         Returns:
-            list: _description_
+            list[dict]: Lijst van getransformeerde relaties tussen entiteiten.
         """
         lst_relationships = []
         if "c:Relationships" in self.content:

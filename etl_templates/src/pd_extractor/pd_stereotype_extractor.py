@@ -21,20 +21,11 @@ class StereotypeExtractor:
         self.stereotype = stereotype_input
         self.dict_domains = self._domains()
 
-    def objects(self) -> list:
-        """Haalt alle objecten op uit het model op basis van het stereotype gespecificeerd in de initialisatie
-
-        Returns:
-            list: List van geschoonde objecten van het opgegeven stereotype
-        """
-        lst_objects = self._objects()
-        return lst_objects
-
-    def _objects(self) -> list:
+    def objects(self) -> list[dict]:
         """Haalt alle objecten van het opgegeven stereotype op gespecificeerd in de initialisatie
 
         Returns:
-            list: List van geschoonde objecten van het opgegeven stereotype
+            list[dict]: List van geschoonde objecten van het opgegeven stereotype
         """
         lst_objects_input = self.content["c:Entities"]["o:Entity"]
         model = self.content["a:Code"]

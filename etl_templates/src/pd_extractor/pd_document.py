@@ -25,7 +25,7 @@ class PDDocument:
         Args:
             file_pd_ldm (str): Power Designer logisch data model document (.ldm)
         """
-        
+
         # Extracting data from the file
         self.content = self.read_file_model(file_pd_ldm=file_pd_ldm)
         self.document_info = {}
@@ -112,7 +112,7 @@ class PDDocument:
         """
         extractor = ModelExtractor(pd_content=self.content, file_pd_ldm=self.file_pd_ldm)
         logger.debug("Start model extraction")
-        lst_models = extractor.models(lst_aggregates=self.lst_aggregates)
+        lst_models = extractor.models()
         logger.debug("Finished model extraction")
         self.lst_models = lst_models
         return lst_models

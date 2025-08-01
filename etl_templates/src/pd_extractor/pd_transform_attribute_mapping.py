@@ -12,7 +12,7 @@ class TransformAttributeMapping(ObjectTransformer):
         super().__init__(file_pd_ldm)
         self.file_pd_ldm = file_pd_ldm
 
-    def attribute_mapping(self, dict_entity_target: dict, dict_attributes:dict) -> list:
+    def attribute_mapping(self, dict_entity_target: dict, dict_attributes:dict) -> dict:
         """Verrijkt, schoont en hangt attribuut mappings om ten behoeven van een mapping
 
         Args:
@@ -20,7 +20,7 @@ class TransformAttributeMapping(ObjectTransformer):
             dict_attributes (dict): Alle attributen van het Power Designer LDM die beschikbaar zijn als bron voor de attribuut mapping
 
         Returns:
-            list: Mapping met geschoonde en verrijkte attribuut mapping
+            dict: Mapping met geschoonde en verrijkte attribuut mapping
         """
         lst_attribute_mapping = dict_entity_target
         mapping = lst_attribute_mapping

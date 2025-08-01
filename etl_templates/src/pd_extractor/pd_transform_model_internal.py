@@ -46,8 +46,8 @@ class TransformModelInternal(ObjectTransformer):
         model["IsDocumentModel"] = True
         return model
 
-    def domains(self, lst_domains: list) -> dict:
-        """Domain (data-type) gerelateerde data
+    def domains(self, lst_domains: list[dict]) -> dict:
+        """Domain (list) gerelateerde data
 
         Input:
             lst_domains (list): Power Designer domain data
@@ -64,7 +64,7 @@ class TransformModelInternal(ObjectTransformer):
             dict_domains[domain["Id"]] = domain
         return dict_domains
 
-    def datasources(self, lst_datasources: list) -> dict:
+    def datasources(self, lst_datasources: list[dict]) -> dict:
         """Datasource gerelateerde data
 
         Args:
@@ -85,7 +85,7 @@ class TransformModelInternal(ObjectTransformer):
             }
         return dict_datasources
 
-    def entities(self, lst_entities: list, dict_domains: dict) -> list:
+    def entities(self, lst_entities: list[dict], dict_domains: dict) -> list:
         """Omvormen van data van interne entiteiten en verrijkt de attributen met domain data
 
         Args:
@@ -240,7 +240,7 @@ class TransformModelInternal(ObjectTransformer):
             logger.error(msg_missing)
         return has_primary, primary_id
 
-    def _prepare_identifiers(self, entity: dict):
+    def _prepare_identifiers(self, entity: dict) -> list[dict]:
         """Bereidt de lijst van identifiers voor en maakt deze schoon.
 
         Deze functie normaliseert de structuur van identifiers en past key-cleaning toe voor verdere verwerking.
@@ -249,7 +249,7 @@ class TransformModelInternal(ObjectTransformer):
             entity (dict): De entiteit met identifier data.
 
         Returns:
-            list: Een geschoonde lijst van identifier dictionaries.
+            list[dict]: Een geschoonde lijst van identifier dictionaries.
         """
 
         identifiers = entity["c:Identifiers"]["o:Identifier"]
@@ -294,15 +294,15 @@ class TransformModelInternal(ObjectTransformer):
         identifier["Attributes"] = lst_attr_id
         identifier.pop("c:Identifier.Attributes")
 
-    def relationships(self, lst_relationships: list, lst_entity: list) -> list:
+    def relationships(self, lst_relationships: list[dict], lst_entity: list[dict]) -> list[dict]:
         """Vormt om en verrijkt relatie data
 
         Args:
-            lst_relationships (list): Power Designer items die een relatie beschrijven tussen entiteiten
+            lst_relationships (list[dict]): Power Designer items die een relatie beschrijven tussen entiteiten
             lst_entity (dict): Bevat alle entiteiten
 
         Returns:
-            list: Relaties tussen model entiteiten
+            list[dict]: Relaties tussen model entiteiten
         """
         # Creating dictionaries to simplify adding data to relationships
         dict_entities = {entity["Id"]: entity for entity in lst_entity}
