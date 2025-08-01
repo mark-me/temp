@@ -11,6 +11,7 @@ class TransformTargetEntity(ObjectTransformer):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
         self.file_pd_ldm = file_pd_ldm
+
     def target_entities(self, mapping: dict, dict_objects: dict) -> dict:
         """Omvormen van mapping data en verrijkt dit met doelentiteit en attribuut data
 
@@ -26,7 +27,7 @@ class TransformTargetEntity(ObjectTransformer):
             f"Start target_entity voor '{mapping['Name']}' in {self.file_pd_ldm}"
         )
         # Target entity rerouting and enriching
-        if "o:Entity" in mapping["c:Classifier"]:
+        if "o:Entity" in mapping.get("c:Classifier", {}):
             id_entity_target = mapping["c:Classifier"]["o:Entity"]["@Ref"]
             mapping["EntityTarget"] = dict_objects[id_entity_target]
             logger.debug(
@@ -37,37 +38,42 @@ class TransformTargetEntity(ObjectTransformer):
             )
         else:
             logger.warning(f"Mapping zonder entiteit gevonden: '{mapping['Name']}' in {self.file_pd_ldm}")
-        mapping.pop("c:Classifier")
-        mapping.pop("SourceObjects_REMOVE")
+        mapping.pop("c:Classifier", None)
+        mapping.pop("SourceObjects_REMOVE", None)
         return mapping
 
-    def _remove_source_entities(self, mapping: dict, dict_objects: dict) -> dict:
-        """Verwijderd de bron entiteiten die onderdeel uitmaken van een mapping
+    def _remove_source_entities(self, mapping: dict, dict_objects: dict) -> dict | None:
+        """
+        Verwijdert en verrijkt de source entities van een mapping met de bijbehorende objectdata.
+
+        Deze functie zoekt de bronentiteiten op in de mapping, haalt de bijbehorende objecten op uit dict_objects,
+        en voegt deze toe aan de mapping. Indien een entiteit niet gevonden wordt, wordt een fout gelogd.
 
         Args:
-            mapping (dict): Het deel van het Power Designer document die de mapping beschrijft
-            dict_objects (dict): Alle objecten(entities/filters/scalars/aggregaten) in het document (internal en external)
+            mapping (dict): De mapping waarin de source entities verwerkt moeten worden.
+            dict_objects (dict): Dictionary met alle beschikbare objecten.
 
         Returns:
-            dict: Versie van de mapping data waar bron entiteit data is verwijderd
+            dict | None: De mapping met toegevoegde source entities, of None bij een fout.
         """
         logger.debug(
             f"Start met transformeren van source_entities voor mapping '{mapping['Name']}' in {self.file_pd_ldm}"
         )
         lst_source_entity = []
         for entity_type in ["o:Entity", "o:Shortcut"]:
-            if entity_type in mapping["c:SourceClassifiers"]:
+            if entity_type in mapping.get("c:SourceClassifiers", {}):
                 source_entity = mapping["c:SourceClassifiers"][entity_type]
                 if isinstance(source_entity, dict):
                     source_entity = [source_entity]
-                source_entity = [d["@Ref"] for d in source_entity]
+                source_entity = [d.get("@Ref") for d in source_entity]
                 lst_source_entity = lst_source_entity + source_entity
-        # onderstaande regel geeft problemen als  item in lst_source_entity niet in dict_object aanwezig is
-        try:
-            lst_source_entity = [dict_objects[item] for item in lst_source_entity]
-        except KeyError as e:
-            logger.error(f"Entiteit niet gevonden voor externe model met referentie '{e.args[0]}', mogelijk omdat het externe model gegenereerd is door Object in plaats van Shortcut. Betreft: {self.file_pd_ldm}")
-            return
+        if missing_refs := [
+            item for item in lst_source_entity if item not in dict_objects
+        ]:
+            logger.error(
+                f"Entiteiten niet gevonden voor externe model met referenties {missing_refs}, mogelijk omdat het externe model gegenereerd is door Object in plaats van Shortcut. Betreft: {self.file_pd_ldm}"
+            )
+        lst_source_entity = [dict_objects[item] for item in lst_source_entity if item in dict_objects]
         mapping["SourceObjects_REMOVE"] = lst_source_entity
-        mapping.pop("c:SourceClassifiers")
+        mapping.pop("c:SourceClassifiers", None)
         return mapping
