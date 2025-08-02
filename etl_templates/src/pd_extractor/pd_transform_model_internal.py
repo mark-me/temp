@@ -401,11 +401,18 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             dict: De geschoonde versie van de join(s) behorende bij de relatie
         """
-        if lst_joins := self._get_nested(data=relationship, keys=["c:Joins", "o:RelationshipJoin"]):
+        if lst_joins := self._get_nested(
+            data=relationship, keys=["c:Joins", "o:RelationshipJoin"]
+        ):
             lst_joins = [lst_joins] if isinstance(lst_joins, dict) else lst_joins
             lst_joins = self.clean_keys(lst_joins)
             for i in range(len(lst_joins)):
-                join = self._build_join_dict(lst_joins[i], i, relationship, dict_attributes)
+                join = self._build_join_dict(
+                    join_data=lst_joins[i],
+                    order=i,
+                    relationship=relationship,
+                    dict_attributes=dict_attributes,
+                )
                 lst_joins[i] = join
             relationship["Joins"] = lst_joins
             relationship.pop("c:Joins")
@@ -415,26 +422,49 @@ class TransformModelInternal(ObjectTransformer):
             )
         return relationship
 
-    def _build_join_dict(self, join_data: dict, order: int, relationship: dict, dict_attributes: dict) -> dict:
+    def _build_join_dict(
+        self, join_data: dict, order: int, relationship: dict, dict_attributes: dict
+    ) -> dict:
         """Bouwt een join dictionary op basis van de join data en verrijkt deze met attributen."""
         join = {"Order": order}
-        id_attr = self._extract_entity1_attribute_id(join_data, relationship)
-        if id_attr and id_attr in dict_attributes:
-            join |= {"Entity1Attribute": dict_attributes[id_attr]}
-        else:
-            logger.warning(
-                f"{id_attr} voor join[Entity1Attribute] niet in dict_acttributes"
-            )
-        id_attr = join_data["c:Object2"]["o:EntityAttribute"]["@Ref"]
-        if id_attr in dict_attributes:
-            join |= {"Entity2Attribute": dict_attributes[id_attr]}
-        else:
-            logger.warning(
-                f"{id_attr} voor join[Entity2Attribute] niet in dict_acttributes in {self.file_pd_ldm}"
-            )
+        entity1_attr = self._get_entity1_attribute(
+            join_data=join_data,
+            relationship=relationship,
+            dict_attributes=dict_attributes,
+        )
+        if entity1_attr:
+            join |= {"Entity1Attribute": entity1_attr}
+        if entity2_attr := self._get_entity2_attribute(
+            join_data=join_data, dict_attributes=dict_attributes
+        ):
+            join |= {"Entity2Attribute": entity2_attr}
         return join
 
-    def _extract_entity1_attribute_id(self, join_data: dict, relationship: dict) -> str | None:
+    def _get_entity1_attribute(
+        self, join_data: dict, relationship: dict, dict_attributes: dict
+    ):
+        """Haalt het attribuut voor Entity1 op en logt indien niet gevonden."""
+        id_attr = self._extract_entity1_attribute_id(join_data, relationship)
+        if id_attr and id_attr in dict_attributes:
+            return dict_attributes[id_attr]
+        logger.warning(
+            f"{id_attr} voor join[Entity1Attribute] niet in dict_acttributes"
+        )
+        return None
+
+    def _get_entity2_attribute(self, join_data: dict, dict_attributes: dict):
+        """Haalt het attribuut voor Entity2 op en logt indien niet gevonden."""
+        id_attr = join_data["c:Object2"]["o:EntityAttribute"]["@Ref"]
+        if id_attr in dict_attributes:
+            return dict_attributes[id_attr]
+        logger.warning(
+            f"{id_attr} voor join[Entity2Attribute] niet in dict_acttributes in {self.file_pd_ldm}"
+        )
+        return None
+
+    def _extract_entity1_attribute_id(
+        self, join_data: dict, relationship: dict
+    ) -> str | None:
         """Extraheert het attribuut-ID voor Entity1 uit de join data."""
         if "o:EntityAttribute" in join_data["c:Object1"]:
             return join_data["c:Object1"]["o:EntityAttribute"]["@Ref"]
