@@ -3,6 +3,7 @@ from logtools import get_logger
 from .extractor_base import ExtractorBase
 from .model_internal_transform import TransformModelInternal
 from .models_external_transform import TransformModelsExternal
+from .model_relationships_transform import TransformRelationships
 
 logger = get_logger(__name__)
 
@@ -183,10 +184,13 @@ class ModelExtractor(ExtractorBase):
         Returns:
             list[dict] | None: Lijst van relaties of None als er geen relaties zijn gevonden.
         """
+        transform_relationships = TransformRelationships(
+            file_pd_ldm=self.file_pd_ldm, lst_entities=lst_entity
+        )
         path_keys = ["c:Relationships", "o:Relationship"]
         if lst_pd_relationships := self._get_nested(data=self.content, keys=path_keys):
-            lst_relationships = self.transform_model_internal.relationships(
-                lst_relationships=lst_pd_relationships, lst_entity=lst_entity
+            lst_relationships = transform_relationships.process(
+                lst_relationships=lst_pd_relationships
             )
             return lst_relationships
         else:
