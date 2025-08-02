@@ -111,10 +111,11 @@ class ModelExtractor(ExtractorBase):
         """
         # External model entity data
         dict_result = {}
-        if "c:Packages" in self.content:
-            path_keys = ["c:Packages", "o:Package", "c:Entities", "o:Shortcut"]
-        else:
-            path_keys = ["c:Entities", "o:Shortcut"]
+        path_keys = (
+            ["c:Packages", "o:Package", "c:Entities", "o:Shortcut"]
+            if "c:Packages" in self.content
+            else ["c:Entities", "o:Shortcut"]
+        )
         lst_entities = self._get_nested(data=self.content, keys=path_keys)
         if isinstance(lst_entities, dict):
             lst_entities = [lst_entities]
@@ -183,7 +184,7 @@ class ModelExtractor(ExtractorBase):
             list[dict] | None: Lijst van relaties of None als er geen relaties zijn gevonden.
         """
         path_keys = ["c:Relationships", "o:Relationship"]
-        if lst_pd_relationships := self._get_nested(data= self.content, keys=path_keys):
+        if lst_pd_relationships := self._get_nested(data=self.content, keys=path_keys):
             lst_relationships = self.transform_model_internal.relationships(
                 lst_relationships=lst_pd_relationships, lst_entity=lst_entity
             )
@@ -193,4 +194,3 @@ class ModelExtractor(ExtractorBase):
                 f"Het extraheren van de relaties tussen entiteiten is gefaald, er zijn geen relaties gevonden. Betreft: {self.file_pd_ldm}."
             )
             return None
-
