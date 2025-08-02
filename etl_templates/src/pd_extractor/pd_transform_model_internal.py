@@ -175,27 +175,21 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             dict: Het verrijkte attribuut.
         """
-        if "c:Domain" in attr:
-            if "o:Domain" in attr["c:Domain"]:
-                id_domain = attr["c:Domain"]["o:Domain"]["@Ref"]
-                attr_domain = dict_domains[id_domain]
-                keys_domain = {
-                    "Id",
-                    "Name",
-                    "Code",
-                    "DataType",
-                    "Length",
-                    "Precision",
-                }
-                attr_domain = {
-                    k: attr_domain[k] for k in keys_domain if k in attr_domain
-                }
-                attr["Domain"] = attr_domain
-                attr.pop("c:Domain")
-            else:
-                logger.error(
-                    f"[o:Domain] niet gevonden in attribuut voor {attr.get('Code', '')} in {self.file_pd_ldm}"
-                )
+        if id_domain := self._get_nested(data=attr, keys=["c:Domain", "o:Domain", "@Ref"]):
+            attr_domain = dict_domains[id_domain]
+            keys_domain = {
+                "Id",
+                "Name",
+                "Code",
+                "DataType",
+                "Length",
+                "Precision",
+            }
+            attr_domain = {
+                k: attr_domain.get(k) for k in keys_domain if k in attr_domain
+            }
+            attr["Domain"] = attr_domain
+            attr.pop("c:Domain")
         return attr
 
     def _entity_identifiers(self, entity: dict, dict_attrs: dict) -> dict:
