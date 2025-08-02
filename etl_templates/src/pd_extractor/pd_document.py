@@ -5,6 +5,7 @@ from pathlib import Path
 import xmltodict
 from logtools import get_logger
 
+from .pd_extractor_base import ExtractorBase
 from .pd_mapping_extractor import MappingExtractor
 from .pd_model_extractor import ModelExtractor
 from .pd_stereotype_extractor import StereotypeExtractor
@@ -13,7 +14,7 @@ from .pd_transform_object import ObjectTransformer
 logger = get_logger(__name__)
 
 
-class PDDocument:
+class PDDocument(ExtractorBase):
     """Representeert een logisch datamodel bestand gemaakt in Power Designer
     Dit bestand biedt de mogelijkheid om model en mapping data te extraheren en herstructureert deze data naar een meer
     leesbare format. De output gemaakt op basis van dit bestand is input voor DDL- en ETL generatie.
@@ -25,7 +26,7 @@ class PDDocument:
         Args:
             file_pd_ldm (str): Power Designer logisch data model document (.ldm)
         """
-
+        super().__init__(file_pd_ldm=file_pd_ldm)
         # Extracting data from the file
         self.content = self.read_file_model(file_pd_ldm=file_pd_ldm)
         self.document_info = {}
@@ -34,7 +35,6 @@ class PDDocument:
         self.lst_scalars = []
         self.lst_aggregates = []
         self.lst_mappings = []
-        self.file_pd_ldm = file_pd_ldm
         self.transform_objects = ObjectTransformer(file_pd_ldm)
 
     def get_document_info(self) -> dict:
@@ -47,24 +47,28 @@ class PDDocument:
         """
         return {
             "Filename": str(self.file_pd_ldm),
-            "FilenameRepo": self.content['a:RepositoryFilename'],
-            "Creator": self.content["a:Creator"],
-            "DateCreated": datetime.fromtimestamp(int(self.content['a:CreationDate'])),
-            "Modifier": self.content['a:Modifier'],
-            "DateModified": datetime.fromtimestamp(int(self.content['a:ModificationDate'])),
-            "ModelOptions": self.content['a:ModelOptionsText'].split("\n"),
-            "PackageOptions": self.content['a:PackageOptionsText'].split("\n"),
+            "FilenameRepo": self.content.get("a:RepositoryFilename", None),
+            "Creator": self.content.get("a:Creator", None),
+            "DateCreated": datetime.fromtimestamp(int(self.content.get("a:CreationDate", 0))),
+            "Modifier": self.content.get("a:Modifier", None),
+            "DateModified": datetime.fromtimestamp(
+                int(self.content.get("a:ModificationDate", 0))
+            ),
+            "ModelOptions": self.content.get("a:ModelOptionsText", "").split("\n"),
+            "PackageOptions": self.content.get("a:PackageOptionsText", "").split("\n"),
         }
 
-    def get_filters(self) -> list:
+    def get_filters(self) -> list[dict]:
         """Haalt alle filter objecten op uit het logisch data model
 
         Returns:
-            list : Een lijst van dictionaries die de filters representeren
+            list[dict]: Een lijst van dictionaries die de filters representeren
         """
         stereotype_input = "mdde_FilterBusinessRule"
         extractor = StereotypeExtractor(
-            pd_content=self.content, stereotype_input=stereotype_input, file_pd_ldm=self.file_pd_ldm
+            pd_content=self.content,
+            stereotype_input=stereotype_input,
+            file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start filter extraction")
         lst_filters = extractor.objects()
@@ -72,15 +76,17 @@ class PDDocument:
         self.lst_filters = lst_filters
         return lst_filters
 
-    def get_scalars(self) -> list:
+    def get_scalars(self) -> list[dict]:
         """Haalt alle scalar objecten (berekende attributen) op uit het logisch data model
 
         Returns:
-            list: Een lijst van dictionaries die de scalars representeren
+            list[dict]: Een lijst van dictionaries die de scalars representeren
         """
         stereotype_input = "mdde_ScalarBusinessRule"
         extractor = StereotypeExtractor(
-            pd_content=self.content, stereotype_input=stereotype_input, file_pd_ldm=self.file_pd_ldm
+            pd_content=self.content,
+            stereotype_input=stereotype_input,
+            file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start scalar extraction")
         lst_scalars = extractor.objects()
@@ -88,15 +94,17 @@ class PDDocument:
         self.lst_scalars = lst_scalars
         return lst_scalars
 
-    def get_aggregates(self) -> list:
+    def get_aggregates(self) -> list[dict]:
         """Haalt alle aggregatie objecten op uit het logisch data model
 
         Returns:
-            list: Een lijst van dictionaries die de aggregaten representeren
+            list[dict]: Een lijst van dictionaries die de aggregaten representeren
         """
         stereotype_input = "mdde_AggregateBusinessRule"
         extractor = StereotypeExtractor(
-            pd_content=self.content, stereotype_input=stereotype_input, file_pd_ldm=self.file_pd_ldm
+            pd_content=self.content,
+            stereotype_input=stereotype_input,
+            file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start aggregate extraction")
         lst_aggregates = extractor.objects()
@@ -104,29 +112,33 @@ class PDDocument:
         self.lst_aggregates = lst_aggregates
         return lst_aggregates
 
-    def get_models(self) -> list:
+    def get_models(self) -> list[dict]:
         """Haalt model data, apart van de mappings, op uit het logisch data model
 
         Returns:
-            list: The Power Designer modellen zonder enige mappings
+            list[dict]: The Power Designer modellen zonder enige mappings
         """
-        extractor = ModelExtractor(pd_content=self.content, file_pd_ldm=self.file_pd_ldm)
+        extractor = ModelExtractor(
+            pd_content=self.content, file_pd_ldm=self.file_pd_ldm
+        )
         logger.debug("Start model extraction")
         lst_models = extractor.models()
         logger.debug("Finished model extraction")
         self.lst_models = lst_models
         return lst_models
 
-    def get_mappings(self) -> list:
+    def get_mappings(self) -> list[dict]:
         """Haalt de mappings op die de ETL van het LDM vertegenwoordigen
 
         Returns:
-            list: Een lijst van dictionaries die mapping objects vertegenwoordigen
+            list[dict]: Een lijst van dictionaries die mapping objects vertegenwoordigen
         """
         if len(self.lst_models) == 0:
             self.get_models()
 
-        extractor = MappingExtractor(pd_content=self.content, file_pd_ldm=self.file_pd_ldm)
+        extractor = MappingExtractor(
+            pd_content=self.content, file_pd_ldm=self.file_pd_ldm
+        )
         logger.debug("Start mapping extraction")
         dict_entities = self._all_entities()
         dict_filters = self._all_filters()
@@ -140,7 +152,7 @@ class PDDocument:
             dict_objects=dict_objects,
             dict_attributes=dict_attributes,
             dict_variables=dict_variables,
-            dict_datasources= dict_datasources,
+            dict_datasources=dict_datasources,
         )
         self.lst_mappings = lst_mappings
         return lst_mappings
@@ -155,10 +167,14 @@ class PDDocument:
             dict: De Power Designer data geconverteerd naar een dictionary
         """
         # Function not yet used, but candidate for reading XML file
-        with open(file_pd_ldm, encoding='utf8') as fd:
+        with open(file_pd_ldm, encoding="utf8") as fd:
             doc = fd.read()
         dict_data = xmltodict.parse(doc)
-        dict_data = dict_data["Model"]["o:RootObject"]["c:Children"]["o:Model"]
+        try:
+            dict_data = dict_data["Model"]["o:RootObject"]["c:Children"]["o:Model"]
+        except (KeyError, TypeError) as e:
+            logger.error(f"Overwachte XML structuur in {file_pd_ldm}: {e}")
+            return None
         return dict_data
 
     def _all_entities(self) -> dict:
@@ -180,16 +196,16 @@ class PDDocument:
                         "IdModel": model["Id"],
                         "NameModel": model["Name"],
                         "CodeModel": model["Code"],
-                        "IsDocumentModel": not model["IsDocumentModel"],
-                        "Stereotype": None
+                        "IsDocumentModel": model["IsDocumentModel"],
+                        "Stereotype": None,
                     }
         return dict_result
 
-    def _all_filters(self) -> list:
-        """Haalt alle filters op ongeacht het model waartoe ze behoren.
+    def _all_filters(self) -> dict:
+        """Haalt alle filters op uit het logisch data model, ongeacht het model waartoe ze behoren.
 
         Returns:
-            list: Elke value uit de list representeert een stereotype, de sleutel is het interne ID
+            dict: Elke waarde in de dictionary representeert een filter, de sleutel is het interne ID.
         """
         dict_result = {
             filter["Id"]: {
@@ -206,7 +222,7 @@ class PDDocument:
         }
         return dict_result
 
-    def _all_scalars(self) -> list:
+    def _all_scalars(self) -> dict:
         """Haalt alle scalars op ongeacht het model waartoe ze behoren.
 
         Returns:
@@ -228,11 +244,11 @@ class PDDocument:
         }
         return dict_result
 
-    def _all_aggregates(self) -> list:
+    def _all_aggregates(self) -> dict:
         """Haalt alle aggregaties op ongeacht het model waartoe ze behoren.
 
         Returns:
-            list: Elke value uit de list representeert een stereotype, de sleutel is het interne ID
+            dict: Elke value uit de dict representeert een stereotype, de sleutel is het interne ID
         """
         dict_result = {
             aggregates["Id"]: {
@@ -267,7 +283,7 @@ class PDDocument:
                             "IdModel": model["Id"],
                             "NameModel": model["Name"],
                             "CodeModel": model["Code"],
-                            "IsDocumentModel": not model["IsDocumentModel"],
+                            "IsDocumentModel": model["IsDocumentModel"],
                             "IdEntity": entity["Id"],
                             "NameEntity": entity["Name"],
                             "CodeEntity": entity["Code"],
@@ -282,7 +298,7 @@ class PDDocument:
             dict: Gevonden variabelen met de waarden gebaseerd op hun eigen interne referentie ("o")
         """
         dict_result = {}
-        lst_stereotypes = self.lst_filters + self.lst_scalars #+ self.lst_aggregates
+        lst_stereotypes = self.lst_filters + self.lst_scalars
         for stereotypes in lst_stereotypes:
             lst_variables = stereotypes["Variables"]
             for var in lst_variables:
@@ -294,7 +310,7 @@ class PDDocument:
                     "IdEntity": stereotypes["Id"],
                     "NameEntity": stereotypes["Name"],
                     "CodeEntity": stereotypes["Code"],
-                    "StereotypeEntity": stereotypes["Stereotype"]
+                    "StereotypeEntity": stereotypes["Stereotype"],
                 }
         return dict_result
 
@@ -355,7 +371,7 @@ class PDDocument:
             dict_document["Mappings"] = lst_mappings
         path = Path(file_output)
         Path(path.parent).mkdir(parents=True, exist_ok=True)
-        with open(file_output, "w") as outfile:
+        with open(file_output, "w", encoding="utf-8") as outfile:
             json.dump(
                 dict_document, outfile, indent=4, default=self._serialize_datetime
             )

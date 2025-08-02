@@ -3,19 +3,21 @@ from typing import Union
 
 from logtools import get_logger
 
+from .pd_extractor_base import ExtractorBase
+
 logger = get_logger(__name__)
 
 
-class ObjectTransformer:
+class ObjectTransformer(ExtractorBase):
     """Collectie van functions die structuren en data van Power Designer objecten kan transformeren
 
     Het transformeren van structuren wordt gedaan om het 'querien' van data voor de ETL en DDL te versimpelen
     """
 
     def __init__(self, file_pd_ldm: str):
+        super().__init__(file_pd_ldm=file_pd_ldm)
         self._timestamp_fields = ["a:CreationDate", "a:ModificationDate"]
-        self.file_pd_ldm = file_pd_ldm
-        
+
     def clean_keys(self, content: Union[dict, list]):
         """Hernoemt sleutels van Power Designer objecten (m.a.w. dictionaries) zodat prefixes als '@' en 'a:' worden verwijderd
 

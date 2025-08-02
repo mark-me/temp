@@ -1,6 +1,6 @@
-
 from logtools import get_logger
 
+from .pd_extractor_base import ExtractorBase
 from .pd_transform_attribute_mapping import TransformAttributeMapping
 from .pd_transform_source_composition import TransformSourceComposition
 from .pd_transform_target_entity import TransformTargetEntity
@@ -8,7 +8,7 @@ from .pd_transform_target_entity import TransformTargetEntity
 logger = get_logger(__name__)
 
 
-class MappingExtractor:
+class MappingExtractor(ExtractorBase):
     """Extraheert ETL specificaties (mappings) vanuit een Power Designer LDM waarin mappings zijn geïmplementeerd met behulp van de
     CrossBreeze MDDE extensie.
     Transformeert de data in een meer leesbaar format door overbodige informatie te verwijderen en relevante model informatie
@@ -21,14 +21,18 @@ class MappingExtractor:
         Args:
             pd_content (dict): Power Designer LDM bestand inhoud (gerepresenteerd als een dictionary)
         """
-        self.file_pd_ldm = file_pd_ldm
+        super().__init__(file_pd_ldm=file_pd_ldm)
         self.content = pd_content
         self.transform_attribute_mapping = TransformAttributeMapping(file_pd_ldm)
         self.transform_source_composition = TransformSourceComposition(file_pd_ldm)
         self.transform_target_entity = TransformTargetEntity(file_pd_ldm)
 
     def mappings(
-        self, dict_objects: dict, dict_attributes: dict, dict_variables: dict, dict_datasources: dict
+        self,
+        dict_objects: dict,
+        dict_attributes: dict,
+        dict_variables: dict,
+        dict_datasources: dict,
     ) -> list:
         """
         Extraheert en transformeert mappings uit een Power Designer LDM-bestand.
@@ -55,35 +59,43 @@ class MappingExtractor:
             )
             dict_attributes_combined = dict_attributes | dict_variables
             lst_attribute_mapping = self.transform_attribute_mapping.attribute_mapping(
-                dict_entity_target=lst_entity_target, dict_attributes=dict_attributes_combined
+                dict_entity_target=lst_entity_target,
+                dict_attributes=dict_attributes_combined,
             )
             lst_source_composition = (
                 self.transform_source_composition.source_composition(
                     lst_attribute_mapping=lst_attribute_mapping,
                     dict_attributes=dict_attributes_combined,
                     dict_objects=dict_objects,
-                    dict_datasources=dict_datasources
+                    dict_datasources=dict_datasources,
                 )
             )
             lst_mappings_def.append(lst_source_composition)
 
         return lst_mappings_def
 
-    def _get_relevant_mappings(self) -> list:
-        """Selecteert en filtert de relevante mappings uit het Power Designer model."""
+    def _get_relevant_mappings(self) -> list[dict]:
+        """Selecteert en filtert relevante mappings uit het Power Designer LDM-bestand.
+
+        Deze functie haalt alle mappings op, verwijdert te negeren mappings en retourneert de relevante mappings.
+
+        Returns:
+            list[dict]: Een lijst van relevante mappings.
+        """
         if "c:Packages" in self.content:
-            lst_mappings = self.content["c:Packages"]["o:Package"]["c:Mappings"][
-                "o:DefaultObjectMapping"
-            ]
+            key_path = ["c:Packages", "o:Package", "c:Mappings", "o:DefaultObjectMapping"]
         else:
-            lst_mappings = self.content["c:Mappings"]["o:DefaultObjectMapping"]
+            key_path = ["c:Mappings", "o:DefaultObjectMapping"]
+        lst_mappings = self._get_nested(data=self.content, keys=key_path)
 
         lst_ignored_mapping = [
             "Mapping Br Custom Business Rule Example",
             "Mapping AggrTotalSalesPerCustomer",
             "Mapping Pivot Orders Per Country Per Date",
         ]
-        if isinstance(lst_mappings, list):
+        if not lst_mappings:
+            logger.warning(f"Geen mappings gevonden in '{self.file_pd_ldm}'")
+        elif isinstance(lst_mappings, list):
             lst_mappings = [
                 m for m in lst_mappings if m["a:Name"] not in lst_ignored_mapping
             ]
@@ -96,8 +108,10 @@ class MappingExtractor:
 
     def _normalize_mapping_name(self, mapping: dict) -> dict:
         """Vervangt spaties in de mappingnaam door underscores en logt een waarschuwing indien nodig."""
-        if ' ' in mapping['a:Name']:
-            logger.warning(f"Er staan spatie(s) in de mapping naam staan voor '{mapping['a:Name']}' uit {self.file_pd_ldm}.")
-            mapping['a:Name'] = mapping['a:Name'].replace(" ", "_")
+        if " " in mapping["a:Name"]:
+            logger.warning(
+                f"Er staan spatie(s) in de mapping naam staan voor '{mapping['a:Name']}' uit {self.file_pd_ldm}."
+            )
+            mapping["a:Name"] = mapping["a:Name"].replace(" ", "_")
         logger.debug(f"Start mapping voor '{mapping['a:Name']} uit {self.file_pd_ldm}")
         return mapping

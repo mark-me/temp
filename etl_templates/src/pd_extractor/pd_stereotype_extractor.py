@@ -1,10 +1,12 @@
 from logtools import get_logger
+
+from .pd_extractor_base import ExtractorBase
 from .pd_transform_stereotype import TransformStereotype
 
 logger = get_logger(__name__)
 
 
-class StereotypeExtractor:
+class StereotypeExtractor(ExtractorBase):
     """Extraheert Power Designer document objecten die filters, aggregaten en scalars representeren"""
 
     def __init__(self, pd_content: dict, stereotype_input: str, file_pd_ldm: str):
@@ -15,7 +17,7 @@ class StereotypeExtractor:
             stereotype_input (str): StereoType die aangeeft of het een filter(mdde_FilterBusinessRule), scalar(mdde_ScalarBusinessRule) of aggregate (mdde_AggregateBusinessRule) betreft
             file_pd_ldm (str): Bestand van waar de stereotypes uit geëxtraheerd worden.
         """
-        self.file_pd_ldm = file_pd_ldm
+        super().__init__(file_pd_ldm=file_pd_ldm)
         self.content = pd_content
         self.transform_stereotype = TransformStereotype(file_pd_ldm)
         self.stereotype = stereotype_input
@@ -25,14 +27,15 @@ class StereotypeExtractor:
         """Haalt alle objecten van het opgegeven stereotype op gespecificeerd in de initialisatie
 
         Returns:
-            list[dict]: List van geschoonde objecten van het opgegeven stereotype
+            list[dict]: Lijst van geschoonde objecten van het opgegeven stereotype
         """
         lst_objects_input = self.content["c:Entities"]["o:Entity"]
+        if isinstance(lst_objects_input, dict):
+            lst_objects_input = [lst_objects_input]
         model = self.content["a:Code"]
 
         lst_objects = []
-        for i in range(len(lst_objects_input)):
-            stereotype_object = lst_objects_input[i]
+        for stereotype_object in lst_objects_input:
             if self._is_matching_stereotype(stereotype_object=stereotype_object):
                 self._clean_stereotype_object(
                     stereotype_object=stereotype_object, model=model
@@ -68,37 +71,33 @@ class StereotypeExtractor:
             model (str): De code van het model waartoe het object behoort.
         """
         stereotype_object["CodeModel"] = model
-        if "c:ExtendedCollections" in stereotype_object:
-            stereotype_object.pop("c:ExtendedCollections")
-            logger.debug(f"Verwijderd c:ExtendedCollections voor lst_objects' in {self.file_pd_ldm}")
-        if "c:ExtendedCompositions" in stereotype_object:
-            stereotype_object.pop("c:ExtendedCompositions")
-            logger.debug(f"Verwijderd c:ExtendedCompositions voor lst_objects' in {self.file_pd_ldm}")
-        if "c:DefaultMapping" in stereotype_object:
-            stereotype_object.pop("c:DefaultMapping")
-            logger.debug(f"Verwijderd c:DefaultMapping voor lst_objects'in {self.file_pd_ldm}")
+        keys_to_remove = [
+            "c:ExtendedCollections",
+            "c:ExtendedCompositions",
+            "c:DefaultMapping"
+        ]
+        for key in keys_to_remove:
+            if key in stereotype_object:
+                stereotype_object.pop(key)
+                logger.debug(f"Verwijderd {key} voor lst_objects in {self.file_pd_ldm}")
 
-    def _domains(self) -> dict:
-        """Haalt op en schoont domain data voor de objecten van het opgegeven stereotype
+    def _domains(self) -> dict | None:
+        """Extraheert alle domeinen die in het Power Designer model zijn gedefinieerd voor stereotypes.
+
+        Deze functie zoekt naar domeinen in het model en retourneert een dictionary met domeininformatie,
+        of None als er geen domeinen zijn gevonden.
 
         Returns:
-            dict: Domains waar het Power Designer object id is de sleutel van het domain
+            dict | None: Een dictionary met domeinen of None als er geen domeinen zijn gevonden.
         """
-        dict_domains = {}
-        if "c:Domains" in self.content:
-            if "o:Domain" in self.content["c:Domains"]:
-                lst_domains = self.content["c:Domains"]["o:Domain"]
-                logger.debug(f"Start met het extraheren van domains voor stereotype in {self.file_pd_ldm}")
-                dict_domains = self.transform_stereotype.domains(
-                    lst_domains=lst_domains
-                )
-                logger.debug(f"Klaar met het extraheren van domains voor stereotype in {self.file_pd_ldm}")
-            else:
-                logger.error(
-                    f"Er is geen Domain gevonden tijdens het extraheren van een stereotype uit {self.file_pd_ldm}, dit is nodig voor het maken van een werkend script"
-                )
+        path_keys = ["c:Domains", "o:Domain"]
+        if lst_domains := self._get_nested(data=self.content, keys=path_keys):
+            dict_domains = self.transform_stereotype.domains(
+                lst_domains=lst_domains
+            )
+            return dict_domains
         else:
             logger.error(
-                f"Er is geen gebruik van Domain geconstateerd in {self.file_pd_ldm} voor het extraheren van een stereotype"
+                f"Er is geen gebruik van Domain geconstateerd in '{self.file_pd_ldm}' voor het extraheren van een stereotype"
             )
-        return dict_domains
+            return None
