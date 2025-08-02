@@ -2,12 +2,12 @@ import re
 
 from logtools import get_logger
 
-from .pd_transform_object import ObjectTransformer
+from .transformer_base import TransformerBase
 
 logger = get_logger(__name__)
 
 
-class TransformStereotype(ObjectTransformer):
+class TransformStereotype(TransformerBase):
     """Verrijken, schonen en transformeren van stereotype objecten (filters, scalars en aggregaten)"""
 
     def __init__(self, file_pd_ldm: str):

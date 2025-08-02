@@ -2,12 +2,12 @@ import re
 
 from logtools import get_logger
 
-from .pd_transform_object import ObjectTransformer
+from .transformer_base import TransformerBase
 
 logger = get_logger(__name__)
 
 
-class TransformSourceComposition(ObjectTransformer):
+class TransformSourceComposition(TransformerBase):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
 

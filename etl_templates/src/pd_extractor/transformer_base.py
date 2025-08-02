@@ -3,12 +3,12 @@ from typing import Union
 
 from logtools import get_logger
 
-from .pd_extractor_base import ExtractorBase
+from .extractor_base import ExtractorBase
 
 logger = get_logger(__name__)
 
 
-class ObjectTransformer(ExtractorBase):
+class TransformerBase(ExtractorBase):
     """Collectie van functions die structuren en data van Power Designer objecten kan transformeren
 
     Het transformeren van structuren wordt gedaan om het 'querien' van data voor de ETL en DDL te versimpelen

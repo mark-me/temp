@@ -1,11 +1,11 @@
 from logtools import get_logger
 
-from .pd_transform_object import ObjectTransformer
+from .transformer_base import TransformerBase
 
 logger = get_logger(__name__)
 
 
-class TransformAttributeMapping(ObjectTransformer):
+class TransformAttributeMapping(TransformerBase):
     """Collectie van functies om attribuut mappings conform het afgestemde JSON format op te bouwen om ETL generatie te faciliteren"""
 
     def __init__(self, file_pd_ldm: str):

@@ -1,1 +1,1 @@
-from .pd_document import PDDocument
+from .document import PDDocument

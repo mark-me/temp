@@ -5,11 +5,11 @@ from pathlib import Path
 import xmltodict
 from logtools import get_logger
 
-from .pd_extractor_base import ExtractorBase
-from .pd_mapping_extractor import MappingExtractor
-from .pd_model_extractor import ModelExtractor
-from .pd_stereotype_extractor import StereotypeExtractor
-from .pd_transform_object import ObjectTransformer
+from .extractor_base import ExtractorBase
+from .mapping_extractor import MappingExtractor
+from .model_extractor import ModelExtractor
+from .stereotype_extractor import StereotypeExtractor
+from .transformer_base import TransformerBase
 
 logger = get_logger(__name__)
 
@@ -35,7 +35,7 @@ class PDDocument(ExtractorBase):
         self.lst_scalars = []
         self.lst_aggregates = []
         self.lst_mappings = []
-        self.transform_objects = ObjectTransformer(file_pd_ldm)
+        self.transform_objects = TransformerBase(file_pd_ldm)
 
     def get_document_info(self) -> dict:
         """Geeft metadata terug over het ingelezen Power Designer logisch datamodel.

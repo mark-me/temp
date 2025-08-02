@@ -1,8 +1,8 @@
 from logtools import get_logger
 
-from .pd_extractor_base import ExtractorBase
-from .pd_transform_model_internal import TransformModelInternal
-from .pd_transform_models_external import TransformModelsExternal
+from .extractor_base import ExtractorBase
+from .model_internal_transform import TransformModelInternal
+from .models_external_transform import TransformModelsExternal
 
 logger = get_logger(__name__)
 

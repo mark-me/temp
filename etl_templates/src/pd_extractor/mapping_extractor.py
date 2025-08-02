@@ -1,8 +1,8 @@
 from logtools import get_logger
 
-from .pd_extractor_base import ExtractorBase
-from .pd_transform_attribute_mapping import TransformAttributeMapping
-from .pd_transform_source_composition import TransformSourceComposition
+from .extractor_base import ExtractorBase
+from .attribute_mapping_transform import TransformAttributeMapping
+from .composition_transform import TransformSourceComposition
 from .pd_transform_target_entity import TransformTargetEntity
 
 logger = get_logger(__name__)

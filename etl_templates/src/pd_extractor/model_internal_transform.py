@@ -1,11 +1,11 @@
 from logtools import get_logger
 
-from .pd_transform_object import ObjectTransformer
+from .transformer_base import TransformerBase
 
 logger = get_logger(__name__)
 
 
-class TransformModelInternal(ObjectTransformer):
+class TransformModelInternal(TransformerBase):
     """Hangt om en schoont elk onderdeel van de metadata van het model dat omgezet wordt naar DDL en ETL generatie"""
 
     def __init__(self, file_pd_ldm: str):
@@ -175,7 +175,9 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             dict: Het verrijkte attribuut.
         """
-        if id_domain := self._get_nested(data=attr, keys=["c:Domain", "o:Domain", "@Ref"]):
+        if id_domain := self._get_nested(
+            data=attr, keys=["c:Domain", "o:Domain", "@Ref"]
+        ):
             attr_domain = dict_domains[id_domain]
             keys_domain = {
                 "Id",
@@ -236,19 +238,16 @@ class TransformModelInternal(ObjectTransformer):
 
         return entity
 
-    def _extract_primary_identifier(self, entity: dict):
-        """Haalt de primaire identifier uit een entiteit en verwijdert deze.
+    def _extract_primary_identifier(self, entity: dict) -> tuple[bool, str]:
+        """Haalt de primaire identifier (primary key) van een entiteit op.
 
-        Bepaalt of de entiteit een primaire identifier heeft en geeft de referentie terug.
-        Verwijdert de primaire identifier uit de entiteit indien aanwezig, en logt een:
-          * Waarschuwing bij entiteiten met een Stereotype
-          * Fout bij een 'reguliere' entiteit
+        Deze functie controleert of een entiteit een primaire sleutel heeft, haalt het ID op en verwijdert de sleutel uit de entiteit.
 
         Args:
-            entity (dict): De entiteit waaruit de primaire identifier wordt gehaald.
+            entity (dict): De entiteit waarvan de primaire identifier wordt opgehaald.
 
         Returns:
-            tuple: (has_primary, primary_id) waarbij has_primary een bool is en primary_id de identifier referentie of None.
+            tuple[bool, str]: Een tuple met een boolean of de primaire sleutel aanwezig is en het ID van de primaire sleutel (of None).
         """
         has_primary = "c:PrimaryIdentifier" in entity
         primary_id = None
@@ -323,6 +322,9 @@ class TransformModelInternal(ObjectTransformer):
     ) -> list[dict]:
         """Vormt om en verrijkt relatie data
 
+        Deze functie verwerkt een lijst van relaties tussen entiteiten, verrijkt deze met entiteit-, attribuut- en identifier-informatie,
+        en filtert relaties naar externe modellen uit.
+
         Args:
             lst_relationships (list[dict]): Power Designer items die een relatie beschrijven tussen entiteiten
             lst_entity (dict): Bevat alle entiteiten
@@ -330,16 +332,11 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             list[dict]: Relaties tussen model entiteiten
         """
-        # Creating dictionaries to simplify adding data to relationships
         dict_entities = {
             entity["Id"]: entity for entity in lst_entity if "Id" in entity
         }
-
-        dict_attributes = {
-            attr["Id"]: attr for entity in lst_entity for attr in entity["Attributes"]
-        }
+        dict_attributes = self._build_attributes_dict(lst_entity)
         dict_identifiers = self._build_identifiers_dict(lst_entity)
-        # Processing relationships
         lst_relationships = self.clean_keys(lst_relationships)
         lst_relationships = (
             [lst_relationships]
@@ -347,22 +344,45 @@ class TransformModelInternal(ObjectTransformer):
             else lst_relationships
         )
         for i, relationship in enumerate(lst_relationships):
-            # Add entity data
-            if relationship := self._relationship_entities(
-                relationship=relationship, dict_entities=dict_entities
-            ):
-                # Add attribute data
-                relationship = self._relationship_join(
-                    relationship=relationship, dict_attributes=dict_attributes
-                )
-                # Add identifier data
-                relationship = self._relationship_identifiers(
-                    relationship=relationship, dict_identifiers=dict_identifiers
-                )
-            else:
-                lst_relationships[i] = relationship
+            relationship = self._process_relationship(
+                relationship=relationship,
+                dict_entities=dict_entities,
+                dict_attributes=dict_attributes,
+                dict_identifiers=dict_identifiers,
+            )
+            lst_relationships[i] = relationship
         lst_relationships = [x for x in lst_relationships if x is not None]
         return lst_relationships
+
+    def _build_attributes_dict(self, lst_entity: list[dict]) -> dict:
+        """Bouwt een dictionary van attributen op basis van hun Id."""
+        return {
+            attr["Id"]: attr
+            for entity in lst_entity
+            if "Attributes" in entity
+            for attr in entity["Attributes"]
+            if "Id" in attr
+        }
+
+    def _process_relationship(
+        self,
+        relationship: dict,
+        dict_entities: dict,
+        dict_attributes: dict,
+        dict_identifiers: dict,
+    ) -> dict:
+        """Verwerkt een enkele relatie: entiteiten, joins en identifiers."""
+        if relationship := self._relationship_entities(
+            relationship=relationship, dict_entities=dict_entities
+        ):
+            relationship = self._relationship_join(
+                relationship=relationship, dict_attributes=dict_attributes
+            )
+            relationship = self._relationship_identifiers(
+                relationship=relationship, dict_identifiers=dict_identifiers
+            )
+            return relationship
+        return None
 
     def _build_identifiers_dict(self, lst_entity: list[dict]) -> dict:
         """Bouwt een dictionary van identifiers (primaire en vreemde sleutels) op basis van hun Id."""
@@ -469,7 +489,9 @@ class TransformModelInternal(ObjectTransformer):
         """Haalt het attribuut voor Entity1 op en logt indien niet gevonden."""
         id_attr = self._extract_entity1_attribute_id(join_data, relationship)
         if id_attr is None:
-            logger.warning("id_attr is None voor join[Entity1Attribute], attribuut ontbreekt mogelijk in join_data")
+            logger.warning(
+                "id_attr is None voor join[Entity1Attribute], attribuut ontbreekt mogelijk in join_data"
+            )
             return None
         if id_attr in dict_attributes:
             return dict_attributes[id_attr]
