@@ -132,40 +132,12 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             dict: Entiteit met geschoonde attribuut data
         """
-        if "c:Attributes" in entity:
-            lst_attrs = entity["c:Attributes"]["o:EntityAttribute"]
-        elif "Variables" in entity:
-            lst_attrs = entity["Variables"]
-        lst_attrs = [lst_attrs] if isinstance(lst_attrs, dict) else lst_attrs
+        lst_attrs = self._extract_entity_attributes(entity)
         lst_attrs = self.clean_keys(lst_attrs)
         for i in range(len(lst_attrs)):
-            # Change domain data
             attr = lst_attrs[i]
             attr["Order"] = i
-            if "c:Domain" in attr:
-                # Reroute domain data
-                if "o:Domain" in attr["c:Domain"]:
-                    id_domain = attr["c:Domain"]["o:Domain"]["@Ref"]
-
-                    # Add matching domain data
-                    attr_domain = dict_domains[id_domain]
-                    keys_domain = {
-                        "Id",
-                        "Name",
-                        "Code",
-                        "DataType",
-                        "Length",
-                        "Precision",
-                    }
-                    attr_domain = {
-                        k: attr_domain[k] for k in keys_domain if k in attr_domain
-                    }
-                    attr["Domain"] = attr_domain
-                    attr.pop("c:Domain")
-                else:
-                    logger.error(
-                        f"[o:Domain] niet gevonden in attribuut voor {attr['Code']} in {self.file_pd_ldm}"
-                    )
+            attr = self._enrich_attribute_with_domain(attr, dict_domains)
             lst_attrs[i] = attr
             entity["Attributes"] = lst_attrs
         if "c:Attributes" in entity:
@@ -173,6 +145,58 @@ class TransformModelInternal(ObjectTransformer):
         elif "Variables" in entity:
             entity.pop("Variables")
         return entity
+
+    def _extract_entity_attributes(self, entity: dict):
+        """Extraheert de lijst van attributen uit een entiteit.
+
+        Args:
+            entity (dict): De entiteit waaruit attributen worden gehaald.
+
+        Returns:
+            list: Lijst van attributen.
+        """
+        if "c:Attributes" in entity:
+            lst_attrs = entity["c:Attributes"]["o:EntityAttribute"]
+        elif "Variables" in entity:
+            lst_attrs = entity["Variables"]
+        else:
+            lst_attrs = []
+        if isinstance(lst_attrs, dict):
+            lst_attrs = [lst_attrs]
+        return lst_attrs
+
+    def _enrich_attribute_with_domain(self, attr: dict, dict_domains: dict) -> dict:
+        """Verrijkt een attribuut met domein data indien aanwezig.
+
+        Args:
+            attr (dict): Het attribuut dat verrijkt moet worden.
+            dict_domains (dict): Dictionary met alle domeinen.
+
+        Returns:
+            dict: Het verrijkte attribuut.
+        """
+        if "c:Domain" in attr:
+            if "o:Domain" in attr["c:Domain"]:
+                id_domain = attr["c:Domain"]["o:Domain"]["@Ref"]
+                attr_domain = dict_domains[id_domain]
+                keys_domain = {
+                    "Id",
+                    "Name",
+                    "Code",
+                    "DataType",
+                    "Length",
+                    "Precision",
+                }
+                attr_domain = {
+                    k: attr_domain[k] for k in keys_domain if k in attr_domain
+                }
+                attr["Domain"] = attr_domain
+                attr.pop("c:Domain")
+            else:
+                logger.error(
+                    f"[o:Domain] niet gevonden in attribuut voor {attr.get('Code', '')} in {self.file_pd_ldm}"
+                )
+        return attr
 
     def _entity_identifiers(self, entity: dict, dict_attrs: dict) -> dict:
         """Omvormen en schoonmaken van de index en primary key van een interne entiteit.
