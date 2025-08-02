@@ -10,7 +10,6 @@ logger = get_logger(__name__)
 class TransformSourceComposition(ObjectTransformer):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
-        self.file_pd_ldm = file_pd_ldm
 
     def source_composition(
         self,
@@ -87,7 +86,10 @@ class TransformSourceComposition(ObjectTransformer):
         return lst_composition_items
 
     def _transform_composition_items(
-        self, lst_composition_items: list[dict], dict_objects: dict, dict_attributes: dict
+        self,
+        lst_composition_items: list[dict],
+        dict_objects: dict,
+        dict_attributes: dict,
     ) -> list[dict]:
         """Transformeert en verrijkt individuele compositie-items."""
         for i, composition_item in enumerate(lst_composition_items):
@@ -214,12 +216,12 @@ class TransformSourceComposition(ObjectTransformer):
             f"Start met transformeren entiteit voor compositie '{composition['Name']} for {self.file_pd_ldm}'"
         )
 
-        if "c:ExtendedComposition.Content" in composition:
+        path_keys_1 = ["c:ExtendedComposition.Content", "o:ExtendedSubObject"]
+        path_keys_2 = ["c:ExtendedCollections", "o:ExtendedCollection"]
+        if entity := self._get_nested(data=composition, keys=path_keys_1):
             root_data = "c:ExtendedComposition.Content"
-            entity = composition["c:ExtendedComposition.Content"]["o:ExtendedSubObject"]
-        elif "c:ExtendedCollections" in composition:
+        elif entity := self._get_nested(data=composition, keys=path_keys_2):
             root_data = "c:ExtendedCollections"
-            entity = composition["c:ExtendedCollections"]["o:ExtendedCollection"]
         elif "c:Content" in composition:
             root_data = "c:Content"
             entity = composition
@@ -259,10 +261,8 @@ class TransformSourceComposition(ObjectTransformer):
         lst_conditions = self._extract_conditions_from_composition(composition)
         lst_conditions = self.clean_keys(lst_conditions)
 
-        for i in range(len(lst_conditions)):
-            condition = lst_conditions[i]
+        for i, condition in enumerate(lst_conditions):
             self._process_condition(condition, i, composition, dict_attributes)
-            lst_conditions[i] = condition
 
         composition["JoinConditions"] = lst_conditions
         composition.pop("c:ExtendedCompositions")
@@ -279,11 +279,16 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             list: Een lijst met condities uit de compositie.
         """
-        lst_conditions = composition["c:ExtendedCompositions"]["o:ExtendedComposition"][
-            "c:ExtendedComposition.Content"
-        ]["o:ExtendedSubObject"]
-        if isinstance(lst_conditions, dict):
-            lst_conditions = [lst_conditions]
+        path_keys = [
+            "c:ExtendedCompositions",
+            "o:ExtendedComposition",
+            "c:ExtendedComposition.Content",
+            "o:ExtendedSubObject",
+        ]
+        lst_conditions = self._get_nested(data=composition, keys=path_keys)
+        lst_conditions = (
+            [lst_conditions] if isinstance(lst_conditions, dict) else lst_conditions
+        )
         return lst_conditions
 
     def _process_condition(
@@ -368,6 +373,18 @@ class TransformSourceComposition(ObjectTransformer):
             dict: Geschoonde, omgevormde en verrijkte data van het join conditie component
         """
         dict_components = {}
+        dict_child, dict_parent, alias_parent = self._extract_join_components(lst_components, dict_attributes)
+        if len(dict_parent) > 0:
+            if alias_parent is not None:
+                dict_parent.update({"EntityAlias": alias_parent})
+            dict_components["AttributeParent"] = dict_parent
+        if len(dict_child) > 0:
+            dict_child.update({"EntityAlias": alias_child})
+            dict_components["AttributeChild"] = dict_child
+        return dict_components
+
+    def _extract_join_components(self, lst_components: list, dict_attributes: dict):
+        """Extraheert child, parent en parent alias uit de join componenten."""
         dict_child = {}
         dict_parent = {}
         alias_parent = None
@@ -388,17 +405,11 @@ class TransformSourceComposition(ObjectTransformer):
                 logger.warning(
                     f"Ongeldige join item in conditie '{type_component}' for {self.file_pd_ldm}"
                 )
+        return dict_child, dict_parent, alias_parent
 
-        if len(dict_parent) > 0:
-            if alias_parent is not None:
-                dict_parent.update({"EntityAlias": alias_parent})
-            dict_components["AttributeParent"] = dict_parent
-        if len(dict_child) > 0:
-            dict_child.update({"EntityAlias": alias_child})
-            dict_components["AttributeChild"] = dict_child
-        return dict_components
-
-    def _extract_join_child_attribute(self, component: dict, dict_attributes: dict) -> dict:
+    def _extract_join_child_attribute(
+        self, component: dict, dict_attributes: dict
+    ) -> dict:
         """Haalt het child attribute dictionary op voor een join conditie component.
 
         Args:
@@ -426,10 +437,13 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             str: De alias van het parent source object.
         """
+        path_keys = ["c:Content", "o:ExtendedSubObject", "@Ref"]
         logger.debug(f"Parent entity alias toegevoegd voor {self.file_pd_ldm}")
-        return component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
+        return self._get_nested(data=component, keys=path_keys)
 
-    def _extract_join_parent_attribute(self, component: dict, dict_attributes: dict) -> dict:
+    def _extract_join_parent_attribute(
+        self, component: dict, dict_attributes: dict
+    ) -> dict:
         """Haalt het parent attribute dictionary op voor een join conditie component.
 
         Args:
@@ -439,14 +453,15 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             dict: Een kopie van het parent attribute dictionary.
         """
-        logger.debug(f"Parent attribute toegevoegd voor {self.file_pd_ldm}")
-        type_entity = [
-            value
-            for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-            if value in component["c:Content"]
-        ][0]
-        id_attr = component["c:Content"][type_entity]["@Ref"]
-        return dict_attributes[id_attr].copy()
+        if content := component.get("c:Content"):
+            logger.debug(f"Parent attribute toegevoegd voor {self.file_pd_ldm}")
+            type_entity = [
+                value
+                for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
+                if value in content
+            ][0]
+            id_attr = content[type_entity]["@Ref"]
+            return dict_attributes[id_attr].copy()
 
     def _composition_source_conditions(
         self, composition: dict, dict_attributes: dict
@@ -466,10 +481,8 @@ class TransformSourceComposition(ObjectTransformer):
         lst_conditions = self._extract_source_conditions_from_composition(composition)
         lst_conditions = self.clean_keys(lst_conditions)
 
-        for i in range(len(lst_conditions)):
-            condition = lst_conditions[i]
+        for i, condition in enumerate(lst_conditions):
             self._process_source_condition(condition, i, dict_attributes, composition)
-            lst_conditions[i] = condition
         composition["SourceConditions"] = lst_conditions
         return composition
 
@@ -482,11 +495,16 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             list: Een lijst met source condities uit de compositie.
         """
-        lst_conditions = composition["c:ExtendedCompositions"]["o:ExtendedComposition"][
-            "c:ExtendedComposition.Content"
-        ]["o:ExtendedSubObject"]
-        if isinstance(lst_conditions, dict):
-            lst_conditions = [lst_conditions]
+        path_keys = [
+            "c:ExtendedCompositions",
+            "o:ExtendedComposition",
+            "c:ExtendedComposition.Content",
+            "o:ExtendedSubObject",
+        ]
+        lst_conditions = self._get_nested(data=composition, keys=path_keys)
+        lst_conditions = (
+            [lst_conditions] if isinstance(lst_conditions, dict) else lst_conditions
+        )
         return lst_conditions
 
     def _process_source_condition(
@@ -502,14 +520,17 @@ class TransformSourceComposition(ObjectTransformer):
         """
         condition["Order"] = index
         parent_literal = ""
-        if "ExtendedAttributesText" in condition:
+        if extended_attr_text := self._get_nested(
+            condition, keys=["ExtendedAttributesText"]
+        ):
             parent_literal = self._extract_value_from_attribute_text(
-                condition["ExtendedAttributesText"],
+                extended_attr_text,
                 preceded_by="mdde_ParentLiteralValue,",
             )
         lst_components = condition["c:ExtendedCollections"]["o:ExtendedCollection"]
-        if isinstance(lst_components, dict):
-            lst_components = [lst_components]
+        lst_components = (
+            [lst_components] if isinstance(lst_components, dict) else lst_components
+        )
         sourceconditionvariable = self._source_condition_components(
             lst_components=lst_components,
             dict_attributes=dict_attributes,
@@ -575,7 +596,9 @@ class TransformSourceComposition(ObjectTransformer):
                 logger.debug(
                     f"SourceConditionAttribute alias toegevoegd voor {self.file_pd_ldm}"
                 )
-                alias_parent = component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
+                alias_parent = self._get_nested(
+                    data=component, keys=["c:Content", "o:ExtendedSubObject", "@Ref"]
+                )
             elif component["Name"] == "mdde_ParentAttribute":
                 logger.debug(
                     f"SourceConditionAttribute alias toegevoegd voor {self.file_pd_ldm}"
@@ -793,12 +816,16 @@ class TransformSourceComposition(ObjectTransformer):
             dict: Een kopie van het child attribute dictionary, of leeg dict als niet gevonden.
         """
         lst_components = self.clean_keys(content=lst_components)
-        for component in lst_components:
-            if component["Name"] == "mdde_ChildAttribute":
-                return self._extract_child_attribute(
+        return next(
+            (
+                self._extract_child_attribute(
                     component=component, dict_attributes=dict_attributes
                 )
-        return {}
+                for component in lst_components
+                if component["Name"] == "mdde_ChildAttribute"
+            ),
+            {},
+        )
 
     def _get_scalar_parent_attribute_and_alias(
         self, lst_components: list[dict], dict_attributes: dict
@@ -909,21 +936,19 @@ class TransformSourceComposition(ObjectTransformer):
         Returns:
             dict: mapping met de zojuist toegevoegde expressie
         """
-        if "AttributeMapping" in mapping:
-            lst_mapping = mapping["AttributeMapping"]
+        if lst_mapping := self._get_nested(data=mapping, keys=["AttributeMapping"]):
             for map in lst_mapping:
-                if "EntityAlias" in map:
-                    alias_id = map["EntityAlias"]
-                    lst_scalarexpression = mapping["SourceComposition"]
+                if alias_id := self._get_nested(data=map, keys=["EntityAlias"]):
+                    lst_scalarexpression = mapping.get("SourceComposition")
                     # Lookup the alias_id in composition. For the attributemapping we'll replace the entityalias with the expression we've created in the sourcecomposition
                     for composition in lst_scalarexpression:
                         if composition["Id"] == alias_id:
-                            mappingexpression = composition["Expression"]
+                            mappingexpression = composition.get("Expression")
                     map["Expression"] = mappingexpression
                     map.pop("EntityAlias")
         else:
             logger.warning(
-                f"Attributemapping van {mapping['Name']} in {self.file_pd_ldm} ontbreekt voor update"
+                f"Attributemapping van {mapping['Name']} in '{self.file_pd_ldm}' ontbreekt voor update"
             )
         return mapping
 
@@ -945,15 +970,20 @@ class TransformSourceComposition(ObjectTransformer):
             logger.info(
                 f"'{idx_check}' waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
             )
-            idx_start = extended_attrs_text.find(preceded_by) + len(preceded_by)
-            idx_end = extended_attrs_text.find("\n", idx_start)
-            idx_end = idx_end if idx_end > -1 else len(extended_attrs_text) + 1
-            value = extended_attrs_text[idx_start:idx_end]
-            idx_start = value.find("=") + 1
-            value = value[idx_start:].upper()
+            return self._extract_value_with_indices(extended_attrs_text, preceded_by)
         else:
             logger.info(
                 f"Geen waardes gevonden in extended_attrs_text voor {self.file_pd_ldm} bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
             )
-            value = ""
-        return value
+            return ""
+
+    def _extract_value_with_indices(
+        self, extended_attrs_text: str, preceded_by: str
+    ) -> str:
+        """Hulpmethode om de waarde te extraheren uit de tekst op basis van indices."""
+        idx_start = extended_attrs_text.find(preceded_by) + len(preceded_by)
+        idx_end = extended_attrs_text.find("\n", idx_start)
+        idx_end = idx_end if idx_end > -1 else len(extended_attrs_text) + 1
+        value = extended_attrs_text[idx_start:idx_end]
+        idx_start = value.find("=") + 1
+        return value[idx_start:].upper()

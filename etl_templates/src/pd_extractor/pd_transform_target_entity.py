@@ -26,9 +26,10 @@ class TransformTargetEntity(ObjectTransformer):
         logger.debug(
             f"Start target_entity voor '{mapping['Name']}' in {self.file_pd_ldm}"
         )
+        path_keys = ["c:Classifier", "o:Entity", "@Ref"]
+
         # Target entity rerouting and enriching
-        if "o:Entity" in mapping.get("c:Classifier", {}):
-            id_entity_target = mapping["c:Classifier"]["o:Entity"]["@Ref"]
+        if id_entity_target := self._get_nested(data=mapping, keys=path_keys):
             mapping["EntityTarget"] = dict_objects[id_entity_target]
             logger.debug(
                 f"Mapping target_entity: '{mapping['EntityTarget']['Name']}' in {self.file_pd_ldm}"

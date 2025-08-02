@@ -10,7 +10,6 @@ class TransformModelsExternal(ObjectTransformer):
     """
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
-        self.file_pd_ldm = file_pd_ldm
 
     def models(self, lst_models: list[dict], dict_entities: dict) -> list[dict]:
         """Doelmodellen bevatten verwijzingen naar entiteiten uit een ander model. Het doelmodel wordt verrijkt met deze entiteiten
@@ -26,8 +25,8 @@ class TransformModelsExternal(ObjectTransformer):
         lst_models = self.clean_keys(lst_models)
 
         for model in lst_models:
-            if "c:SessionShortcuts" in model:
-                shortcuts = model["c:SessionShortcuts"]["o:Shortcut"]
+            path_keys = ["c:SessionShortcuts", "o:Shortcut"]
+            if shortcuts := self._get_nested(data=model, keys=path_keys):
                 if isinstance(shortcuts, dict):
                     shortcuts = [shortcuts]
                 shortcuts = [i["@Ref"] for i in shortcuts]
@@ -81,12 +80,10 @@ class TransformModelsExternal(ObjectTransformer):
         lst_attributes = entity["c:SubShortcuts"]["o:Shortcut"]
         if isinstance(lst_attributes, dict):
             lst_attributes = [lst_attributes]
-        for i in range(len(lst_attributes)):
-            attr = lst_attributes[i]
+        for i, attr in enumerate(lst_attributes):
             if "c:FullShortcutReplica" in attr:
                 attr.pop("c:FullShortcutReplica")
             attr["Order"] = i
-            lst_attributes[i] = attr
         lst_attributes = self.clean_keys(lst_attributes)
         entity["Attributes"] = lst_attributes
         return entity

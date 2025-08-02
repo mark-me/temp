@@ -12,7 +12,6 @@ class TransformStereotype(ObjectTransformer):
 
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
-        self.file_pd_ldm = file_pd_ldm
 
     def domains(self, lst_domains: list[dict]) -> dict:
         """Verrijk de stereotypes met domain data
@@ -23,13 +22,11 @@ class TransformStereotype(ObjectTransformer):
         Returns:
             dict: Objecten met het opgegeven stereotype zijn verrijkt met domain data
         """
-        dict_domains = {}
         if isinstance(lst_domains, dict):
             lst_domains = [lst_domains]
         lst_domains = self.convert_timestamps(lst_domains)
         lst_domains = self.clean_keys(lst_domains)
-        for domain in lst_domains:
-            dict_domains[domain["Id"]] = domain
+        dict_domains = {domain["Id"]: domain for domain in lst_domains}
         return dict_domains
 
     def objects(self, lst_objects: list[dict], dict_domains: dict) -> list[dict]:
@@ -43,15 +40,13 @@ class TransformStereotype(ObjectTransformer):
             list: Geschoonde en verrijkte stereotype objecten
         """
         lst_objects = self.clean_keys(lst_objects)
-        for i in range(len(lst_objects)):
-            objects = lst_objects[i]
+        for objects in lst_objects:
             logger.debug(f"Start met het definieren van object '{objects['Name']}' in {self.file_pd_ldm}")
             objects = self._object_variables(object=objects, dict_domains=dict_domains)
             if objects["Stereotype"] == "mdde_AggregateBusinessRule":
-                objects = self._object_identifiers(object=objects)
+                objects = self._object_identifiers(dict_object=objects)
             self._process_sql_expression(objects=objects)
             logger.debug(f"Klaar met het definieren van object {objects['Name']} in {self.file_pd_ldm}")
-            lst_objects[i] = objects
         return lst_objects
 
     def _process_sql_expression(self, objects: dict):
@@ -170,11 +165,10 @@ class TransformStereotype(ObjectTransformer):
         Returns:
             list[dict]: Verrijkte variabelen
         """
-        for i in range(len(lst_variables)):
-            variables = lst_variables[i]
+        for i, variables in enumerate(lst_variables):
             variables["Order"] = i
-            if "c:Domain" in variables:
-                id_domain = variables["c:Domain"]["o:Domain"]["@Ref"]
+            path_keys = ["c:Domain", "o:Domain", "@Ref"]
+            if id_domain := self._get_nested(data=variables, keys=path_keys):
                 attr_domain = dict_domains[id_domain]
                 keys_domain = {"Id", "Name", "Code", "DataType", "Length", "Precision"}
                 attr_domain = {
@@ -182,10 +176,9 @@ class TransformStereotype(ObjectTransformer):
                 }
                 variables["Domain"] = attr_domain
                 variables.pop("c:Domain")
-            lst_variables[i] = variables
         return lst_variables
 
-    def _object_identifiers(self, object: dict) -> dict:
+    def _object_identifiers(self, dict_object: dict) -> dict:
         """Schoon de identifier(s) (sleutels) van een stereotype object
         Args:
             object (dict): Stereotype object
@@ -194,47 +187,73 @@ class TransformStereotype(ObjectTransformer):
             dict: Stereotype object met geschoonde identifier(s)
         """
         dict_vars = {
-            d["Id"]: {"Name": d["Name"], "Code": d["Code"]} for d in object["Variables"]
+            d["Id"]: {"Name": d["Name"], "Code": d["Code"]} for d in dict_object["Variables"]
         }
-        # Set primary identifiers as an attribute of the identifiers
-        has_primary = "c:PrimaryIdentifier" in object
+        has_primary, primary_id = self._check_primary_identifier(dict_object)
+        logger.debug(f"Start met het verzamelen van identifiers voor object {dict_object['Name']} for {self.file_pd_ldm}")
+        if identifiers := self._extract_identifiers(dict_object):
+            identifiers = self.clean_keys(identifiers)
+            self._process_identifiers(
+                identifiers, dict_object, dict_vars, has_primary, primary_id
+            )
+            dict_object["Identifiers"] = identifiers
+            logger.debug(f"Klaar met het verzamelen van identifiers voor {dict_object['Name']} in {self.file_pd_ldm}")
+        return dict_object
+
+
+    def _check_primary_identifier(self, dict_object: dict) -> tuple[bool, str | None]:
+        """Controleert of er een primaire identifier aanwezig is en retourneert de status en het id."""
+        has_primary = "c:PrimaryIdentifier" in dict_object
+        primary_id = None
         if has_primary:
-            primary_id = object["c:PrimaryIdentifier"]["o:Identifier"]["@Ref"]
-        logger.debug(f"Start met het verzamelen van identifiers voor object {object['Name']} for {self.file_pd_ldm}")
-        # Reroute identifiers
-        if "c:Identifiers" in object:
-            identifiers = object["c:Identifiers"]["o:Identifier"]
+            primary_id = dict_object["c:PrimaryIdentifier"]["o:Identifier"]["@Ref"]
+        return has_primary, primary_id
+
+    def _extract_identifiers(self, dict_object: dict) -> list | None:
+        """Extraheert de identifiers uit het object."""
+        path_keys = ["c:Identifiers", "o:Identifier"]
+        if identifiers := self._get_nested(data=dict_object, keys=path_keys):
             if isinstance(identifiers, dict):
                 identifiers = [identifiers]
-            identifiers = self.clean_keys(identifiers)
-            # Clean and transform identifier data
-            for j in range(len(identifiers)):
-                identifier = identifiers[j]
-                identifier["EntityID"] = object["Id"]
-                identifier["EntityName"] = object["Name"]
-                identifier["EntityCode"] = object["Code"]
-                if "c:Identifier.Attributes" not in identifier:
-                    logger.error(
-                        f"Geen attributen toegevoegd in identifier {identifier['Name']} voor {self.file_pd_ldm}'"
-                    )
-                else:
-                    lst_var_id = identifier["c:Identifier.Attributes"][
-                        "o:EntityAttribute"
-                    ]
-                    if isinstance(lst_var_id, dict):
-                        lst_var_id = [lst_var_id]
-                    lst_var_id = [dict_vars[d["@Ref"]] for d in lst_var_id]
-                    identifier["Variables"] = lst_var_id
-                    # identifier.pop("c:Identifier.Attributes")
-                # Set primary identifier attribute
-                if has_primary:
-                    identifier["IsPrimary"] = primary_id == identifier["Id"]
-                identifiers[j] = identifier
-            object["Identifiers"] = identifiers
-            #object.pop("c:Identifiers")
-            #object.pop("c:PrimaryIdentifier")
-            logger.debug(f"Klaar met het verzamelen van identifiers voor {object['Name']} in {self.file_pd_ldm}")
-        return object
+            return identifiers
+        return None
+
+    def _process_identifiers(
+        self,
+        identifiers: list[dict],
+        dict_object: dict,
+        dict_vars: dict,
+        has_primary: bool,
+        primary_id: str | None,
+    ):
+        """Verwerkt en verrijkt de identifiers met entiteit- en variabele-informatie.
+
+        Deze functie vult de identifiers aan met entiteit-informatie, koppelt variabelen en markeert de primaire identifier.
+
+        Args:
+            identifiers (list[dict]): Lijst van identifier dictionaries.
+            dict_object (dict): Het stereotype object waartoe de identifiers behoren.
+            dict_vars (dict): Dictionary met variabelen op basis van hun Id.
+            has_primary (bool): Of er een primaire identifier aanwezig is.
+            primary_id (str | None): De Id van de primaire identifier, indien aanwezig.
+        """
+        for identifier in identifiers:
+            identifier["EntityID"] = dict_object["Id"]
+            identifier["EntityName"] = dict_object["Name"]
+            identifier["EntityCode"] = dict_object["Code"]
+            path_keys = ["c:Identifier.Attributes", "o:EntityAttribute"]
+            if lst_var_id := self._get_nested(data=identifier, keys=path_keys):
+                if isinstance(lst_var_id, dict):
+                    lst_var_id = [lst_var_id]
+                lst_var_id = [dict_vars[d["@Ref"]] for d in lst_var_id]
+                identifier["Variables"] = lst_var_id
+            else:
+                logger.error(
+                    f"Geen attributen toegevoegd in identifier {identifier['Name']} voor {self.file_pd_ldm}'"
+                )
+            if has_primary:
+                identifier["IsPrimary"] = primary_id == identifier["Id"]
+
 
     def _extract_expression_variables(self, sqlexpression: str) -> list[str]:
         """Split de sqlexpression van een scalar in 1 of meerdere variabelen

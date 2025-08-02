@@ -120,7 +120,7 @@ class Orchestrator:
                         )
             elif max_severity_level == "ERROR":
                 raise ExtractionIssuesFound(
-                    f"Verwerking gestopt nadat er issues zijn aangetroffen.\nZie rapport: {file_issues}"
+                    f"Verwerking gestopt nadat er breaking issues zijn aangetroffen.\nZie rapport: {file_issues}"
                 )
 
             return func_result

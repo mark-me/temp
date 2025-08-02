@@ -27,10 +27,7 @@ class ObjectTransformer(ExtractorBase):
         Returns:
             _type_: List of dict met hernoemde sleutels (afhankelijk van welk type werd doorgegeven als parameter)
         """
-        if isinstance(content, dict):
-            lst_object = [content]
-        else:
-            lst_object = content
+        lst_object = [content] if isinstance(content, dict) else content
         for i in range(len(lst_object)):
             attrs = [key for key in list(lst_object[i].keys()) if key[:1] == "@"]
             for attr in attrs:
@@ -39,10 +36,7 @@ class ObjectTransformer(ExtractorBase):
             for attr in attrs:
                 lst_object[i][attr[2:]] = lst_object[i].pop(attr)
 
-        if isinstance(content, dict):
-            result = lst_object[0]
-        else:
-            result = lst_object
+        result = lst_object[0] if isinstance(content, dict) else lst_object
         return result
 
     def _convert_values_datetime(self, d: dict, convert_key: str) -> dict:

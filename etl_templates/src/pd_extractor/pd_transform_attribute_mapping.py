@@ -79,7 +79,6 @@ class TransformAttributeMapping(ObjectTransformer):
             tuple: (has_entity_alias (bool), id_entity_alias (str of None))
         """
         has_entity_alias = False
-        id_entity_alias = None
         path_keys = [
             "c:ExtendedCollections",
             "o:ExtendedCollection",
@@ -87,11 +86,9 @@ class TransformAttributeMapping(ObjectTransformer):
             "o:ExtendedSubObject",
             "@Ref",
         ]
-        if "c:ExtendedCollections" in attr_map:
+        id_entity_alias = self._get_nested(data=attr_map, keys=path_keys)
+        if id_entity_alias:
             has_entity_alias = True
-            id_entity_alias = attr_map["c:ExtendedCollections"]["o:ExtendedCollection"][
-                "c:Content"
-            ]["o:ExtendedSubObject"]["@Ref"]
             logger.info(
                 "Ongebruikt object; file:pd_transform_attribute_mapping; object:id_entity_alias"
             )

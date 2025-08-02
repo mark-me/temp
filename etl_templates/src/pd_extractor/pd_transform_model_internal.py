@@ -10,7 +10,6 @@ class TransformModelInternal(ObjectTransformer):
 
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
-        self.file_pd_ldm = file_pd_ldm
 
     def model(self, content: dict) -> dict:
         """Model generieke data
@@ -22,9 +21,9 @@ class TransformModelInternal(ObjectTransformer):
             dict: Geschoonde versie van de data op het niveau van het model
         """
         content = self.convert_timestamps(content)
-        if "c:GenerationOrigins" in content:
-            model = content["c:GenerationOrigins"]["o:Shortcut"]  # Document model
-        else:
+        path_keys = ["c:GenerationOrigins", "o:Shortcut"]
+        model = self._get_nested(data=content, keys=path_keys)
+        if not model:
             lst_include = [
                 "@Id",
                 "@a:ObjectID",
@@ -47,21 +46,21 @@ class TransformModelInternal(ObjectTransformer):
         return model
 
     def domains(self, lst_domains: list[dict]) -> dict:
-        """Domain (list) gerelateerde data
+        """Verwerkt en schoont domein data uit het Power Designer model.
 
-        Input:
-            lst_domains (list): Power Designer domain data
+        Deze functie converteert timestamps, maakt de domein data schoon en retourneert een dictionary met domeinen.
+
+        Args:
+            lst_domains (list[dict]): Lijst van domeinen uit het Power Designer model.
 
         Returns:
-            dict: Geschoonde en omgehangen domains (data-types)
+            dict: Dictionary met domeinen, waarbij de sleutel het domein-ID is.
         """
-        dict_domains = {}
         if isinstance(lst_domains, dict):
             lst_domains = [lst_domains]
         lst_domains = self.convert_timestamps(lst_domains)
         lst_domains = self.clean_keys(lst_domains)
-        for domain in lst_domains:
-            dict_domains[domain["Id"]] = domain
+        dict_domains = {domain["Id"]: domain for domain in lst_domains}
         return dict_domains
 
     def datasources(self, lst_datasources: list[dict]) -> dict:
@@ -73,16 +72,18 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             dict: Geschoonde datasource data (Id, naam en code) te gebruiken in model en mapping
         """
-        dict_datasources = {}
+
         if isinstance(lst_datasources, dict):
             lst_datasources = [lst_datasources]
         lst_datasources = self.clean_keys(lst_datasources)
-        for datasource in lst_datasources:
-            dict_datasources[datasource["Id"]] = {
+        dict_datasources = {
+            datasource["Id"]: {
                 "Id": datasource["Id"],
                 "Name": datasource["Name"],
                 "Code": datasource["Code"],
             }
+            for datasource in lst_datasources
+        }
         return dict_datasources
 
     def entities(self, lst_entities: list[dict], dict_domains: dict) -> list:
@@ -161,7 +162,9 @@ class TransformModelInternal(ObjectTransformer):
                     attr["Domain"] = attr_domain
                     attr.pop("c:Domain")
                 else:
-                    logger.error(f"[o:Domain] niet gevonden in attribuut voor {attr['Code']} in {self.file_pd_ldm}")
+                    logger.error(
+                        f"[o:Domain] niet gevonden in attribuut voor {attr['Code']} in {self.file_pd_ldm}"
+                    )
             lst_attrs[i] = attr
             entity["Attributes"] = lst_attrs
         if "c:Attributes" in entity:
@@ -294,7 +297,9 @@ class TransformModelInternal(ObjectTransformer):
         identifier["Attributes"] = lst_attr_id
         identifier.pop("c:Identifier.Attributes")
 
-    def relationships(self, lst_relationships: list[dict], lst_entity: list[dict]) -> list[dict]:
+    def relationships(
+        self, lst_relationships: list[dict], lst_entity: list[dict]
+    ) -> list[dict]:
         """Vormt om en verrijkt relatie data
 
         Args:
@@ -310,7 +315,35 @@ class TransformModelInternal(ObjectTransformer):
         dict_attributes = {
             attr["Id"]: attr for entity in lst_entity for attr in entity["Attributes"]
         }
-        dict_identifiers = {
+        dict_identifiers = self._build_identifiers_dict(lst_entity)
+        # Processing relationships
+        lst_relationships = self.clean_keys(lst_relationships)
+        lst_relationships = (
+            [lst_relationships]
+            if isinstance(lst_relationships, dict)
+            else lst_relationships
+        )
+        for i, relationship in enumerate(lst_relationships):
+            # Add entity data
+            if relationship := self._relationship_entities(
+                relationship=relationship, dict_entities=dict_entities
+            ):
+                # Add attribute data
+                relationship = self._relationship_join(
+                    relationship=relationship, dict_attributes=dict_attributes
+                )
+                # Add identifier data
+                relationship = self._relationship_identifiers(
+                    relationship=relationship, dict_identifiers=dict_identifiers
+                )
+            else:
+                lst_relationships[i] = relationship
+        lst_relationships = [x for x in lst_relationships if x is not None]
+        return lst_relationships
+
+    def _build_identifiers_dict(self, lst_entity: list[dict]) -> dict:
+        """Bouwt een dictionary van identifiers (primaire en vreemde sleutels) op basis van hun Id."""
+        return {
             entity["KeyPrimary"]["Id"]: entity["KeyPrimary"]
             for entity in lst_entity
             if "KeyPrimary" in entity
@@ -320,27 +353,6 @@ class TransformModelInternal(ObjectTransformer):
             if "KeysForeign" in entity
             for ids in entity["KeysForeign"]
         }
-        # Processing relationships
-        lst_relationships = self.clean_keys(lst_relationships)
-        if isinstance(lst_relationships, dict):
-            lst_relationships = [lst_relationships]
-        for i in range(len(lst_relationships)):
-            relationship = lst_relationships[i]
-            # Add entity data
-            self._relationship_entities(
-                relationship=relationship, dict_entities=dict_entities
-            )
-            # Add attribute data
-            relationship = self._relationship_join(
-                relationship=relationship, dict_attributes=dict_attributes
-            )
-            # Add identifier data
-            relationship = self._relationship_identifiers(
-                relationship=relationship, dict_identifiers=dict_identifiers
-            )
-            lst_relationships[i] = relationship
-
-        return lst_relationships
 
     def _relationship_entities(self, relationship: dict, dict_entities: dict) -> dict:
         """Vormt om en hernoemt de entiteiten beschreven in de relatie
@@ -352,14 +364,16 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             dict: De geschoonde versie van de relatie data
         """
-        id_entity = relationship["c:Object1"]["o:Entity"]["@Ref"]
+        relationship_with_external = False
+        id_entity = self._get_nested(
+            data=relationship, keys=["c:Object1", "o:Entity", "@Ref"]
+        )
         if id_entity in dict_entities:
             relationship["Entity1"] = dict_entities[id_entity]
             relationship.pop("c:Object1")
         else:
-            logger.warning(
-                f"{id_entity} voor relationship[Entity1] niet in dict_entities in {self.file_pd_ldm}"
-            )
+            relationship_with_external = True
+
         if "o:Entity" in relationship["c:Object2"]:
             id_entity = relationship["c:Object2"]["o:Entity"]["@Ref"]
         elif "o:Shortcut" in relationship["c:Object2"]:
@@ -368,9 +382,13 @@ class TransformModelInternal(ObjectTransformer):
             relationship["Entity2"] = dict_entities[id_entity]
             relationship.pop("c:Object2")
         else:
+            relationship_with_external = True
+
+        if relationship_with_external:
             logger.warning(
-                f"{id_entity} voor relationship[Entity2] niet in dict_entities in {self.file_pd_ldm} "
+                f"Relatie '{relationship['Name']}' beschrijft een relatie naar een extern model in '{self.file_pd_ldm}', wordt niet verwerkt"
             )
+            relationship = None
         return relationship
 
     def _relationship_join(self, relationship: dict, dict_attributes: dict) -> dict:
@@ -383,10 +401,9 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             dict: De geschoonde versie van de join(s) behorende bij de relatie
         """
-        if "c:Joins" in relationship:
-            lst_joins = relationship["c:Joins"]["o:RelationshipJoin"]
-            if isinstance(lst_joins, dict):
-                lst_joins = [lst_joins]
+        # TODO: Refactor
+        if lst_joins := self._get_nested(data=relationship, keys=["c:Joins", "o:RelationshipJoin"]):
+            lst_joins = [lst_joins] if isinstance(lst_joins, dict) else lst_joins
             lst_joins = self.clean_keys(lst_joins)
             for i in range(len(lst_joins)):
                 join = {"Order": i}
@@ -398,7 +415,9 @@ class TransformModelInternal(ObjectTransformer):
                         f"Relationship:{relationship['Name']}, join relatie ontbreekt in {self.file_pd_ldm}"
                     )
                 else:
-                    logger.warning(f"{relationship['Name']} join relatie ontbreekt in {self.file_pd_ldm}")
+                    logger.warning(
+                        f"{relationship['Name']} join relatie ontbreekt in {self.file_pd_ldm}"
+                    )
                 if id_attr in dict_attributes:
                     join |= {"Entity1Attribute": dict_attributes[id_attr]}
                 else:
@@ -421,6 +440,8 @@ class TransformModelInternal(ObjectTransformer):
             )
         return relationship
 
+
+
     def _relationship_identifiers(
         self, relationship: dict, dict_identifiers: dict
     ) -> dict:
@@ -433,23 +454,13 @@ class TransformModelInternal(ObjectTransformer):
         Returns:
             dict: Relatie verrijkt met geschoonde identifier data
         """
-        if "c:ParentIdentifier" in relationship:
-            if "o:Identifier" in relationship["c:ParentIdentifier"]:
-                lst_identifier_id = relationship["c:ParentIdentifier"]["o:Identifier"]
-                if lst_identifier_id["@Ref"] in dict_identifiers:
-                    if isinstance(lst_identifier_id, dict):
-                        lst_identifier_id = [lst_identifier_id]
-                    relationship["Identifiers"] = [
-                        dict_identifiers[id["@Ref"]] for id in lst_identifier_id
-                    ]
-                else:
-                    logger.warning(
-                        f"{lst_identifier_id} voor relationship[Identifiers] niet in dict_acttributes in {self.file_pd_ldm}"
-                    )
-            else:
-                logger.warning(
-                    f"{relationship['Name']} : identifier mist voor relatie in {self.file_pd_ldm}"
-                )
+        path_keys = ["c:ParentIdentifier", "o:Identifier", "@Ref"]
+        if lst_identifier_id := self._get_nested(data=relationship, keys=path_keys):
+            if isinstance(lst_identifier_id, str):
+                lst_identifier_id = [lst_identifier_id]
+            relationship["Identifiers"] = [
+                dict_identifiers[id] for id in lst_identifier_id
+            ]
             relationship.pop("c:ParentIdentifier")
         else:
             logger.warning(
