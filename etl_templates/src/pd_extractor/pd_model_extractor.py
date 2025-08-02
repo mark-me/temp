@@ -189,7 +189,7 @@ class ModelExtractor(ExtractorBase):
             )
             return lst_relationships
         else:
-            logger.warning(
+            logger.info(
                 f"Het extraheren van de relaties tussen entiteiten is gefaald, er zijn geen relaties gevonden. Betreft: {self.file_pd_ldm}."
             )
             return None

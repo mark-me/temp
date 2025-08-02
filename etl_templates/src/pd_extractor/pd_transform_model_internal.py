@@ -440,8 +440,6 @@ class TransformModelInternal(ObjectTransformer):
             )
         return relationship
 
-
-
     def _relationship_identifiers(
         self, relationship: dict, dict_identifiers: dict
     ) -> dict:
