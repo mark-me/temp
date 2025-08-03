@@ -23,9 +23,6 @@ class MappingExtractor(ExtractorBase):
         """
         super().__init__(file_pd_ldm=file_pd_ldm)
         self.content = pd_content
-        self.transform_attribute_mapping = TransformAttributeMapping(file_pd_ldm)
-        self.transform_source_composition = TransformSourceComposition(file_pd_ldm)
-        self.transform_target_entity = TransformTargetEntity(file_pd_ldm)
 
     def get_mappings(
         self,
@@ -92,22 +89,27 @@ class MappingExtractor(ExtractorBase):
             list[dict]: Een lijst met de getransformeerde broncompositie voor de mapping.
         """
         mapping = self._normalize_mapping_name(mapping)
-        lst_entity_target = self.transform_target_entity.transform(
+        trf_target_entity = TransformTargetEntity(file_pd_ldm=self.file_pd_ldm)
+        lst_entity_target = trf_target_entity.transform(
             mapping=mapping,
             dict_objects=dict_objects,
         )
         dict_attributes_combined = dict_attributes | dict_variables
-        lst_attribute_mapping = self.transform_attribute_mapping.transform(
+        trf_attribute_mapping = TransformAttributeMapping(file_pd_ldm=self.file_pd_ldm)
+        attribute_mappings = trf_attribute_mapping.transform(
             dict_entity_target=lst_entity_target,
             dict_attributes=dict_attributes_combined,
         )
-        lst_source_composition = self.transform_source_composition.transform(
-            lst_attribute_mapping=lst_attribute_mapping,
+        trf_source_composition = TransformSourceComposition(
+            file_pd_ldm=self.file_pd_ldm
+        )
+        source_composition = trf_source_composition.transform(
+            lst_attribute_mapping=attribute_mappings,
             dict_attributes=dict_attributes_combined,
             dict_objects=dict_objects,
             dict_datasources=dict_datasources,
         )
-        return lst_source_composition
+        return source_composition
 
     def _create_entities_dict(self, models: list[dict]) -> dict:
         """Maakt een dictionary van entiteiten zonder stereotype uit de opgegeven modellen.

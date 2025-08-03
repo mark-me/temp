@@ -51,9 +51,9 @@ class ModelExtractor(ExtractorBase):
         """
         model = self.transform_model_internal.transform(content=self.content)
         # Model add entity data
-        self.lst_entity = self._entities_internal()
-        model["Entities"] = self.lst_entity
-        model["Relationships"] = self._relationships(lst_entity=self.lst_entity)
+        lst_entity = self._entities_internal()
+        model["Entities"] = lst_entity
+        model["Relationships"] = self._relationships(lst_entity=lst_entity)
         model["DataSources"] = self._datasources()
         return model
 
@@ -76,7 +76,7 @@ class ModelExtractor(ExtractorBase):
             ):
                 entity1.append(entity_in)
         lst_entity = entity1
-        self.transform_model_internal.entities(
+        self.transform_model_internal.transform_entities(
             lst_entity, dict_domains=self.dict_domains
         )
         return lst_entity

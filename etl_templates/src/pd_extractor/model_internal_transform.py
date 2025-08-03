@@ -88,7 +88,7 @@ class TransformModelInternal(TransformerBase):
         }
         return dict_datasources
 
-    def entities(self, lst_entities: list[dict], dict_domains: dict) -> list:
+    def transform_entities(self, lst_entities: list[dict], dict_domains: dict) -> list:
         """Omvormen van data van interne entiteiten en verrijkt de attributen met domain data
 
         Args:
