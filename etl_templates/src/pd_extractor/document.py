@@ -137,14 +137,14 @@ class PDDocument(ExtractorBase):
             pd_content=self.content, file_pd_ldm=self.file_pd_ldm
         )
         logger.debug("Start mapping extraction")
-        dict_entities = self._all_entities()
-        dict_filters = self._all_filters()
-        dict_scalars = self._all_scalars()
-        dict_aggregates = self._all_aggregates()
+        dict_entities = self._create_entities_dict()
+        dict_filters = self._create_filters_dict()
+        dict_scalars = self._create_scalars_dict()
+        dict_aggregates = self._create_aggregates_dict()
         dict_objects = dict_entities | dict_filters | dict_scalars | dict_aggregates
-        dict_variables = self._all_variables()
-        dict_attributes = self._all_attributes()
-        dict_datasources = self._all_datasources()
+        dict_variables = self._create_variables_dict()
+        dict_attributes = self._create_attributes_dict()
+        dict_datasources = self._create_datasources_dict()
         lst_mappings = extractor.mappings(
             dict_objects=dict_objects,
             dict_attributes=dict_attributes,
@@ -174,7 +174,7 @@ class PDDocument(ExtractorBase):
             return None
         return dict_data
 
-    def _all_entities(self) -> dict:
+    def _create_entities_dict(self) -> dict:
         """Haalt alle entiteiten op ongeacht het model waartoe ze behoren. Daarnaast worden ook alle aggregaties die
         bij een intern model zijn gevonden toegevoegd.
 
@@ -198,7 +198,7 @@ class PDDocument(ExtractorBase):
                     }
         return dict_result
 
-    def _all_filters(self) -> dict:
+    def _create_filters_dict(self) -> dict:
         """Haalt alle filters op uit het logisch data model, ongeacht het model waartoe ze behoren.
 
         Returns:
@@ -219,7 +219,7 @@ class PDDocument(ExtractorBase):
         }
         return dict_result
 
-    def _all_scalars(self) -> dict:
+    def _create_scalars_dict(self) -> dict:
         """Haalt alle scalars op ongeacht het model waartoe ze behoren.
 
         Returns:
@@ -241,7 +241,7 @@ class PDDocument(ExtractorBase):
         }
         return dict_result
 
-    def _all_aggregates(self) -> dict:
+    def _create_aggregates_dict(self) -> dict:
         """Haalt alle aggregaties op ongeacht het model waartoe ze behoren.
 
         Returns:
@@ -260,7 +260,7 @@ class PDDocument(ExtractorBase):
         }
         return dict_result
 
-    def _all_attributes(self) -> dict:
+    def _create_attributes_dict(self) -> dict:
         """Haalt alle attributen op ongeacht tot welk model of entiteit zij behoren
 
         Returns:
@@ -288,7 +288,7 @@ class PDDocument(ExtractorBase):
                         }
         return dict_result
 
-    def _all_variables(self) -> dict:
+    def _create_variables_dict(self) -> dict:
         """Extraheert de variabelen van de filters, scalars en aggregaten
 
         Returns:
@@ -311,26 +311,12 @@ class PDDocument(ExtractorBase):
                 }
         return dict_result
 
-    def _all_datasources(self) -> dict:
+    def _create_datasources_dict(self) -> dict:
         dict_result = {}
         for model in self.lst_models:
             if "DataSources" in model:
                 dict_result = model["DataSources"]
         return dict_result
-
-    def _serialize_datetime(self, obj):
-        """Haalt alle datetime voorkomens op en formatteert deze naar een ISO-format
-
-        Args:
-            obj (any): Object dat (indien mogelijk) geformatteerd wordt naar een correct ISO datum formaat
-
-        Returns:
-            Datetime: Geformatteerd in ISO-format
-        """
-
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        raise TypeError("Type not serializable")
 
     def extract_to_json(self, file_output: str):
         """Schrijft het geëxtraheerde en getransformeerde model, filters, scalars, aggregaten en mappings naar een outputbestand.
@@ -366,6 +352,9 @@ class PDDocument(ExtractorBase):
             logger.warning(f"Geen mappings om te schrijven in '{file_output}'")
         else:
             dict_document["Mappings"] = lst_mappings
+        self.write_json(file_output=file_output, dict_document=dict_document)
+
+    def write_json(self, file_output: str, dict_document: dict) -> None:
         path = Path(file_output)
         Path(path.parent).mkdir(parents=True, exist_ok=True)
         with open(file_output, "w", encoding="utf-8") as outfile:
@@ -373,3 +362,17 @@ class PDDocument(ExtractorBase):
                 dict_document, outfile, indent=4, default=self._serialize_datetime
             )
         logger.info(f"Document output is written to '{file_output}'")
+
+    def _serialize_datetime(self, obj):
+        """Haalt alle datetime voorkomens op en formatteert deze naar een ISO-format
+
+        Args:
+            obj (any): Object dat (indien mogelijk) geformatteerd wordt naar een correct ISO datum formaat
+
+        Returns:
+            Datetime: Geformatteerd in ISO-format
+        """
+
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        raise TypeError("Type not serializable")
