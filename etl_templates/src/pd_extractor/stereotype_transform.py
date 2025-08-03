@@ -13,22 +13,6 @@ class TransformStereotype(TransformerBase):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
 
-    def domains(self, lst_domains: list[dict]) -> dict:
-        """Verrijk de stereotypes met domain data
-
-        Args:
-            lst_domains (list[dict]): Domain data
-
-        Returns:
-            dict: Objecten met het opgegeven stereotype zijn verrijkt met domain data
-        """
-        if isinstance(lst_domains, dict):
-            lst_domains = [lst_domains]
-        lst_domains = self.convert_timestamps(lst_domains)
-        lst_domains = self.clean_keys(lst_domains)
-        dict_domains = {domain["Id"]: domain for domain in lst_domains}
-        return dict_domains
-
     def transform(self, lst_objects: list[dict], dict_domains: dict) -> list[dict]:
         """Schoont en verrijkt de stereotype objecten die zijn opgenomen in het Power Designer LDM document
 

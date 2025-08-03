@@ -21,9 +21,8 @@ class StereotypeExtractor(ExtractorBase):
         self.content = pd_content
         self.transform_stereotype = TransformStereotype(file_pd_ldm)
         self.stereotype = stereotype_input
-        self.dict_domains = self._domains()
 
-    def get_objects(self) -> list[dict]:
+    def get_objects(self, dict_domains: dict) -> list[dict]:
         """Haalt alle objecten van het opgegeven stereotype op gespecificeerd in de initialisatie
 
         Returns:
@@ -42,7 +41,7 @@ class StereotypeExtractor(ExtractorBase):
                 )
                 lst_objects.append(stereotype_object)
         logger.debug(f"Start met transformaties voor stereotype uit {self.file_pd_ldm}")
-        self.transform_stereotype.transform(lst_objects, dict_domains=self.dict_domains)
+        self.transform_stereotype.transform(lst_objects, dict_domains=dict_domains)
         return lst_objects
 
     def _is_matching_stereotype(self, stereotype_object: dict) -> bool:

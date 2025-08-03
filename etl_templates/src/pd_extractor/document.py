@@ -6,6 +6,7 @@ import xmltodict
 from logtools import get_logger
 
 from .extractor_base import ExtractorBase
+from .domains_extractor import DomainsExtractor
 from .mapping_extractor import MappingExtractor
 from .model_extractor import ModelExtractor
 from .stereotype_extractor import StereotypeExtractor
@@ -37,16 +38,17 @@ class PDDocument(ExtractorBase):
         """
         pd_content = self._read_file_model()
         dict_document = {"Info": self._get_document_info(pd_content=pd_content)}
-        if filters := self._get_filters(pd_content=pd_content):
+        domains = self._get_domains(pd_content=pd_content)
+        if filters := self._get_filters(pd_content=pd_content, domains=domains):
             dict_document["Filters"] = filters
         else:
             logger.debug(f"Geen filters geschreven naar  '{file_output}'")
-        if scalars := self._get_scalars(pd_content=pd_content):
+        if scalars := self._get_scalars(pd_content=pd_content, domains=domains):
             dict_document["Scalars"] = scalars
         else:
             logger.debug(f"No scalars to write to  '{file_output}'")
-        aggregates = self._get_aggregates(pd_content=pd_content)
-        if models := self._get_models(pd_content=pd_content):
+        aggregates = self._get_aggregates(pd_content=pd_content, domains=domains)
+        if models := self._get_models(pd_content=pd_content, domains=domains):
             dict_document["Models"] = models
         else:
             logger.error(f"Geen mappings om te schrijven in '{self.file_pd_ldm}'")
@@ -104,13 +106,20 @@ class PDDocument(ExtractorBase):
             "PackageOptions": pd_content.get("a:PackageOptionsText", "").split("\n"),
         }
 
-    def _get_filters(self, pd_content: dict) -> list[dict]:
+    def _get_domains(self, pd_content: dict) -> list[dict]:
+        extractor = DomainsExtractor(
+            pd_content=pd_content, file_pd_ldm=self.file_pd_ldm
+        )
+        return extractor.get_domains()
+
+    def _get_filters(self, pd_content: dict, domains: dict) -> list[dict]:
         """Haalt alle filter objecten op uit het logisch data model.
 
         Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van filter dictionaries.
 
         Args:
             pd_content (dict): De inhoud van het Power Designer LDM-bestand.
+            dict_domains (dict): Dictionary met domeininformatie.
 
         Returns:
             list[dict]: Een lijst van dictionaries die de filters representeren.
@@ -121,17 +130,18 @@ class PDDocument(ExtractorBase):
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start filter extraction")
-        filters = extractor.get_objects()
+        filters = extractor.get_objects(dict_domains=domains)
         logger.debug("Finished filter extraction")
         return filters
 
-    def _get_scalars(self, pd_content: dict) -> list[dict]:
+    def _get_scalars(self, pd_content: dict, domains: dict) -> list[dict]:
         """Haalt alle scalar objecten op uit het logisch data model.
 
         Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van scalar dictionaries.
 
         Args:
             pd_content (dict): De inhoud van het Power Designer LDM-bestand.
+            dict_domains (dict): Dictionary met domeininformatie.
 
         Returns:
             list[dict]: Een lijst van dictionaries die de scalars representeren.
@@ -142,17 +152,18 @@ class PDDocument(ExtractorBase):
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start scalar extraction")
-        lst_scalars = extractor.get_objects()
+        lst_scalars = extractor.get_objects(dict_domains=domains)
         logger.debug("Finished scalar extraction")
         return lst_scalars
 
-    def _get_aggregates(self, pd_content: dict) -> list[dict]:
+    def _get_aggregates(self, pd_content: dict, domains: dict) -> list[dict]:
         """Haalt alle aggregate objecten op uit het logisch data model.
 
         Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van aggregate dictionaries.
 
         Args:
             pd_content (dict): De inhoud van het Power Designer LDM-bestand.
+            dict_domains (dict): Dictionary met domeininformatie.
 
         Returns:
             list[dict]: Een lijst van dictionaries die de aggregates representeren.
@@ -163,11 +174,11 @@ class PDDocument(ExtractorBase):
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start aggregate extraction")
-        lst_aggregates = extractor.get_objects()
+        lst_aggregates = extractor.get_objects(dict_domains=domains)
         logger.debug("Finished aggregate extraction")
         return lst_aggregates
 
-    def _get_models(self, pd_content: dict) -> list[dict]:
+    def _get_models(self, pd_content: dict, domains: dict) -> list[dict]:
         """Haalt alle model objecten op uit het logisch data model.
 
         Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van model dictionaries.
@@ -180,7 +191,7 @@ class PDDocument(ExtractorBase):
         """
         extractor = ModelExtractor(pd_content=pd_content, file_pd_ldm=self.file_pd_ldm)
         logger.debug("Start model extraction")
-        lst_models = extractor.get_models()
+        lst_models = extractor.get_models(dict_domains=domains)
         logger.debug("Finished model extraction")
         return lst_models
 
