@@ -104,7 +104,7 @@ class MappingExtractor(ExtractorBase):
             file_pd_ldm=self.file_pd_ldm
         )
         source_composition = trf_source_composition.transform(
-            lst_attribute_mapping=attribute_mappings,
+            mapping=attribute_mappings,
             dict_attributes=dict_attributes_combined,
             dict_objects=dict_objects,
             dict_datasources=dict_datasources,

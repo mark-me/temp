@@ -11,9 +11,7 @@ class TransformAttributeMapping(TransformerBase):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm=file_pd_ldm)
 
-    def transform(
-        self, dict_entity_target: dict, dict_attributes: dict
-    ) -> dict:
+    def transform(self, dict_entity_target: dict, dict_attributes: dict) -> dict:
         """Verrijkt, schoont en hangt attribuut mappings om ten behoeven van een mapping
 
         Args:
@@ -29,8 +27,9 @@ class TransformAttributeMapping(TransformerBase):
         key_path = ["c:StructuralFeatureMaps", "o:DefaultStructuralFeatureMapping"]
 
         if lst_attr_maps := self._get_nested(data=mapping, keys=key_path):
-            if isinstance(lst_attr_maps, dict):
-                lst_attr_maps = [lst_attr_maps].copy()
+            lst_attr_maps = (
+                [lst_attr_maps] if isinstance(lst_attr_maps, dict) else lst_attr_maps
+            )
             lst_attr_maps = self.clean_keys(lst_attr_maps)
             for j in range(len(lst_attr_maps)):
                 attr_map = lst_attr_maps[j].copy()
@@ -40,7 +39,7 @@ class TransformAttributeMapping(TransformerBase):
                 )
                 lst_attr_maps[j] = attr_map.copy()
             mapping["AttributeMapping"] = lst_attr_maps
-            mapping.pop("c:StructuralFeatureMaps")
+            mapping.pop("c:StructuralFeatureMaps", None)
             dict_attribute_mapping = mapping
         else:
             logger.error(

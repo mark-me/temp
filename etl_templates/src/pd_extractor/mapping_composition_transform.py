@@ -13,26 +13,31 @@ class TransformSourceComposition(TransformerBase):
 
     def transform(
         self,
-        lst_attribute_mapping: list[dict],
+        mapping: dict,
         dict_objects: dict,
         dict_attributes: dict,
         dict_datasources: dict,
     ) -> dict:
-        """Schoont en verrijkt de composities van de bron entiteiten data.
+        """Transformeert en verrijkt de mapping met source composition data.
 
-        Deze functie verwerkt de composities van een mapping, verwijdert voorbeeldcomposities,
-        extraheert en transformeert de relevante compositie-items, en verrijkt de mapping met geschoonde source composition data.
+        Deze functie verwerkt de mapping, haalt compositie-items op, verrijkt deze, filtert specifieke items en voegt de resultaten toe aan de mapping.
 
         Args:
-            lst_attribute_mapping (list): De mappings
-            dict_objects (dict): Alle (objecten/filters/scalars) (in- en external)
-            dict_attributes (dict): Alle attributen (in- en external)
-            dict_datasources (dict): Alle mogelijke data sources
+            mapping (dict): De mapping die getransformeerd moet worden.
+            dict_objects (dict): Alle objecten (entiteiten, filters, scalars, aggregaten).
+            dict_attributes (dict): Alle attributen.
+            dict_datasources (dict): Alle datasources.
 
         Returns:
-            list: Versie van mapping data waar compositie data is geschoond en verrijkt
+            dict: De getransformeerde mapping met verrijkte source composition data.
         """
-        mapping = lst_attribute_mapping
+        def _filter_scalar_business_rules(items):
+            return [
+                item
+                for item in items
+                if item["Entity"]["Stereotype"] != "mdde_ScalarBusinessRule"
+            ]
+
         logger.debug(
             f"Start composities voor het extraheren van mapping '{mapping['Name']}' for {self.file_pd_ldm}"
         )
@@ -45,7 +50,7 @@ class TransformSourceComposition(TransformerBase):
         )
 
         mapping["SourceComposition"] = lst_composition_items
-        mapping.pop("c:ExtendedCompositions")
+        mapping.pop("c:ExtendedCompositions", None)
         if "c:DataSource" in mapping:
             mapping = self._mapping_datasource(
                 mapping=mapping, dict_datasources=dict_datasources
@@ -53,25 +58,21 @@ class TransformSourceComposition(TransformerBase):
             mapping.pop("c:DataSource")
         mapping = self._mapping_update(mapping=mapping)
         lst_source_composition_items = mapping["SourceComposition"]
-        lst_source_composition_items = [
-            item
-            for item in lst_source_composition_items
-            if item["Entity"]["Stereotype"] != "mdde_ScalarBusinessRule"
-        ]
+        lst_source_composition_items = _filter_scalar_business_rules(lst_source_composition_items)
         mapping.pop("SourceComposition")
         mapping["SourceComposition"] = lst_source_composition_items
         return mapping
 
     def _get_composition_list(self, mapping: dict) -> list[dict]:
         """Haalt de lijst van composities op uit de mapping."""
-        composition = mapping["c:ExtendedCompositions"]["o:ExtendedComposition"]
-        if isinstance(composition, dict):
-            composition = [composition]
+        path_keys = ["c:ExtendedCompositions", "o:ExtendedComposition"]
+        composition = self._get_nested(data=mapping, keys=path_keys)
+        composition = [composition] if isinstance(composition, dict) else composition
         return self.clean_keys(composition)
 
     def _extract_composition_items(self, composition: dict) -> list[dict]:
         lst_composition_items = []
-        content = composition["c:ExtendedComposition.Content"]
+        content = composition.get("c:ExtendedComposition.Content")
         if (
             "c:ExtendedCollections" in content["o:ExtendedSubObject"]
             or "o:ExtendedSubObject" in content
@@ -117,20 +118,20 @@ class TransformSourceComposition(TransformerBase):
             dict: Composities zonder de MDDE extensie voorbeelden
         """
         composition = {}
-        lst_compositions_new = []
+        compositions_new = []
         for item in lst_compositions:
             if "ExtendedBaseCollection.CollectionName" in item:
                 if (
                     item["ExtendedBaseCollection.CollectionName"]
                     != "mdde_Mapping_Examples"
                 ):
-                    lst_compositions_new.append(item)
+                    compositions_new.append(item)
             else:
                 logger.warning(
                     f"Geen 'ExtendedBaseCollection.CollectionName' voor {self.file_pd_ldm}"
                 )
         # We assume there is only one composition per mapping, which is why we fill lst
-        composition = lst_compositions_new[0]
+        composition = compositions_new[0] if compositions_new else None
         return composition
 
     def _composition(
@@ -350,8 +351,9 @@ class TransformSourceComposition(TransformerBase):
                 f"Er zijn geen c:ExtendedCollections, controleer model voor ongeldige mapping in {self.file_pd_ldm} "
             )
         lst_components = condition["c:ExtendedCollections"]["o:ExtendedCollection"]
-        if isinstance(lst_components, dict):
-            lst_components = [lst_components]
+        lst_components = (
+            [lst_components] if isinstance(lst_components, dict) else lst_components
+        )
         condition["JoinConditionComponents"] = self._join_condition_components(
             lst_components=lst_components,
             dict_attributes=dict_attributes,
@@ -373,7 +375,9 @@ class TransformSourceComposition(TransformerBase):
             dict: Geschoonde, omgevormde en verrijkte data van het join conditie component
         """
         dict_components = {}
-        dict_child, dict_parent, alias_parent = self._extract_join_components(lst_components, dict_attributes)
+        dict_child, dict_parent, alias_parent = self._extract_join_components(
+            lst_components, dict_attributes
+        )
         if len(dict_parent) > 0:
             if alias_parent is not None:
                 dict_parent.update({"EntityAlias": alias_parent})

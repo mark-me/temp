@@ -1,13 +1,13 @@
-
 from logtools import get_logger
 
 from .base_transformer import TransformerBase
 
 logger = get_logger(__name__)
 
+
 class TransformTargetEntity(TransformerBase):
-    """Vormt mapping data om en verrijkt dit met entiteit en attribuut data
-    """
+    """Vormt mapping data om en verrijkt dit met entiteit en attribuut data"""
+
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
         self.file_pd_ldm = file_pd_ldm
@@ -35,10 +35,12 @@ class TransformTargetEntity(TransformerBase):
                 f"Mapping target_entity: '{mapping['EntityTarget']['Name']}' in {self.file_pd_ldm}"
             )
             mapping = self._remove_source_entities(
-                mapping = mapping, dict_objects=dict_objects
+                mapping=mapping, dict_objects=dict_objects
             )
         else:
-            logger.warning(f"Mapping zonder entiteit gevonden: '{mapping['Name']}' in {self.file_pd_ldm}")
+            logger.warning(
+                f"Mapping zonder entiteit gevonden: '{mapping['Name']}' in {self.file_pd_ldm}"
+            )
         mapping.pop("c:Classifier", None)
         mapping.pop("SourceObjects_REMOVE", None)
         return mapping
@@ -64,8 +66,11 @@ class TransformTargetEntity(TransformerBase):
         for entity_type in ["o:Entity", "o:Shortcut"]:
             if entity_type in mapping.get("c:SourceClassifiers", {}):
                 source_entity = mapping["c:SourceClassifiers"][entity_type]
-                if isinstance(source_entity, dict):
-                    source_entity = [source_entity]
+                source_entity = (
+                    [source_entity]
+                    if isinstance(source_entity, dict)
+                    else source_entity
+                )
                 source_entity = [d.get("@Ref") for d in source_entity]
                 lst_source_entity = lst_source_entity + source_entity
         if missing_refs := [
@@ -74,7 +79,9 @@ class TransformTargetEntity(TransformerBase):
             logger.error(
                 f"Entiteiten niet gevonden voor externe model met referenties {missing_refs}, mogelijk omdat het externe model gegenereerd is door Object in plaats van Shortcut. Betreft: {self.file_pd_ldm}"
             )
-        lst_source_entity = [dict_objects[item] for item in lst_source_entity if item in dict_objects]
+        lst_source_entity = [
+            dict_objects[item] for item in lst_source_entity if item in dict_objects
+        ]
         mapping["SourceObjects_REMOVE"] = lst_source_entity
         mapping.pop("c:SourceClassifiers", None)
         return mapping

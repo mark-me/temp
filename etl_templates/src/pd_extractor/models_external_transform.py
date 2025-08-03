@@ -6,8 +6,8 @@ logger = get_logger(__name__)
 
 
 class TransformModelsExternal(TransformerBase):
-    """Functions die gebruikt worden voor het transformeren van model data die gebruikt gaat worden voor de mapping van het model
-    """
+    """Functions die gebruikt worden voor het transformeren van model data die gebruikt gaat worden voor de mapping van het model"""
+
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
 
@@ -56,16 +56,15 @@ class TransformModelsExternal(TransformerBase):
         Returns:
             list[dict]: Geschoonde en getransformeerde entiteiten.
         """
-        if isinstance(lst_entities, dict):
-            lst_entities = [lst_entities]
+        lst_entities = (
+            [lst_entities] if isinstance(lst_entities, dict) else lst_entities
+        )
         lst_entities = self.clean_keys(lst_entities)
-        for i in range(len(lst_entities)):
-            entity = lst_entities[i]
+        for entity in lst_entities:
             if "c:FullShortcutReplica" in entity:
                 entity.pop("c:FullShortcutReplica")
             self._entity_attribute(entity)
             entity.pop("c:SubShortcuts")
-            lst_entities[i] = entity
         return lst_entities
 
     def _entity_attribute(self, entity: list[dict] | dict) -> dict:
