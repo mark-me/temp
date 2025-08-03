@@ -44,10 +44,10 @@ class PDDocument(ExtractorBase):
         """
         return {
             "Filename": str(self.file_pd_ldm),
-            "FilenameRepo": self.content.get("a:RepositoryFilename", None),
-            "Creator": self.content.get("a:Creator", None),
+            "FilenameRepo": self.content.get("a:RepositoryFilename"),
+            "Creator": self.content.get("a:Creator"),
             "DateCreated": datetime.fromtimestamp(int(self.content.get("a:CreationDate", 0))),
-            "Modifier": self.content.get("a:Modifier", None),
+            "Modifier": self.content.get("a:Modifier"),
             "DateModified": datetime.fromtimestamp(
                 int(self.content.get("a:ModificationDate", 0))
             ),
