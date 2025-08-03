@@ -105,10 +105,15 @@ class PDDocument(ExtractorBase):
         }
 
     def get_filters(self, pd_content: dict) -> list[dict]:
-        """Haalt alle filter objecten op uit het logisch data model
+        """Haalt alle filter objecten op uit het logisch data model.
+
+        Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van filter dictionaries.
+
+        Args:
+            pd_content (dict): De inhoud van het Power Designer LDM-bestand.
 
         Returns:
-            list[dict]: Een lijst van dictionaries die de filters representeren
+            list[dict]: Een lijst van dictionaries die de filters representeren.
         """
         extractor = StereotypeExtractor(
             pd_content=pd_content,
@@ -121,10 +126,15 @@ class PDDocument(ExtractorBase):
         return filters
 
     def get_scalars(self, pd_content: dict) -> list[dict]:
-        """Haalt alle scalar objecten (berekende attributen) op uit het logisch data model
+        """Haalt alle scalar objecten op uit het logisch data model.
+
+        Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van scalar dictionaries.
+
+        Args:
+            pd_content (dict): De inhoud van het Power Designer LDM-bestand.
 
         Returns:
-            list[dict]: Een lijst van dictionaries die de scalars representeren
+            list[dict]: Een lijst van dictionaries die de scalars representeren.
         """
         extractor = StereotypeExtractor(
             pd_content=pd_content,
@@ -137,10 +147,15 @@ class PDDocument(ExtractorBase):
         return lst_scalars
 
     def get_aggregates(self, pd_content: dict) -> list[dict]:
-        """Haalt alle aggregatie objecten op uit het logisch data model
+        """Haalt alle aggregate objecten op uit het logisch data model.
+
+        Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van aggregate dictionaries.
+
+        Args:
+            pd_content (dict): De inhoud van het Power Designer LDM-bestand.
 
         Returns:
-            list[dict]: Een lijst van dictionaries die de aggregaten representeren
+            list[dict]: Een lijst van dictionaries die de aggregates representeren.
         """
         extractor = StereotypeExtractor(
             pd_content=pd_content,
@@ -153,10 +168,15 @@ class PDDocument(ExtractorBase):
         return lst_aggregates
 
     def get_models(self, pd_content: dict) -> list[dict]:
-        """Haalt model data, apart van de mappings, op uit het logisch data model
+        """Haalt alle model objecten op uit het logisch data model.
+
+        Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van model dictionaries.
+
+        Args:
+            pd_content (dict): De inhoud van het Power Designer LDM-bestand.
 
         Returns:
-            list[dict]: The Power Designer modellen zonder enige mappings
+            list[dict]: Een lijst van dictionaries die de modellen representeren.
         """
         extractor = ModelExtractor(pd_content=pd_content, file_pd_ldm=self.file_pd_ldm)
         logger.debug("Start model extraction")
@@ -174,12 +194,18 @@ class PDDocument(ExtractorBase):
     ) -> list[dict]:
         """Haalt alle mapping objecten op uit het logisch data model.
 
-        Deze functie verwerkt modellen, filters, scalars en aggregaten om een lijst van mapping dictionaries te genereren.
+        Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van mapping dictionaries.
+
+        Args:
+            pd_content (dict): De inhoud van het Power Designer LDM-bestand.
+            models (list[dict]): Lijst van model dictionaries.
+            filters (list[dict]): Lijst van filter dictionaries.
+            scalars (list[dict]): Lijst van scalar dictionaries.
+            aggregates (list[dict]): Lijst van aggregaat dictionaries.
 
         Returns:
             list[dict]: Een lijst van dictionaries die de mappings representeren.
         """
-
         extractor = MappingExtractor(
             pd_content=pd_content, file_pd_ldm=self.file_pd_ldm
         )
@@ -206,16 +232,20 @@ class PDDocument(ExtractorBase):
             )
         logger.info(f"Document output is written to '{file_output}'")
 
-    def _serialize_datetime(self, obj):
-        """Haalt alle datetime voorkomens op en formatteert deze naar een ISO-format
+    def _serialize_datetime(self, obj: datetime) -> str:
+        """Converteert een datetime-object naar een ISO 8601 string.
+
+        Deze functie wordt gebruikt voor het serialiseren van datetime-objecten bij het schrijven naar JSON.
 
         Args:
-            obj (any): Object dat (indien mogelijk) geformatteerd wordt naar een correct ISO datum formaat
+            obj (datetime): Het te serialiseren object.
 
         Returns:
-            Datetime: Geformatteerd in ISO-format
-        """
+            str: De ISO 8601 stringrepresentatie van het datetime-object.
 
+        Raises:
+            TypeError: Indien het object geen datetime is.
+        """
         if isinstance(obj, datetime):
             return obj.isoformat()
         raise TypeError("Type not serializable")
