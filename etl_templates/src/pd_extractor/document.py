@@ -73,10 +73,9 @@ class PDDocument(ExtractorBase):
         Returns:
             list[dict]: Een lijst van dictionaries die de scalars representeren
         """
-        stereotype_input = "mdde_ScalarBusinessRule"
         extractor = StereotypeExtractor(
             pd_content=pd_content,
-            stereotype_input=stereotype_input,
+            stereotype_input="mdde_ScalarBusinessRule",
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start scalar extraction")
@@ -90,10 +89,9 @@ class PDDocument(ExtractorBase):
         Returns:
             list[dict]: Een lijst van dictionaries die de aggregaten representeren
         """
-        stereotype_input = "mdde_AggregateBusinessRule"
         extractor = StereotypeExtractor(
             pd_content=pd_content,
-            stereotype_input=stereotype_input,
+            stereotype_input="mdde_AggregateBusinessRule",
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start aggregate extraction")
