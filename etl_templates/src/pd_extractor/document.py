@@ -26,7 +26,6 @@ class PDDocument(ExtractorBase):
             file_pd_ldm (str): Power Designer logisch data model document (.ldm)
         """
         super().__init__(file_pd_ldm=file_pd_ldm)
-        self.content = {}
 
     def extract_to_json(self, file_output: str):
         """Schrijft het geëxtraheerde en getransformeerde model, filters, scalars, aggregaten en mappings naar een outputbestand.
@@ -36,23 +35,27 @@ class PDDocument(ExtractorBase):
         Args:
             file_output (str): Het pad waar het resultaatbestand wordt opgeslagen.
         """
-        self.content = self._read_file_model()
-        dict_document = {"Info": self.get_document_info(pd_content=self.content)}
-        if filters := self.get_filters(pd_content=self.content):
+        pd_content = self._read_file_model()
+        dict_document = {"Info": self.get_document_info(pd_content=pd_content)}
+        if filters := self.get_filters(pd_content=pd_content):
             dict_document["Filters"] = filters
         else:
             logger.debug(f"Geen filters geschreven naar  '{file_output}'")
-        if scalars := self.get_scalars(pd_content=self.content):
+        if scalars := self.get_scalars(pd_content=pd_content):
             dict_document["Scalars"] = scalars
         else:
             logger.debug(f"No scalars to write to  '{file_output}'")
-        aggregates = self.get_aggregates(pd_content=self.content)
-        if models := self.get_models(pd_content=self.content):
+        aggregates = self.get_aggregates(pd_content=pd_content)
+        if models := self.get_models(pd_content=pd_content):
             dict_document["Models"] = models
         else:
             logger.error(f"Geen mappings om te schrijven in '{self.file_pd_ldm}'")
         if mappings := self.get_mappings(
-            models=models, filters=filters, scalars=scalars, aggregates=aggregates
+            pd_content=pd_content,
+            models=models,
+            filters=filters,
+            scalars=scalars,
+            aggregates=aggregates,
         ):
             dict_document["Mappings"] = mappings
         else:
@@ -163,6 +166,7 @@ class PDDocument(ExtractorBase):
 
     def get_mappings(
         self,
+        pd_content: dict,
         models: list[dict],
         filters: list[dict],
         scalars: list[dict],
@@ -177,7 +181,7 @@ class PDDocument(ExtractorBase):
         """
 
         extractor = MappingExtractor(
-            pd_content=self.content, file_pd_ldm=self.file_pd_ldm
+            pd_content=pd_content, file_pd_ldm=self.file_pd_ldm
         )
         logger.debug("Start mapping extraction")
         lst_mappings = extractor.get_mappings(
