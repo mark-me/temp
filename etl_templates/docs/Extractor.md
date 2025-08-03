@@ -322,42 +322,50 @@ Mogelijkheid om veranderingen tussen modelversies te vergelijken.
 
 ## API referentie
 
-### ::: src.pd_extractor.pd_document.PDDocument
+### ::: src.pd_extractor.document.PDDocument
 
 ---
 
-### ::: src.pd_extractor.pd_stereotype_extractor.StereotypeExtractor
+### ::: src.pd_extractor.domains_extractor.DomainsExtractor
 
 ---
 
-### ::: src.pd_extractor.pd_transform_stereotype.TransformStereotype
+### ::: src.pd_extractor.domains_transformer.TransformDomains
 
 ---
 
-### ::: src.pd_extractor.pd_model_extractor.ModelExtractor
+### ::: src.pd_extractor.stereotype_extractor.StereotypeExtractor
 
 ---
 
-### ::: src.pd_extractor.pd_transform_model_internal.TransformModelInternal
+### ::: src.pd_extractor.stereotype_transform.TransformStereotype
 
 ---
 
-### ::: src.pd_extractor.pd_transform_models_external.TransformModelsExternal
+### ::: src.pd_extractor.model_extractor.ModelExtractor
 
 ---
 
-### ::: src.pd_extractor.pd_mapping_extractor.MappingExtractor
+### ::: src.pd_extractor.model_internal_transform.TransformModelInternal
 
 ---
 
-### ::: src.pd_extractor.pd_transform_attribute_mapping.TransformAttributeMapping
+### ::: src.pd_extractor.models_external_transform.TransformModelsExternal
 
 ---
 
-### ::: src.pd_extractor.pd_transform_source_composition.TransformSourceComposition
+### ::: src.pd_extractor.mapping_extractor.MappingExtractor
 
 ---
 
-### ::: src.pd_extractor.pd_transform_target_entity.TransformTargetEntity
+### ::: src.pd_extractor.mapping_attributes_transform.TransformAttributeMapping
+
+---
+
+### ::: src.pd_extractor.mapping_composition_transform.TransformSourceComposition
+
+---
+
+### ::: src.pd_extractor.mapping_target_transform.TransformTargetEntity
 
 ---

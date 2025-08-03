@@ -30,7 +30,7 @@ class ExtractorBase:
                 return default
         return current
 
-    def has_nested(self, data: dict, keys: list[str]) -> bool:
+    def _has_nested(self, data: dict, keys: list[str]) -> bool:
         """Controleert of een reeks geneste sleutels aanwezig is in een dictionary.
 
         Deze functie retourneert True als alle opgegeven sleutels bestaan in de geneste structuur van de dictionary, anders False.
