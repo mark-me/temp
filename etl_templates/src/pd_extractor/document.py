@@ -35,7 +35,6 @@ class PDDocument(ExtractorBase):
         self.lst_scalars = []
         self.lst_aggregates = []
         self.lst_mappings = []
-        self.transform_objects = TransformerBase(file_pd_ldm)
 
     def get_document_info(self) -> dict:
         """Geeft metadata terug over het ingelezen Power Designer logisch datamodel.
