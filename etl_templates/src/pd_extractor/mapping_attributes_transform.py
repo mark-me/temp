@@ -21,12 +21,8 @@ class TransformAttributeMapping(TransformerBase):
         Returns:
             dict: Mapping met geschoonde en verrijkte attribuut mapping
         """
-        dict_attribute_mapping = dict_entity_target
-        mapping = dict_attribute_mapping
-
         key_path = ["c:StructuralFeatureMaps", "o:DefaultStructuralFeatureMapping"]
-
-        if lst_attr_maps := self._get_nested(data=mapping, keys=key_path):
+        if lst_attr_maps := self._get_nested(data=dict_entity_target, keys=key_path):
             lst_attr_maps = (
                 [lst_attr_maps] if isinstance(lst_attr_maps, dict) else lst_attr_maps
             )
@@ -38,14 +34,13 @@ class TransformAttributeMapping(TransformerBase):
                     attr_map=attr_map, dict_attributes=dict_attributes
                 )
                 lst_attr_maps[j] = attr_map.copy()
-            mapping["AttributeMapping"] = lst_attr_maps
-            mapping.pop("c:StructuralFeatureMaps", None)
-            dict_attribute_mapping = mapping
+            dict_entity_target["AttributeMapping"] = lst_attr_maps
+            dict_entity_target.pop("c:StructuralFeatureMaps", None)
         else:
             logger.error(
-                f"attributemapping voor {mapping['Name']} van {self.file_pd_ldm} niet gevonden"
+                f"attributemapping voor {dict_entity_target['Name']} van {self.file_pd_ldm} niet gevonden"
             )
-        return dict_attribute_mapping
+        return dict_entity_target
 
     def _process_attribute_map(self, attr_map: dict, dict_attributes: dict) -> None:
         logger.debug(
@@ -113,7 +108,10 @@ class TransformAttributeMapping(TransformerBase):
             ][0]
             id_attr = attr_map["c:SourceFeatures"][type_entity]["@Ref"]
             if id_attr in dict_attributes:
-                if dict_attributes[id_attr]["StereotypeEntity"] is None:
+                if (
+                    "StereotypeEntity" not in dict_attributes[id_attr]
+                    or dict_attributes[id_attr]["StereotypeEntity"] is None
+                ):
                     attr_map["AttributesSource"] = dict_attributes[id_attr].copy()
                     if has_entity_alias:
                         attr_map["AttributesSource"]["EntityAlias"] = id_entity_alias
@@ -132,6 +130,6 @@ class TransformAttributeMapping(TransformerBase):
                 logger.warning(
                     f"{id_attr} van {self.file_pd_ldm}is niet gevonden binnen bron attributen"
                 )
-            attr_map.pop("c:SourceFeatures")
+            attr_map.pop("c:SourceFeatures", None)
         else:
             logger.warning(f"Source attributes van {self.file_pd_ldm} niet gevonden")
