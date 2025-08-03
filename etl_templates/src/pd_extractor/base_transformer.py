@@ -1,6 +1,4 @@
 from datetime import datetime
-from typing import Union
-
 from logtools import get_logger
 
 from .base_extractor import ExtractorBase
@@ -18,24 +16,25 @@ class TransformerBase(ExtractorBase):
         super().__init__(file_pd_ldm=file_pd_ldm)
         self._timestamp_fields = ["a:CreationDate", "a:ModificationDate"]
 
-    def clean_keys(self, content: Union[dict, list]):
-        """Hernoemt sleutels van Power Designer objecten (m.a.w. dictionaries) zodat prefixes als '@' en 'a:' worden verwijderd
+    def clean_keys(self, content: dict| list) -> dict | list:
+        """Removes special prefixes from dictionary keys for easier access and manipulation.
+
+        This function processes a dictionary or list of dictionaries, removing leading '@' and 'a:' from keys to standardize them.
 
         Args:
-            content (Union[dict, list]): Een dict of list van dicts met Power Designer objecten
+            content (dict or list): The dictionary or list of dictionaries to clean.
 
         Returns:
-            _type_: List of dict met hernoemde sleutels (afhankelijk van welk type werd doorgegeven als parameter)
+            dict or list: The cleaned dictionary or list of dictionaries with standardized keys.
         """
         lst_object = [content] if isinstance(content, dict) else content
-        for i in range(len(lst_object)):
-            attrs = [key for key in list(lst_object[i].keys()) if key[:1] == "@"]
+        for obj in lst_object:
+            attrs = [key for key in list(obj.keys()) if key[:1] == "@"]
             for attr in attrs:
-                lst_object[i][attr[1:]] = lst_object[i].pop(attr)
-            attrs = [key for key in list(lst_object[i].keys()) if key[:2] == "a:"]
+                obj[attr[1:]] = obj.pop(attr)
+            attrs = [key for key in list(obj.keys()) if key[:2] == "a:"]
             for attr in attrs:
-                lst_object[i][attr[2:]] = lst_object[i].pop(attr)
-
+                obj[attr[2:]] = obj.pop(attr)
         result = lst_object[0] if isinstance(content, dict) else lst_object
         return result
 
@@ -50,7 +49,9 @@ class TransformerBase(ExtractorBase):
             dict: De dictionary zonder de sleutels
         """
         if isinstance(d, dict):
-            logger.debug("object is dictionary; file:pd_transform_object; object:d in {self.file_pd_ldm}")
+            logger.debug(
+                "object is dictionary; file:pd_transform_object; object:d in {self.file_pd_ldm}"
+            )
             for key in list(d.keys()):
                 if key == convert_key:
                     d[key] = datetime.fromtimestamp(int(d[key]))
@@ -58,7 +59,9 @@ class TransformerBase(ExtractorBase):
                     self._convert_values_datetime(d[key], convert_key)
             return d
         elif isinstance(d, list):
-            logger.debug("object is list; file:pd_transform_object; object:d in {self.file_pd_ldm}")
+            logger.debug(
+                "object is list; file:pd_transform_object; object:d in {self.file_pd_ldm}"
+            )
             for i in range(len(d)):
                 d[i] = self._convert_values_datetime(d[i], convert_key)
             return d
@@ -77,7 +80,8 @@ class TransformerBase(ExtractorBase):
         return pd_content
 
     def extract_value_from_attribute_text(
-        self, extended_attrs_text: str, preceded_by: str) -> str:
+        self, extended_attrs_text: str, preceded_by: str
+    ) -> str:
         """Extraheert de opgegeven tekst uit een tekst string. Deze tekst kan voorafgegaan worden door een specifieke tekst en wordt afgesloten door een \n of het zit aan het einde van de string
 
         Args:
@@ -89,13 +93,17 @@ class TransformerBase(ExtractorBase):
         """
         idx_check = extended_attrs_text.find(preceded_by)
         if idx_check > 0:
-            logger.info(f"'{idx_check}' Waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}")
+            logger.info(
+                f"'{idx_check}' Waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
+            )
             idx_start = extended_attrs_text.find(preceded_by) + len(preceded_by)
-            idx_end= len(extended_attrs_text) + 1
+            idx_end = len(extended_attrs_text) + 1
             value = extended_attrs_text[idx_start:idx_end]
             idx_start = value.find("=") + 1
             value = value[idx_start:].upper()
         else:
-            logger.warning(f"Geen waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}")
+            logger.warning(
+                f"Geen waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
+            )
             value = ""
         return value
