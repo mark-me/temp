@@ -42,7 +42,7 @@ class StereotypeExtractor(ExtractorBase):
                 )
                 lst_objects.append(stereotype_object)
         logger.debug(f"Start met transformaties voor stereotype uit {self.file_pd_ldm}")
-        self.transform_stereotype.objects(lst_objects, dict_domains=self.dict_domains)
+        self.transform_stereotype.transform(lst_objects, dict_domains=self.dict_domains)
         return lst_objects
 
     def _is_matching_stereotype(self, stereotype_object: dict) -> bool:

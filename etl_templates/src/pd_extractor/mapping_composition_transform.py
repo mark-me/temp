@@ -11,7 +11,7 @@ class TransformSourceComposition(TransformerBase):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
 
-    def source_composition(
+    def transform(
         self,
         lst_attribute_mapping: list[dict],
         dict_objects: dict,

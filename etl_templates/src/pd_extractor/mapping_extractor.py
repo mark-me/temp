@@ -92,16 +92,16 @@ class MappingExtractor(ExtractorBase):
             list[dict]: Een lijst met de getransformeerde broncompositie voor de mapping.
         """
         mapping = self._normalize_mapping_name(mapping)
-        lst_entity_target = self.transform_target_entity.target_entities(
+        lst_entity_target = self.transform_target_entity.transform(
             mapping=mapping,
             dict_objects=dict_objects,
         )
         dict_attributes_combined = dict_attributes | dict_variables
-        lst_attribute_mapping = self.transform_attribute_mapping.attribute_mapping(
+        lst_attribute_mapping = self.transform_attribute_mapping.transform(
             dict_entity_target=lst_entity_target,
             dict_attributes=dict_attributes_combined,
         )
-        lst_source_composition = self.transform_source_composition.source_composition(
+        lst_source_composition = self.transform_source_composition.transform(
             lst_attribute_mapping=lst_attribute_mapping,
             dict_attributes=dict_attributes_combined,
             dict_objects=dict_objects,

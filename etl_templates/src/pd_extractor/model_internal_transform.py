@@ -11,7 +11,7 @@ class TransformModelInternal(TransformerBase):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
 
-    def model(self, content: dict) -> dict:
+    def transform(self, content: dict) -> dict:
         """Model generieke data
 
         Args:

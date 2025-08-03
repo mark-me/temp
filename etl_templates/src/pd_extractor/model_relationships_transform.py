@@ -10,7 +10,7 @@ class TransformRelationships(TransformerBase):
         super().__init__(file_pd_ldm)
         self.lst_entities = lst_entities
 
-    def process(self, lst_relationships: list[dict]) -> list[dict]:
+    def transform(self, lst_relationships: list[dict]) -> list[dict]:
         """Vormt om en verrijkt relatie data
 
         Deze functie verwerkt een lijst van relaties tussen entiteiten, verrijkt deze met entiteit-, attribuut- en identifier-informatie,

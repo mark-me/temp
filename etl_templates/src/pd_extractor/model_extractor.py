@@ -49,7 +49,7 @@ class ModelExtractor(ExtractorBase):
         Returns:
             dict: In het Power Designer LDM ontworpen model (niet geïmporteerd voor ETL)
         """
-        model = self.transform_model_internal.model(content=self.content)
+        model = self.transform_model_internal.transform(content=self.content)
         # Model add entity data
         self.lst_entity = self._entities_internal()
         model["Entities"] = self.lst_entity
@@ -96,7 +96,7 @@ class ModelExtractor(ExtractorBase):
         # Retain 'TargetModels' have references to entities
         path_keys = ["c:TargetModels", "o:TargetModel"]
         if lst_target_model := self._get_nested(data=self.content, keys=path_keys):
-            lst_models = self.transform_models_external.models(
+            lst_models = self.transform_models_external.transform(
                 lst_models=lst_target_model, dict_entities=dict_entities
             )
             return lst_models
@@ -120,7 +120,7 @@ class ModelExtractor(ExtractorBase):
         lst_entities = self._get_nested(data=self.content, keys=path_keys)
         if isinstance(lst_entities, dict):
             lst_entities = [lst_entities]
-        lst_entities = self.transform_models_external.entities(
+        lst_entities = self.transform_models_external.transform_entities(
             lst_entities=lst_entities
         )
         for entity in lst_entities:
@@ -189,7 +189,7 @@ class ModelExtractor(ExtractorBase):
         )
         path_keys = ["c:Relationships", "o:Relationship"]
         if lst_pd_relationships := self._get_nested(data=self.content, keys=path_keys):
-            lst_relationships = transform_relationships.process(
+            lst_relationships = transform_relationships.transform(
                 lst_relationships=lst_pd_relationships
             )
             return lst_relationships

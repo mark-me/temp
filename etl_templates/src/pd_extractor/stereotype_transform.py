@@ -29,7 +29,7 @@ class TransformStereotype(TransformerBase):
         dict_domains = {domain["Id"]: domain for domain in lst_domains}
         return dict_domains
 
-    def objects(self, lst_objects: list[dict], dict_domains: dict) -> list[dict]:
+    def transform(self, lst_objects: list[dict], dict_domains: dict) -> list[dict]:
         """Schoont en verrijkt de stereotype objecten die zijn opgenomen in het Power Designer LDM document
 
         Args:

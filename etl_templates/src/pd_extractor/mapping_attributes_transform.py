@@ -11,7 +11,7 @@ class TransformAttributeMapping(TransformerBase):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm=file_pd_ldm)
 
-    def attribute_mapping(
+    def transform(
         self, dict_entity_target: dict, dict_attributes: dict
     ) -> dict:
         """Verrijkt, schoont en hangt attribuut mappings om ten behoeven van een mapping

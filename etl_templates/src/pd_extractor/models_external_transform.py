@@ -11,7 +11,7 @@ class TransformModelsExternal(TransformerBase):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
 
-    def models(self, lst_models: list[dict], dict_entities: dict) -> list[dict]:
+    def transform(self, lst_models: list[dict], dict_entities: dict) -> list[dict]:
         """Doelmodellen bevatten verwijzingen naar entiteiten uit een ander model. Het doelmodel wordt verrijkt met deze entiteiten
 
         Args:
@@ -43,7 +43,7 @@ class TransformModelsExternal(TransformerBase):
                     model.pop("c:FullShortcutModel")
         return lst_result
 
-    def entities(self, lst_entities: list[dict] | dict) -> list[dict]:
+    def transform_entities(self, lst_entities: list[dict] | dict) -> list[dict]:
         """
         Transformeert en schoont externe entiteiten uit het Power Designer model.
 

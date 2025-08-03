@@ -12,7 +12,7 @@ class TransformTargetEntity(TransformerBase):
         super().__init__(file_pd_ldm)
         self.file_pd_ldm = file_pd_ldm
 
-    def target_entities(self, mapping: dict, dict_objects: dict) -> dict:
+    def transform(self, mapping: dict, dict_objects: dict) -> dict:
         """Omvormen van mapping data en verrijkt dit met doelentiteit en attribuut data
 
         Args:
