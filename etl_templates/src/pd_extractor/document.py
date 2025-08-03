@@ -164,8 +164,8 @@ class PDDocument(ExtractorBase):
             dict: De Power Designer data geconverteerd naar een dictionary
         """
         # Function not yet used, but candidate for reading XML file
-        with open(self.file_pd_ldm, encoding="utf8") as fd:
-            doc = fd.read()
+        with open(self.file_pd_ldm, encoding="utf8") as file_pd:
+            doc = file_pd.read()
         dict_data = xmltodict.parse(doc)
         try:
             dict_data = dict_data["Model"]["o:RootObject"]["c:Children"]["o:Model"]
