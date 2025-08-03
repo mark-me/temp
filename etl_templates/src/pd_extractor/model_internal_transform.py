@@ -110,11 +110,9 @@ class TransformModelInternal(TransformerBase):
         """
         lst_attrs = self._extract_entity_attributes(entity)
         lst_attrs = self.clean_keys(lst_attrs)
-        for i in range(len(lst_attrs)):
-            attr = lst_attrs[i]
+        for i, attr in enumerate(lst_attrs):
             attr["Order"] = i
             attr = self._enrich_attribute_with_domain(attr, dict_domains)
-            lst_attrs[i] = attr
         entity["Attributes"] = lst_attrs
         if "c:Attributes" in entity:
             entity.pop("c:Attributes")
