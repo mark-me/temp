@@ -53,6 +53,37 @@ class Orchestrator:
         )
         self.step_current = next(self.process_steps)
 
+    def start_processing(self, skip_devops: bool = False) -> None:
+        """Start het Genesis verwerkingsproces.
+
+        Orkestreert extractie, afhankelijkheidsanalyse, codegeneratie en repository-operaties voor het ETL-proces.
+
+        Args:
+            skip_devops (bool): Indien True, worden DevOps repository-operaties overgeslagen.
+
+        Returns:
+            None
+        """
+        print(
+            f"{BOLD_BLUE}{UNDERLINE}Start Genesis verwerking: {self.config.title} {self.config._version}.{RESET}\n",
+            file=sys.stdout,
+        )
+        # Extraheert data uit de Power Designer ldm bestanden
+        files_RETW = self._extract_to_json()
+        # Integreer alle data uit de verschillende bestanden
+        dag_etl = self._integrate_files(files_RETW=files_RETW)
+        # Genereer code voor doelschema's en mappings
+        self._generate_code(dag_etl=dag_etl)
+        # Genereer code voor ETL deployment
+        self._generate_mdde_deployment(dag_etl=dag_etl)
+        # Voegt gegenereerde code en database objecten toe aan het repository
+        if not skip_devops:
+            self._add_to_repository()
+        else:
+            logger.info(
+                "Repository afhandeling zijn overgeslagen door de 'skip_devops' flag."
+            )
+
     @staticmethod
     def _decorator_proces_issues(func):
         """
@@ -127,39 +158,8 @@ class Orchestrator:
 
         return wrapper
 
-    def start_processing(self, skip_devops: bool = False) -> None:
-        """Start het Genesis verwerkingsproces.
-
-        Orkestreert extractie, afhankelijkheidsanalyse, codegeneratie en repository-operaties voor het ETL-proces.
-
-        Args:
-            skip_devops (bool): Indien True, worden DevOps repository-operaties overgeslagen.
-
-        Returns:
-            None
-        """
-        print(
-            f"{BOLD_BLUE}{UNDERLINE}Start Genesis verwerking: {self.config.title} {self.config._version}.{RESET}\n",
-            file=sys.stdout,
-        )
-        # Extraheert data uit de Power Designer ldm bestanden
-        files_RETW = self._extract()
-        # Integreer alle data uit de verschillende bestanden
-        dag_etl = self._integrate_files(files_RETW=files_RETW)
-        # Genereer code voor doelschema's en mappings
-        self._generate_code(dag_etl=dag_etl)
-        # Genereer code voor ETL deployment
-        self._generate_mdde_deployment(dag_etl=dag_etl)
-        # Voegt gegenereerde code en database objecten toe aan het repository
-        if not skip_devops:
-            self._add_to_repository()
-        else:
-            logger.info(
-                "Repository afhandeling zijn overgeslagen door de 'skip_devops' flag."
-            )
-
     @_decorator_proces_issues
-    def _extract(self) -> list[Path]:
+    def _extract_to_json(self) -> list[Path]:
         """
         Extraheert data uit Power Designer bestanden en schrijft deze naar JSON-bestanden.
 
