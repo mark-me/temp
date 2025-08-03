@@ -9,7 +9,6 @@ from .extractor_base import ExtractorBase
 from .mapping_extractor import MappingExtractor
 from .model_extractor import ModelExtractor
 from .stereotype_extractor import StereotypeExtractor
-from .transformer_base import TransformerBase
 
 logger = get_logger(__name__)
 
