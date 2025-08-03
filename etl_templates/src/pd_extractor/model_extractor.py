@@ -1,6 +1,6 @@
 from logtools import get_logger
 
-from .extractor_base import ExtractorBase
+from .base_extractor import ExtractorBase
 from .model_internal_transform import TransformModelInternal
 from .models_external_transform import TransformModelsExternal
 from .model_relationships_transform import TransformRelationships

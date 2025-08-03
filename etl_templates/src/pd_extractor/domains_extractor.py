@@ -1,6 +1,6 @@
 from logtools import get_logger
 
-from .extractor_base import ExtractorBase
+from .base_extractor import ExtractorBase
 from .domains_transformer import TransformDomains
 logger = get_logger(__name__)
 

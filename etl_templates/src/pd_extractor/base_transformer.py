@@ -3,7 +3,7 @@ from typing import Union
 
 from logtools import get_logger
 
-from .extractor_base import ExtractorBase
+from .base_extractor import ExtractorBase
 
 logger = get_logger(__name__)
 

@@ -1,6 +1,6 @@
 from logtools import get_logger
 
-from .extractor_base import ExtractorBase
+from .base_extractor import ExtractorBase
 from .mapping_attributes_transform import TransformAttributeMapping
 from .mapping_composition_transform import TransformSourceComposition
 from .mapping_target_transform import TransformTargetEntity
