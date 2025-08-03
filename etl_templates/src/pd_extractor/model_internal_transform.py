@@ -99,9 +99,7 @@ class TransformModelInternal(TransformerBase):
             list: Alle entities
         """
         lst_entities = self.clean_keys(lst_entities)
-        for i in range(len(lst_entities)):
-            entity = lst_entities[i]
-
+        for entity in lst_entities:
             # Reroute attributes
             entity = self._entity_attributes(entity=entity, dict_domains=dict_domains)
             # Create subset of attributes to enrich identifier attributes
@@ -118,8 +116,6 @@ class TransformModelInternal(TransformerBase):
                 entity.pop("c:DefaultMapping")
             if "c:AttachedKeywords" in entity:
                 entity.pop("c:AttachedKeywords")
-
-            lst_entities[i] = entity
         return lst_entities
 
     def _entity_attributes(self, entity: dict, dict_domains: dict) -> dict:
