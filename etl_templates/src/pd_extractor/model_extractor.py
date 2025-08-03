@@ -140,7 +140,7 @@ class ModelExtractor(ExtractorBase):
         """
         path_keys = ["c:DataSources", "o:DefaultDataSource"]
         if lst_datasources := self._get_nested(data=self.content, keys=path_keys):
-            dict_datasources = self.transform_model_internal.datasources(
+            dict_datasources = self.transform_model_internal.transform_datasources(
                 lst_datasources=lst_datasources
             )
             return dict_datasources

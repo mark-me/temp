@@ -45,27 +45,7 @@ class TransformModelInternal(TransformerBase):
         model["IsDocumentModel"] = True
         return model
 
-    def domains(self, lst_domains: list[dict]) -> dict:
-        """Verwerkt en schoont domein data uit het Power Designer model.
-
-        Deze functie converteert timestamps, maakt de domein data schoon en retourneert een dictionary met domeinen.
-
-        Args:
-            lst_domains (list[dict]): Lijst van domeinen uit het Power Designer model.
-
-        Returns:
-            dict: Dictionary met domeinen, waarbij de sleutel het domein-ID is.
-        """
-        if isinstance(lst_domains, dict):
-            lst_domains = [lst_domains]
-        lst_domains = self.convert_timestamps(lst_domains)
-        lst_domains = self.clean_keys(lst_domains)
-        dict_domains = {
-            domain["Id"]: domain for domain in lst_domains if "Id" in domain
-        }
-        return dict_domains
-
-    def datasources(self, lst_datasources: list[dict]) -> dict:
+    def transform_datasources(self, lst_datasources: list[dict]) -> dict:
         """Datasource gerelateerde data
 
         Args:
@@ -74,9 +54,9 @@ class TransformModelInternal(TransformerBase):
         Returns:
             dict: Geschoonde datasource data (Id, naam en code) te gebruiken in model en mapping
         """
-
-        if isinstance(lst_datasources, dict):
-            lst_datasources = [lst_datasources]
+        lst_datasources = (
+            [lst_datasources] if isinstance(lst_datasources, dict) else lst_datasources
+        )
         lst_datasources = self.clean_keys(lst_datasources)
         dict_datasources = {
             datasource["Id"]: {
@@ -135,7 +115,7 @@ class TransformModelInternal(TransformerBase):
             attr["Order"] = i
             attr = self._enrich_attribute_with_domain(attr, dict_domains)
             lst_attrs[i] = attr
-            entity["Attributes"] = lst_attrs
+        entity["Attributes"] = lst_attrs
         if "c:Attributes" in entity:
             entity.pop("c:Attributes")
         elif "Variables" in entity:
