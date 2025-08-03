@@ -188,7 +188,7 @@ class Orchestrator:
                 file_RETW = (
                     self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
                 )
-                document.write_result(file_output=file_RETW)
+                document.extract_to_json(file_output=file_RETW)
                 logger.info(
                     f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
                 )

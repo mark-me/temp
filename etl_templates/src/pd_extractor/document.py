@@ -26,8 +26,7 @@ class PDDocument(ExtractorBase):
             file_pd_ldm (str): Power Designer logisch data model document (.ldm)
         """
         super().__init__(file_pd_ldm=file_pd_ldm)
-        # Extracting data from the file
-        self.content = self.read_file_model(file_pd_ldm=file_pd_ldm)
+        self.content = {}
         self.document_info = {}
         self.lst_models = []
         self.lst_filters = []
@@ -155,7 +154,7 @@ class PDDocument(ExtractorBase):
         self.lst_mappings = lst_mappings
         return lst_mappings
 
-    def read_file_model(self, file_pd_ldm: str) -> dict:
+    def read_file_model(self) -> dict:
         """Leest de XML van het Power Designer LDM in een dictionary
 
         Args:
@@ -165,13 +164,13 @@ class PDDocument(ExtractorBase):
             dict: De Power Designer data geconverteerd naar een dictionary
         """
         # Function not yet used, but candidate for reading XML file
-        with open(file_pd_ldm, encoding="utf8") as fd:
+        with open(self.file_pd_ldm, encoding="utf8") as fd:
             doc = fd.read()
         dict_data = xmltodict.parse(doc)
         try:
             dict_data = dict_data["Model"]["o:RootObject"]["c:Children"]["o:Model"]
         except (KeyError, TypeError) as e:
-            logger.error(f"Overwachte XML structuur in {file_pd_ldm}: {e}")
+            logger.error(f"Overwachte XML structuur in {self.file_pd_ldm}: {e}")
             return None
         return dict_data
 
@@ -333,7 +332,7 @@ class PDDocument(ExtractorBase):
             return obj.isoformat()
         raise TypeError("Type not serializable")
 
-    def write_result(self, file_output: str):
+    def extract_to_json(self, file_output: str):
         """Schrijft het geëxtraheerde en getransformeerde model, filters, scalars, aggregaten en mappings naar een outputbestand.
 
         Deze functie verzamelt alle relevante data uit het logisch datamodel en schrijft deze als JSON naar het opgegeven bestandspad.
@@ -341,7 +340,7 @@ class PDDocument(ExtractorBase):
         Args:
             file_output (str): Het pad waar het resultaatbestand wordt opgeslagen.
         """
-
+        self.content = self.read_file_model()
         dict_document = {"Info": self.get_document_info()}
         lst_filters = self.get_filters()
         lst_scalars = self.get_scalars()
