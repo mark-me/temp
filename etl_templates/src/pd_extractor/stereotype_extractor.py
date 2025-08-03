@@ -23,7 +23,7 @@ class StereotypeExtractor(ExtractorBase):
         self.stereotype = stereotype_input
         self.dict_domains = self._domains()
 
-    def objects(self) -> list[dict]:
+    def get_objects(self) -> list[dict]:
         """Haalt alle objecten van het opgegeven stereotype op gespecificeerd in de initialisatie
 
         Returns:

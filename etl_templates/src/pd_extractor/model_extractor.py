@@ -18,7 +18,7 @@ class ModelExtractor(ExtractorBase):
         self.transform_models_external = TransformModelsExternal(file_pd_ldm)
         self.dict_domains = self._domains()
 
-    def models(self) -> list[dict]:
+    def get_models(self) -> list[dict]:
         """Haalt alle modellen en hun bijbehorende objecten op die gebruikt worden in het Power Designer LDM
 
         Args:
