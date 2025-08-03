@@ -36,21 +36,21 @@ class PDDocument(ExtractorBase):
             file_output (str): Het pad waar het resultaatbestand wordt opgeslagen.
         """
         pd_content = self._read_file_model()
-        dict_document = {"Info": self.get_document_info(pd_content=pd_content)}
-        if filters := self.get_filters(pd_content=pd_content):
+        dict_document = {"Info": self._get_document_info(pd_content=pd_content)}
+        if filters := self._get_filters(pd_content=pd_content):
             dict_document["Filters"] = filters
         else:
             logger.debug(f"Geen filters geschreven naar  '{file_output}'")
-        if scalars := self.get_scalars(pd_content=pd_content):
+        if scalars := self._get_scalars(pd_content=pd_content):
             dict_document["Scalars"] = scalars
         else:
             logger.debug(f"No scalars to write to  '{file_output}'")
-        aggregates = self.get_aggregates(pd_content=pd_content)
-        if models := self.get_models(pd_content=pd_content):
+        aggregates = self._get_aggregates(pd_content=pd_content)
+        if models := self._get_models(pd_content=pd_content):
             dict_document["Models"] = models
         else:
             logger.error(f"Geen mappings om te schrijven in '{self.file_pd_ldm}'")
-        if mappings := self.get_mappings(
+        if mappings := self._get_mappings(
             pd_content=pd_content,
             models=models,
             filters=filters,
@@ -60,7 +60,7 @@ class PDDocument(ExtractorBase):
             dict_document["Mappings"] = mappings
         else:
             logger.warning(f"Geen mappings om te schrijven in '{file_output}'")
-        self.write_json(file_output=file_output, dict_document=dict_document)
+        self._write_json(file_output=file_output, dict_document=dict_document)
 
     def _read_file_model(self) -> dict:
         """Leest de XML van het Power Designer LDM in een dictionary
@@ -81,7 +81,7 @@ class PDDocument(ExtractorBase):
             return None
         return dict_data
 
-    def get_document_info(self, pd_content: dict) -> dict:
+    def _get_document_info(self, pd_content: dict) -> dict:
         """Geeft metadata terug over het ingelezen Power Designer logisch datamodel.
 
         Deze functie retourneert een dictionary met informatie zoals bestandsnaam, maker, aanmaakdatum, en modelopties.
@@ -104,7 +104,7 @@ class PDDocument(ExtractorBase):
             "PackageOptions": pd_content.get("a:PackageOptionsText", "").split("\n"),
         }
 
-    def get_filters(self, pd_content: dict) -> list[dict]:
+    def _get_filters(self, pd_content: dict) -> list[dict]:
         """Haalt alle filter objecten op uit het logisch data model.
 
         Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van filter dictionaries.
@@ -125,7 +125,7 @@ class PDDocument(ExtractorBase):
         logger.debug("Finished filter extraction")
         return filters
 
-    def get_scalars(self, pd_content: dict) -> list[dict]:
+    def _get_scalars(self, pd_content: dict) -> list[dict]:
         """Haalt alle scalar objecten op uit het logisch data model.
 
         Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van scalar dictionaries.
@@ -146,7 +146,7 @@ class PDDocument(ExtractorBase):
         logger.debug("Finished scalar extraction")
         return lst_scalars
 
-    def get_aggregates(self, pd_content: dict) -> list[dict]:
+    def _get_aggregates(self, pd_content: dict) -> list[dict]:
         """Haalt alle aggregate objecten op uit het logisch data model.
 
         Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van aggregate dictionaries.
@@ -167,7 +167,7 @@ class PDDocument(ExtractorBase):
         logger.debug("Finished aggregate extraction")
         return lst_aggregates
 
-    def get_models(self, pd_content: dict) -> list[dict]:
+    def _get_models(self, pd_content: dict) -> list[dict]:
         """Haalt alle model objecten op uit het logisch data model.
 
         Deze functie verwerkt het opgegeven Power Designer model en retourneert een lijst van model dictionaries.
@@ -184,7 +184,7 @@ class PDDocument(ExtractorBase):
         logger.debug("Finished model extraction")
         return lst_models
 
-    def get_mappings(
+    def _get_mappings(
         self,
         pd_content: dict,
         models: list[dict],
@@ -215,7 +215,7 @@ class PDDocument(ExtractorBase):
         )
         return lst_mappings
 
-    def write_json(self, file_output: str, dict_document: dict) -> None:
+    def _write_json(self, file_output: str, dict_document: dict) -> None:
         """Schrijft het opgegeven document als JSON naar het opgegeven bestandspad.
 
         Deze functie zorgt ervoor dat de outputdirectory bestaat en schrijft het dictionary-object als JSON naar het bestand.
