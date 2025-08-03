@@ -189,6 +189,14 @@ class PDDocument(ExtractorBase):
         self.write_json(file_output=file_output, dict_document=dict_document)
 
     def write_json(self, file_output: str, dict_document: dict) -> None:
+        """Schrijft het opgegeven document als JSON naar het opgegeven bestandspad.
+
+        Deze functie zorgt ervoor dat de outputdirectory bestaat en schrijft het dictionary-object als JSON naar het bestand.
+
+        Args:
+            file_output (str): Het pad waar het resultaatbestand wordt opgeslagen.
+            dict_document (dict): Het te schrijven document.
+        """
         path = Path(file_output)
         Path(path.parent).mkdir(parents=True, exist_ok=True)
         with open(file_output, "w", encoding="utf-8") as outfile:
