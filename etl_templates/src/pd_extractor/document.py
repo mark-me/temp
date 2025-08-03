@@ -28,6 +28,56 @@ class PDDocument(ExtractorBase):
         super().__init__(file_pd_ldm=file_pd_ldm)
         self.content = {}
 
+    def extract_to_json(self, file_output: str):
+        """Schrijft het geëxtraheerde en getransformeerde model, filters, scalars, aggregaten en mappings naar een outputbestand.
+
+        Deze functie verzamelt alle relevante data uit het logisch datamodel en schrijft deze als JSON naar het opgegeven bestandspad.
+
+        Args:
+            file_output (str): Het pad waar het resultaatbestand wordt opgeslagen.
+        """
+        self.content = self._read_file_model()
+        dict_document = {"Info": self.get_document_info(pd_content=self.content)}
+        if filters := self.get_filters(pd_content=self.content):
+            dict_document["Filters"] = filters
+        else:
+            logger.debug(f"Geen filters geschreven naar  '{file_output}'")
+        if scalars := self.get_scalars(pd_content=self.content):
+            dict_document["Scalars"] = scalars
+        else:
+            logger.debug(f"No scalars to write to  '{file_output}'")
+        aggregates = self.get_aggregates(pd_content=self.content)
+        if models := self.get_models(pd_content=self.content):
+            dict_document["Models"] = models
+        else:
+            logger.error(f"Geen mappings om te schrijven in '{self.file_pd_ldm}'")
+        if mappings := self.get_mappings(
+            models=models, filters=filters, scalars=scalars, aggregates=aggregates
+        ):
+            dict_document["Mappings"] = mappings
+        else:
+            logger.warning(f"Geen mappings om te schrijven in '{file_output}'")
+        self.write_json(file_output=file_output, dict_document=dict_document)
+
+    def _read_file_model(self) -> dict:
+        """Leest de XML van het Power Designer LDM in een dictionary
+
+        Args:
+            file_pd_ldm (str): Het pad naar Power Designer LDM file
+
+        Returns:
+            dict: De Power Designer data geconverteerd naar een dictionary
+        """
+        try:
+            with open(self.file_pd_ldm, encoding="utf8") as file_pd:
+                doc = file_pd.read()
+            dict_data = xmltodict.parse(doc)
+            dict_data = dict_data["Model"]["o:RootObject"]["c:Children"]["o:Model"]
+        except (KeyError, TypeError) as e:
+            logger.error(f"Overwachte XML structuur in {self.file_pd_ldm}: {e}")
+            return None
+        return dict_data
+
     def get_document_info(self, pd_content: dict) -> dict:
         """Geeft metadata terug over het ingelezen Power Designer logisch datamodel.
 
@@ -134,57 +184,6 @@ class PDDocument(ExtractorBase):
             models=models, filters=filters, scalars=scalars, aggregates=aggregates
         )
         return lst_mappings
-
-    def read_file_model(self) -> dict:
-        """Leest de XML van het Power Designer LDM in een dictionary
-
-        Args:
-            file_pd_ldm (str): Het pad naar Power Designer LDM file
-
-        Returns:
-            dict: De Power Designer data geconverteerd naar een dictionary
-        """
-        # Function not yet used, but candidate for reading XML file
-        with open(self.file_pd_ldm, encoding="utf8") as file_pd:
-            doc = file_pd.read()
-        dict_data = xmltodict.parse(doc)
-        try:
-            dict_data = dict_data["Model"]["o:RootObject"]["c:Children"]["o:Model"]
-        except (KeyError, TypeError) as e:
-            logger.error(f"Overwachte XML structuur in {self.file_pd_ldm}: {e}")
-            return None
-        return dict_data
-
-    def extract_to_json(self, file_output: str):
-        """Schrijft het geëxtraheerde en getransformeerde model, filters, scalars, aggregaten en mappings naar een outputbestand.
-
-        Deze functie verzamelt alle relevante data uit het logisch datamodel en schrijft deze als JSON naar het opgegeven bestandspad.
-
-        Args:
-            file_output (str): Het pad waar het resultaatbestand wordt opgeslagen.
-        """
-        self.content = self.read_file_model()
-        dict_document = {"Info": self.get_document_info(pd_content=self.content)}
-        if filters := self.get_filters(pd_content=self.content):
-            dict_document["Filters"] = filters
-        else:
-            logger.debug(f"Geen filters geschreven naar  '{file_output}'")
-        if scalars := self.get_scalars(pd_content=self.content):
-            dict_document["Scalars"] = scalars
-        else:
-            logger.debug(f"No scalars to write to  '{file_output}'")
-        aggregates = self.get_aggregates(pd_content=self.content)
-        if models := self.get_models(pd_content=self.content):
-            dict_document["Models"] = models
-        else:
-            logger.error(f"Geen mappings om te schrijven in '{self.file_pd_ldm}'")
-        if mappings := self.get_mappings(
-            models=models, filters=filters, scalars=scalars, aggregates=aggregates
-        ):
-            dict_document["Mappings"] = mappings
-        else:
-            logger.warning(f"Geen mappings om te schrijven in '{file_output}'")
-        self.write_json(file_output=file_output, dict_document=dict_document)
 
     def write_json(self, file_output: str, dict_document: dict) -> None:
         """Schrijft het opgegeven document als JSON naar het opgegeven bestandspad.
