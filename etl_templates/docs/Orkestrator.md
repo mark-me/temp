@@ -16,28 +16,6 @@ Wanneer het main script wordt gestart worden de volgende stappen ondernomen:
 
 ```mermaid
 sequenceDiagram
-    participant Gebruiker
-    participant CLI
-    participant Orchestrator
-
-    Gebruiker->>CLI: Voert CLI uit met pad naar configuratiebestand
-    CLI->>CLI: Ontleedt argumenten (configuratiebestand, skip DevOps deployment)
-    CLI->>Orchestrator: Maakt Orchestrator-object aan met configuratiebestand
-    Orchestrator->>Orchestrator: Initialiseert Orkestrator
-    Orchestrator->>Orchestrator: Laadt configuratie
-    Orchestrator->>Orchestrator: Valideert configuratie
-    Orchestrator->>Orchestrator: Zet verwerkingsomgeving op
-    Orchestrator->>Orchestrator: Start verwerking
-    Orchestrator->>CLI: Geeft resultaat terug
-    CLI->>Gebruiker: Toont resultaat
-```
-
-## Verwerkingsvolgorde van orkestrator
-
-Het orkestratie-proces doorloopt de volgende stappen:
-
-```mermaid
-sequenceDiagram
   participant G as Orchestrator
   participant CF as Configuratiebestand
   participant PD as Power Designer-bestand
