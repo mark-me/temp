@@ -1,9 +1,9 @@
 from logtools import get_logger
 
 from .base_extractor import ExtractorBase
-from .model_internal_transform import TransformModelInternal
-from .models_external_transform import TransformModelsExternal
-from .model_relationships_transform import TransformRelationships
+from .model_internal_transform import ModelInternalTransformer
+from .models_external_transform import ModelsExternalTransformer
+from .model_relationships_transform import RelationshipsTransformer
 
 logger = get_logger(__name__)
 
@@ -14,14 +14,14 @@ class ModelExtractor(ExtractorBase):
     def __init__(self, pd_content: dict, file_pd_ldm: str):
         super().__init__(file_pd_ldm=file_pd_ldm)
         self.content = pd_content
-        self.transform_model_internal = TransformModelInternal(file_pd_ldm)
-        self.transform_models_external = TransformModelsExternal(file_pd_ldm)
+        self.transform_model_internal = ModelInternalTransformer(file_pd_ldm)
+        self.transform_models_external = ModelsExternalTransformer(file_pd_ldm)
 
     def get_models(self, dict_domains: dict) -> list[dict]:
         """Haalt alle modellen en hun bijbehorende objecten op die gebruikt worden in het Power Designer LDM
 
         Args:
-            lst_aggregates (list): Aggregaten die onderdeel zijn van het doelmodel en gebruikt worden in de ETL
+            dict_domains (dict): Domeinen die worden gebruikt om datatypes van kolommen te verrijken.
 
         Returns:
             list[dict]: lijst van modellen die gebruikt worden in het Power Designer LDM document
@@ -162,7 +162,7 @@ class ModelExtractor(ExtractorBase):
         Returns:
             list[dict] | None: Lijst van relaties of None als er geen relaties zijn gevonden.
         """
-        transform_relationships = TransformRelationships(
+        transform_relationships = RelationshipsTransformer(
             file_pd_ldm=self.file_pd_ldm, lst_entities=lst_entity
         )
         path_keys = ["c:Relationships", "o:Relationship"]

@@ -2,12 +2,12 @@ import re
 
 from logtools import get_logger
 
-from .base_transformer import TransformerBase
+from .base_transformer import BaseTransformer
 
 logger = get_logger(__name__)
 
 
-class TransformSourceComposition(TransformerBase):
+class SourceCompositionTransformer(BaseTransformer):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
 
@@ -43,7 +43,7 @@ class TransformSourceComposition(TransformerBase):
         )
 
         composition = self._get_composition_list(mapping)
-        composition = self.compositions_remove_mdde_examples(composition)
+        composition = self._compositions_remove_mdde_examples(composition)
         lst_composition_items = self._extract_composition_items(composition)
         lst_composition_items = self._transform_composition_items(
             lst_composition_items, dict_objects, dict_attributes
@@ -108,7 +108,7 @@ class TransformSourceComposition(TransformerBase):
             lst_composition_items[i] = composition_item
         return lst_composition_items
 
-    def compositions_remove_mdde_examples(self, lst_compositions: list[dict]) -> dict:
+    def _compositions_remove_mdde_examples(self, lst_compositions: list[dict]) -> dict:
         """Verwijderd de MDDE voorbeeld compositie veronderstelt dat er 1 compositie overblijft
 
         Args:

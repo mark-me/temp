@@ -48,9 +48,11 @@ Alleen logberichten op niveau `WARNING` of hoger worden bijgehouden in het geheu
 ```md
 logtools/
 ├── __init__.py           # Publieke API: get_logger, issue_tracker
+├── color_formatter.py    # Voegt kleur to aan logging levels
 ├── log_config.py         # Loggingconfiguratie als dict
 ├── log_manager.py        # Past configuratie toe en stelt logger + tracker beschikbaar
-└── issue_tracking.py     # Aangepaste handler die problemen bijhoudt
+├── issue_tracking.py     # Aangepaste handler die problemen bijhoudt
+└── tqdm_logging.py       # Logging in combinatie met tqdm (progress bars) faciliteren
 ```
 
 ## Aanpassen
@@ -83,10 +85,22 @@ logtools/
 
 ## API referentie
 
+---
+
 ### Log manager
 
 #### ::: src.logtools.log_manager.get_logger
 
+---
+
 ### Issue tracker
 
 #### ::: src.logtools.issue_tracking.IssueTrackingHandler
+
+---
+
+### Formatting
+
+#### ::: src.logtools.color_formatter.ColorFormatter
+
+#### ::: src.logtools.tqdm_logging.TqdmLoggingHandler

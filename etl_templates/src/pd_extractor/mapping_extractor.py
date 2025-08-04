@@ -1,9 +1,9 @@
 from logtools import get_logger
 
 from .base_extractor import ExtractorBase
-from .mapping_attributes_transform import TransformAttributeMapping
-from .mapping_composition_transform import TransformSourceComposition
-from .mapping_target_transform import TransformTargetEntity
+from .mapping_attributes_transform import MappingAttributesTransformer
+from .mapping_composition_transform import SourceCompositionTransformer
+from .mapping_target_transform import TargetEntityTransformer
 
 logger = get_logger(__name__)
 
@@ -89,18 +89,18 @@ class MappingExtractor(ExtractorBase):
             list[dict]: Een lijst met de getransformeerde broncompositie voor de mapping.
         """
         mapping = self._normalize_mapping_name(mapping)
-        trf_target_entity = TransformTargetEntity(file_pd_ldm=self.file_pd_ldm)
+        trf_target_entity = TargetEntityTransformer(file_pd_ldm=self.file_pd_ldm)
         lst_entity_target = trf_target_entity.transform(
             mapping=mapping,
             dict_objects=dict_objects,
         )
         dict_attributes_combined = dict_attributes | dict_variables
-        trf_attribute_mapping = TransformAttributeMapping(file_pd_ldm=self.file_pd_ldm)
+        trf_attribute_mapping = MappingAttributesTransformer(file_pd_ldm=self.file_pd_ldm)
         attribute_mappings = trf_attribute_mapping.transform(
             dict_entity_target=lst_entity_target,
             dict_attributes=dict_attributes_combined,
         )
-        trf_source_composition = TransformSourceComposition(
+        trf_source_composition = SourceCompositionTransformer(
             file_pd_ldm=self.file_pd_ldm
         )
         source_composition = trf_source_composition.transform(

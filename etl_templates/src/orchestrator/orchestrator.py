@@ -81,7 +81,7 @@ class Orchestrator:
             self._add_to_repository()
         else:
             logger.info(
-                "Repository afhandeling zijn overgeslagen door de 'skip_devops' flag."
+                "Repository afhandeling is overgeslagen door de 'skip_devops' flag."
             )
 
     @staticmethod

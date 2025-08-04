@@ -1,7 +1,7 @@
 from logtools import get_logger
 
 from .base_extractor import ExtractorBase
-from .stereotype_transform import TransformStereotype
+from .stereotype_transform import StereotypeTransformer
 
 logger = get_logger(__name__)
 
@@ -19,7 +19,7 @@ class StereotypeExtractor(ExtractorBase):
         """
         super().__init__(file_pd_ldm=file_pd_ldm)
         self.content = pd_content
-        self.transform_stereotype = TransformStereotype(file_pd_ldm)
+        self.transform_stereotype = StereotypeTransformer(file_pd_ldm)
         self.stereotype = stereotype_input
 
     def get_objects(self, dict_domains: dict) -> list[dict]:

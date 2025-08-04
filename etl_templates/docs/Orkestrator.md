@@ -76,8 +76,10 @@ sequenceDiagram
 * Extraheert logical data models en mappings uit PowerDesigner LDM-bestanden met behulp van de klasse `PDDocument`.
 * Slaat de geëxtraheerde data op als JSON-bestanden voor verdere verwerking.
 
-**[Afhankelijkheidsanalyse](Dependency_checker.md) (`_inspect_etl_dag(files_RETW: list)`)**
+**[Integreren Power Designer documenten](Integrator.md) (`_inspect_etl_dag(files_RETW: list)`)**
 
+* Integreert de extracten van de Power Designer modellen tot één ETL flow.
+* Voegt technische keuzes toe aan de ETL flow.
 * Gebruikt de klasse DagReporting om ETL-afhankelijkheden tussen de geëxtraheerde bestanden te analyseren.
 * Genereert een volgorde van mappings en visualiseert de ETL-flow in een HTML-rapport.
 

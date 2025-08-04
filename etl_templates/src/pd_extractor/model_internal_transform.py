@@ -1,11 +1,11 @@
 from logtools import get_logger
 
-from .base_transformer import TransformerBase
+from .base_transformer import BaseTransformer
 
 logger = get_logger(__name__)
 
 
-class TransformModelInternal(TransformerBase):
+class ModelInternalTransformer(BaseTransformer):
     """Hangt om en schoont elk onderdeel van de metadata van het model dat omgezet wordt naar DDL en ETL generatie"""
 
     def __init__(self, file_pd_ldm: str):

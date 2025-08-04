@@ -1,7 +1,7 @@
 from logtools import get_logger
 
 from .base_extractor import ExtractorBase
-from .domains_transformer import TransformDomains
+from .domains_transformer import DomainsTransformer
 logger = get_logger(__name__)
 
 
@@ -21,7 +21,7 @@ class DomainsExtractor(ExtractorBase):
         """
         path_keys = ["c:Domains", "o:Domain"]
         if domains := self._get_nested(data=self.content, keys=path_keys):
-            transform_domains = TransformDomains(file_pd_ldm=self.file_pd_ldm)
+            transform_domains = DomainsTransformer(file_pd_ldm=self.file_pd_ldm)
             dict_domains = transform_domains.transform(
                 lst_domains=domains
             )

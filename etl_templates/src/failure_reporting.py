@@ -41,7 +41,7 @@ def build_dag(file_config: str) -> EtlSimulator:
         logger.info(f"Start extractie van Power Designer bestand '{file_pd_ldm}'")
         document = PDDocument(file_pd_ldm=file_pd_ldm)
         file_RETW = config.extractor.path_output / f"{file_pd_ldm.stem}.json"
-        document.extract_to_json(file_output=file_RETW)
+        document.write_result(file_output=file_RETW)
         logger.info(
             f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
         )

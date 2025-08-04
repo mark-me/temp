@@ -79,7 +79,7 @@ class PDDocument(ExtractorBase):
             dict_data = xmltodict.parse(doc)
             dict_data = dict_data["Model"]["o:RootObject"]["c:Children"]["o:Model"]
         except (KeyError, TypeError) as e:
-            logger.error(f"Overwachte XML structuur in {self.file_pd_ldm}: {e}")
+            logger.error(f"Onverwachte XML structuur in {self.file_pd_ldm}: {e}")
             return None
         return dict_data
 

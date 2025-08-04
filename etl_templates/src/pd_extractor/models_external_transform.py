@@ -1,11 +1,11 @@
 from logtools import get_logger
 
-from .base_transformer import TransformerBase
+from .base_transformer import BaseTransformer
 
 logger = get_logger(__name__)
 
 
-class TransformModelsExternal(TransformerBase):
+class ModelsExternalTransformer(BaseTransformer):
     """Functions die gebruikt worden voor het transformeren van model data die gebruikt gaat worden voor de mapping van het model"""
 
     def __init__(self, file_pd_ldm: str):

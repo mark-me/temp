@@ -1,11 +1,11 @@
 from logtools import get_logger
 
-from .base_transformer import TransformerBase
+from .base_transformer import BaseTransformer
 
 logger = get_logger(__name__)
 
 
-class TransformRelationships(TransformerBase):
+class RelationshipsTransformer(BaseTransformer):
     def __init__(self, file_pd_ldm: str, lst_entities: list[dict]):
         super().__init__(file_pd_ldm)
         self.lst_entities = lst_entities

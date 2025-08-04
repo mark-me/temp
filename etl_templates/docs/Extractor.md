@@ -35,14 +35,14 @@ De volgende klassen spelen een belangrijke rol in het extractieproces:
 
 * `PDDocument`, fungeert als de hoofdinterface voor het omzetten van Power Designer LDM-bestanden in een gestructureerd, machine-leesbaar formaat dat geschikt is voor verdere verwerking in datamodellering, DDL- en ETL-generatie workflows. Het abstraheert de complexiteit van het parsen en interpreteren van de LDM XML en biedt een overzichtelijke API voor downstream-tools en -processen.
 * `StereotypeExtractor` is verantwoordelijk voor het extraheren en verwerken van specifieke typen objecten (filters, aggregaten en scalars) uit een Power Designer-document dat als een dictionary is gerepresenteerd. De extractie is gebaseerd op een opgegeven stereotype. De klasse verzorgt tevens het opschonen en transformeren van deze objecten en verzamelt gerelateerde domeingegevens.
-    * `TransformStereotype` is verantwoordelijk voor....
-* `ModelExtractor` is verantwoordelijk voor het extraheren en transformeren van relevante objecten uit een Power Designer Logical Data Model (LDM)-document. Het hoofddoel is om de inhoud van het LDM te parsen, interne en externe modellen, entiteiten, relaties, domeinen en datasources te identificeren en deze informatie voor te bereiden voor verdere verwerking, zoals ETL of lineage-analyse. De klasse maakt gebruik van twee transformatie-helpers (`TransformModelInternal` en `TransformModelsExternal`) om de specifieke structuren van interne en externe modellen te verwerken.
-    * `TransformModelInternal` is verantwoordelijk voor het transformeren en opschonen van metadata uit PowerDesigner-modellen voor gebruik in DDL (Data Definition Language) en ETL (Extract, Transform, Load) generatie. De klasse breidt `ObjectTransformer` uit en biedt een reeks methoden om verschillende componenten van een PowerDesigner-model te verwerken, normaliseren en verrijken, zoals modellen, domeinen, datasources, entiteiten en relaties.
-    * `TransformModelsExternal` is verantwoordelijk voor het transformeren en opschonen van modelgegevens — specifiek gericht op externe entiteiten in Power Designer-documenten. De klasse breidt `ObjectTransformer` uit en biedt methoden om model- en entiteitsgegevens te verwerken, verrijken en saneren voor gebruik in mapping-operaties.
+    * `StereotypeTransformer` is verantwoordelijk voor....
+* `ModelExtractor` is verantwoordelijk voor het extraheren en transformeren van relevante objecten uit een Power Designer Logical Data Model (LDM)-document. Het hoofddoel is om de inhoud van het LDM te parsen, interne en externe modellen, entiteiten, relaties, domeinen en datasources te identificeren en deze informatie voor te bereiden voor verdere verwerking, zoals ETL of lineage-analyse. De klasse maakt gebruik van twee transformatie-helpers (`ModelInternalTransformer` en `ModelsExternalTransformer`) om de specifieke structuren van interne en externe modellen te verwerken.
+    * `TransformModelInternal` is verantwoordelijk voor het transformeren en opschonen van metadata uit PowerDesigner-modellen voor gebruik in DDL (Data Definition Language) en ETL (Extract, Transform, Load) generatie. De klasse breidt `BaseTransformer` uit en biedt een reeks methoden om verschillende componenten van een PowerDesigner-model te verwerken, normaliseren en verrijken, zoals modellen, domeinen, datasources, entiteiten en relaties.
+    * `ModelsExternalTransformer` is verantwoordelijk voor het transformeren en opschonen van modelgegevens — specifiek gericht op externe entiteiten in Power Designer-documenten. De klasse breidt `BaseTransformer` uit en biedt methoden om model- en entiteitsgegevens te verwerken, verrijken en saneren voor gebruik in mapping-operaties.
 * `MappingExtractor` is verantwoordelijk voor het extraheren van ETL (Extract, Transform, Load) mapping-specificaties uit een Power Designer Logical Data Model (LDM) dat gebruikmaakt van de CrossBreeze MDDE-extensie. De klasse verwerkt de ruwe modelgegevens, filtert irrelevante mappings eruit en transformeert de geëxtraheerde informatie naar een leesbaarder en gestructureerd formaat.
-    * `TransformAttributeMapping` is verantwoordelijk voor het transformeren en verrijken van attributen-mappings, specifiek voor ETL (Extract, Transform, Load).
-    * `TransformSourceComposition` is verantwoordelijk voor het transformeren, opschonen en verrijken van "source composition"-datastructuren die zijn geëxtraheerd uit Power Designer Logical Data Model (LDM)-documenten. Het hoofddoel is om complexe mapping- en compositiedata te verwerken en te normaliseren. Hierbij worden voorbeelddata verwijderd, relevante entiteiten, join-condities en scalar-condities geëxtraheerd en klaargemaakt voor verdere verwerking in ETL- of DDL-generatie.
-    * `TransformTargetEntity` is verantwoordelijk voor het verwerken en verrijken van mapping-data die zijn geëxtraheerd uit Power Designer-documenten. Het hoofddoel is om mapping entries te transformeren door deze te associëren met hun doeltabellen en attributen.
+    * `MappingAttributesTransformer` is verantwoordelijk voor het transformeren en verrijken van attributen-mappings, specifiek voor ETL (Extract, Transform, Load).
+    * `SourceCompositionTransformer` is verantwoordelijk voor het transformeren, opschonen en verrijken van "source composition"-datastructuren die zijn geëxtraheerd uit Power Designer Logical Data Model (LDM)-documenten. Het hoofddoel is om complexe mapping- en compositiedata te verwerken en te normaliseren. Hierbij worden voorbeelddata verwijderd, relevante entiteiten, join-condities en scalar-condities geëxtraheerd en klaargemaakt voor verdere verwerking in ETL- of DDL-generatie.
+    * `TargetEntityTransformer` is verantwoordelijk voor het verwerken en verrijken van mapping-data die zijn geëxtraheerd uit Power Designer-documenten. Het hoofddoel is om mapping entries te transformeren door deze te associëren met hun doeltabellen en attributen.
 
 ## Sequentie diagram
 
@@ -330,7 +330,7 @@ Mogelijkheid om veranderingen tussen modelversies te vergelijken.
 
 ---
 
-### ::: src.pd_extractor.domains_transformer.TransformDomains
+### ::: src.pd_extractor.domains_transformer.DomainsTransformer
 
 ---
 
@@ -338,7 +338,7 @@ Mogelijkheid om veranderingen tussen modelversies te vergelijken.
 
 ---
 
-### ::: src.pd_extractor.stereotype_transform.TransformStereotype
+### ::: src.pd_extractor.stereotype_transform.StereotypeTransformer
 
 ---
 
@@ -346,11 +346,11 @@ Mogelijkheid om veranderingen tussen modelversies te vergelijken.
 
 ---
 
-### ::: src.pd_extractor.model_internal_transform.TransformModelInternal
+### ::: src.pd_extractor.model_internal_transform.ModelInternalTransformer
 
 ---
 
-### ::: src.pd_extractor.models_external_transform.TransformModelsExternal
+### ::: src.pd_extractor.models_external_transform.ModelsExternalTransformer
 
 ---
 
@@ -358,14 +358,14 @@ Mogelijkheid om veranderingen tussen modelversies te vergelijken.
 
 ---
 
-### ::: src.pd_extractor.mapping_attributes_transform.TransformAttributeMapping
+### ::: src.pd_extractor.mapping_attributes_transform.MappingAttributesTransformer
 
 ---
 
-### ::: src.pd_extractor.mapping_composition_transform.TransformSourceComposition
+### ::: src.pd_extractor.mapping_composition_transform.SourceCompositionTransformer
 
 ---
 
-### ::: src.pd_extractor.mapping_target_transform.TransformTargetEntity
+### ::: src.pd_extractor.mapping_target_transform.TargetEntityTransformer
 
 ---

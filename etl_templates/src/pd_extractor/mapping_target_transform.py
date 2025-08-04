@@ -1,11 +1,11 @@
 from logtools import get_logger
 
-from .base_transformer import TransformerBase
+from .base_transformer import BaseTransformer
 
 logger = get_logger(__name__)
 
 
-class TransformTargetEntity(TransformerBase):
+class TargetEntityTransformer(BaseTransformer):
     """Vormt mapping data om en verrijkt dit met entiteit en attribuut data"""
 
     def __init__(self, file_pd_ldm: str):

@@ -6,7 +6,7 @@ from .base_extractor import ExtractorBase
 logger = get_logger(__name__)
 
 
-class TransformerBase(ExtractorBase):
+class BaseTransformer(ExtractorBase):
     """Collectie van functions die structuren en data van Power Designer objecten kan transformeren
 
     Het transformeren van structuren wordt gedaan om het 'querien' van data voor de ETL en DDL te versimpelen
