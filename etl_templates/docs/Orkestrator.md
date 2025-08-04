@@ -113,7 +113,7 @@ classDiagram
     ConfigData o-- DevOpsConfig : has
 ```
 
-## </> API referentie
+## API referentie
 
 ### ::: src.orchestrator.orchestrator.Orchestrator
 
