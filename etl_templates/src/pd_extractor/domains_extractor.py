@@ -1,11 +1,11 @@
 from logtools import get_logger
 
-from .base_extractor import ExtractorBase
+from .base_extractor import BaseExtractor
 from .domains_transformer import DomainsTransformer
 logger = get_logger(__name__)
 
 
-class DomainsExtractor(ExtractorBase):
+class DomainsExtractor(BaseExtractor):
     def __init__(self, pd_content: dict, file_pd_ldm: str):
         super().__init__(file_pd_ldm=file_pd_ldm)
         self.content = pd_content

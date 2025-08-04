@@ -1,12 +1,12 @@
 from datetime import datetime
 from logtools import get_logger
 
-from .base_extractor import ExtractorBase
+from .base_extractor import BaseExtractor
 
 logger = get_logger(__name__)
 
 
-class BaseTransformer(ExtractorBase):
+class BaseTransformer(BaseExtractor):
     """Collectie van functions die structuren en data van Power Designer objecten kan transformeren
 
     Het transformeren van structuren wordt gedaan om het 'querien' van data voor de ETL en DDL te versimpelen

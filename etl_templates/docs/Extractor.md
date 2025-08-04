@@ -11,82 +11,54 @@ De extractie ondersteunt informatie over:
 * Relaties en domeinen,
 * Mappings, joins en transformatie-logica.
 
-Deze handleiding legt uit hoe je de extractor kunt gebruiken, hoe het JSON-bestand is opgebouwd, en geeft visuele modellen van de interne structuur.
-
-## 🚀 Gebruik
-
-De extractor-package bevindt zich in de map `src/pd_extractor`. Het startpunt is het bestand `pd_document.py`, waarin de klasse `PDDocument` wordt gedefinieerd. Deze klasse wordt geïnstantieerd met een bestandslocatie als parameter, waarna de functie `write_result` wordt gebruikt om de JSON-output te genereren.
-
-```python title="Voorbeeld gebruik:"
-from pathlib import Path
-
-from pd_extractor import PDDocument
-
-file_pd_model = "./etl_templates/input/CL_Relations_LDM_Test.ldm"
-dir_output = "./etl_templates/output/"
-file_json = dir_output + Path(path).file_pd_model + ".json"
-document = PDDocument(file_pd_ldm=file_pd_model)
-document.write_result(file_output=file_json)
-```
+Deze documentatie licht de componenten van de extractor toe, hoe het ge-extracte JSON-bestand is opgebouwd, en geeft visuele modellen van de interne structuur.
 
 ## Belangrijke componenten
 
 De volgende klassen spelen een belangrijke rol in het extractieproces:
 
 * `PDDocument`, fungeert als de hoofdinterface voor het omzetten van Power Designer LDM-bestanden in een gestructureerd, machine-leesbaar formaat dat geschikt is voor verdere verwerking in datamodellering, DDL- en ETL-generatie workflows. Het abstraheert de complexiteit van het parsen en interpreteren van de LDM XML en biedt een overzichtelijke API voor downstream-tools en -processen.
-* `StereotypeExtractor` is verantwoordelijk voor het extraheren en verwerken van specifieke typen objecten (filters, aggregaten en scalars) uit een Power Designer-document dat als een dictionary is gerepresenteerd. De extractie is gebaseerd op een opgegeven stereotype. De klasse verzorgt tevens het opschonen en transformeren van deze objecten en verzamelt gerelateerde domeingegevens.
-    * `StereotypeTransformer` is verantwoordelijk voor....
-* `ModelExtractor` is verantwoordelijk voor het extraheren en transformeren van relevante objecten uit een Power Designer Logical Data Model (LDM)-document. Het hoofddoel is om de inhoud van het LDM te parsen, interne en externe modellen, entiteiten, relaties, domeinen en datasources te identificeren en deze informatie voor te bereiden voor verdere verwerking, zoals ETL of lineage-analyse. De klasse maakt gebruik van twee transformatie-helpers (`ModelInternalTransformer` en `ModelsExternalTransformer`) om de specifieke structuren van interne en externe modellen te verwerken.
-    * `TransformModelInternal` is verantwoordelijk voor het transformeren en opschonen van metadata uit PowerDesigner-modellen voor gebruik in DDL (Data Definition Language) en ETL (Extract, Transform, Load) generatie. De klasse breidt `BaseTransformer` uit en biedt een reeks methoden om verschillende componenten van een PowerDesigner-model te verwerken, normaliseren en verrijken, zoals modellen, domeinen, datasources, entiteiten en relaties.
-    * `ModelsExternalTransformer` is verantwoordelijk voor het transformeren en opschonen van modelgegevens — specifiek gericht op externe entiteiten in Power Designer-documenten. De klasse breidt `BaseTransformer` uit en biedt methoden om model- en entiteitsgegevens te verwerken, verrijken en saneren voor gebruik in mapping-operaties.
+* `StereotypeExtractor` is verantwoordelijk voor het extraheren en verwerken van specifieke typen objecten (filters, aggregaten en scalars) uit een Power Designer-document dat als een dictionary is gerepresenteerd. De extractie is gebaseerd op een opgegeven stereotype. De klasse `StereotypeTransformer` verzorgt tevens het opschonen en transformeren van deze objecten en verzamelt gerelateerde domeingegevens.
+* `ModelExtractor` is verantwoordelijk voor het extraheren en transformeren van relevante objecten uit een Power Designer Logical Data Model (LDM)-document. Het hoofddoel is om de inhoud van het LDM te parsen, interne en externe modellen, entiteiten, relaties, domeinen en datasources te identificeren en deze informatie voor te bereiden voor verdere verwerking, zoals ETL of lineage-analyse. De klasse maakt gebruik van twee transformatie-helpers `ModelInternalTransformer` en `ModelsExternalTransformer` om de specifieke structuren van interne en externe modellen te verwerken.
 * `MappingExtractor` is verantwoordelijk voor het extraheren van ETL (Extract, Transform, Load) mapping-specificaties uit een Power Designer Logical Data Model (LDM) dat gebruikmaakt van de CrossBreeze MDDE-extensie. De klasse verwerkt de ruwe modelgegevens, filtert irrelevante mappings eruit en transformeert de geëxtraheerde informatie naar een leesbaarder en gestructureerd formaat.
     * `MappingAttributesTransformer` is verantwoordelijk voor het transformeren en verrijken van attributen-mappings, specifiek voor ETL (Extract, Transform, Load).
     * `SourceCompositionTransformer` is verantwoordelijk voor het transformeren, opschonen en verrijken van "source composition"-datastructuren die zijn geëxtraheerd uit Power Designer Logical Data Model (LDM)-documenten. Het hoofddoel is om complexe mapping- en compositiedata te verwerken en te normaliseren. Hierbij worden voorbeelddata verwijderd, relevante entiteiten, join-condities en scalar-condities geëxtraheerd en klaargemaakt voor verdere verwerking in ETL- of DDL-generatie.
     * `TargetEntityTransformer` is verantwoordelijk voor het verwerken en verrijken van mapping-data die zijn geëxtraheerd uit Power Designer-documenten. Het hoofddoel is om mapping entries te transformeren door deze te associëren met hun doeltabellen en attributen.
 
-## Sequentie diagram
+### Sequentie van componenten
 
-In de onderstaande diagram is de flow van het extractieproces weergegeven.
+De sequentiediagram laat zien hoe de Orchestrator gebruik maakt van de Extractor componenten om een Power Designer document te lezen en het resultaat weg te schrijven naar een JSON bestand. Hierbij is te zien hoe de flow tussen de verschillende objecten door de functies loopt.
 
 ```mermaid
 sequenceDiagram
-    LDM-file ->> PDDocument: __init__(bestandslocatie)
-    destroy LDM-file
-    LDM-file -x PDDocument: read_file_model
+    participant Orchestrator
+    participant PDDocument
+    participant DomainsExtractor
+    participant StereotypeExtractor
+    participant ModelExtractor
+    participant MappingExtractor
+    participant Power Designer LDM
+    participant JSON Extract
 
-    create participant StereotypeExtractor
-    PDDocument ->> StereotypeExtractor: write_result()
-    PDDocument ->> StereotypeExtractor: get_filters()
-    activate StereotypeExtractor
-    StereotypeExtractor ->> PDDocument: objects()
-    deactivate StereotypeExtractor
-
-    PDDocument ->> StereotypeExtractor: get_scalars()
-    activate StereotypeExtractor
-    StereotypeExtractor ->> PDDocument: objects()
-    deactivate StereotypeExtractor
-
-    PDDocument ->> StereotypeExtractor: get_aggregates()
-    activate StereotypeExtractor
-    destroy StereotypeExtractor
-    StereotypeExtractor -x PDDocument: objects()
-
-    create participant ModelExtractor
-    PDDocument ->> ModelExtractor: get_models()
-    ModelExtractor ->> ModelExtractor: TransformModelInternal
-    ModelExtractor ->> ModelExtractor: TransformModelsExternal
-    destroy ModelExtractor
-    ModelExtractor -x PDDocument: models(aggregates)
-
-    create participant MappingExtractor
-    PDDocument ->> MappingExtractor: get_mappings()
-    MappingExtractor ->> MappingExtractor: TransformAttributeMapping
-    MappingExtractor ->> MappingExtractor: TransformSourceComposition
-    MappingExtractor ->> MappingExtractor: TransformTargetEntity
-    destroy  MappingExtractor
-    PDDocument -x MappingExtractor: mappings(<br>entities | filters | scalars | aggregates,<br> attributes, variables, datasources<br>)
-
-    JSON RETW bestand ->> PDDocument: write_result()
+    Orchestrator->>PDDocument: extract_to_json(file_output)
+    PDDocument->>PDDocument: _read_file_model()
+    PDDocument->>Power Designer LDM: Lees PowerDesigner LDM
+    Power Designer LDM-->>PDDocument: pd_content
+    PDDocument->>PDDocument: _get_document_info(pd_content)
+    PDDocument->>DomainsExtractor: get_domains()
+    DomainsExtractor-->>PDDocument: domains
+    PDDocument->>StereotypeExtractor: get_objects(dict_domains=domains) (filters)
+    StereotypeExtractor-->>PDDocument: filters
+    PDDocument->>StereotypeExtractor: get_objects(dict_domains=domains) (scalars)
+    StereotypeExtractor-->>PDDocument: scalars
+    PDDocument->>StereotypeExtractor: get_objects(dict_domains=domains) (aggregates)
+    StereotypeExtractor-->>PDDocument: aggregates
+    PDDocument->>ModelExtractor: get_models(dict_domains=domains)
+    ModelExtractor-->>PDDocument: models
+    PDDocument->>MappingExtractor: get_mappings(models, filters, scalars, aggregates)
+    MappingExtractor-->>PDDocument: mappings
+    PDDocument->>PDDocument: _write_json(file_output, dict_document)
+    PDDocument->>JSON Extract: Schrijf JSON output
 ```
 
 ## Veelgestelde vragen (FAQ)
@@ -233,77 +205,32 @@ erDiagram
 
 ```mermaid
 classDiagram
-PDDocument: doel - Lezen model XML en wegschrijven Json Output
-ModelExtractor: doel - extraheert alle blokken
-ModelExtractor: uit XML <br> t.b.v. model aka DDL
-%% TransformationExtractor: doel - extraheert alle blokken
-%% TransformationExtractor: uit XML t.b.v. ETL
-TransformModelInternal: doel - ophalen van bouwblokken
-TransformModelInternal: entiteiten, attributen, domains
-TransformModelInternal: van interne model
-TransformModelsExternal: doel - ophalen van bouwblokken
-TransformModelsExternal: entiteiten en attributen van
-TransformModelsExternal: externe model
-MappingExtractor: doel - extraheert mapping information
-MappingExtractor: uit output TransformationExtractor
-FilterExtractor: doel - extraheert filter informatie
-FilterExtractor: uit output TransformationExtractor
-ScalarExtractor: doel - extraheert Scalar informatie
-ScalarExtractor: uit output TransformationExtractor
-TransformSource_Composition: doel - ophalen van bouw-
-TransformSource_Composition: blokken t.b.v. composition
-TransformTarget_Entity: doel - ophalen van bouwblokken
-TransformTarget_Entity: t.b.v. doelentiteit
-TransformAttribute_Mapping: doel - ophalen van bouwblokken
-TransformAttribute_Mapping: t.b.v. attribuut mapping
-TransformFilter: doel - ophalen van bouwblokken
-TransformFilter: t.b.v. filter
-TransformScalar: doel - ophalen van bouwblokken
-TransformScalar: t.b.v. Scalar
-ObjectTransformer: doel - centrale plek voor
-ObjectTransformer: herbruikbare functions
-ModelExtractor: doel - extraheert alle blokken uit XML <br> t.b.v. model aka DDL
-TransformationExtractor: doel - extraheert alle blokken uit XML t.b.v. ETL
-TransformModelInternal: doel - ophalen van bouwblokken entiteiten, attributen, domains van interne model
-TransformModelsExternal: doel - ophalen van bouwblokken entiteiten en attributen van externe model
-MappingExtractor: doel - extraheert mapping information uit output TransformationExtractor
-FilterExtractor: doel - extraheert filter informatie uit output TransformationExtractor
-ScalarExtractor: doel - extraheert Scalar informatie uit output TransformationExtractor
-TransformSource_Composition: doel - ophalen van bouwblokken t.b.v. composition
-TransformTarget_Entity: doel - ophalen van bouwblokken t.b.v. doelentiteit
-TransformAttribute_Mapping: doel - ophalen van bouwblokken t.b.v. attribuut mapping
-TransformFilter: doel - ophalen van bouwblokken t.b.v. filter
-TransformScalar: doel - ophalen van bouwblokken t.b.v. Scalar
-ObjectTransformer: doel - centrale plek voor herbruikbare functions
-
-
+    PDDocument *-- DomainsExtractor
+    PDDocument *-- StereotypeExtractor
     PDDocument *-- ModelExtractor
-
-    PDDocument *-- TransformationExtractor
-
-    ModelExtractor *-- TransformModelInternal
-    ModelExtractor *-- TransformModelsExternal
-
     PDDocument *-- MappingExtractor
-    PDDocument *-- FilterExtractor
-    PDDocument *-- ScalarExtractor
 
-    TransformationExtractor *-- MappingExtractor
-    TransformationExtractor *-- FilterExtractor
-    TransformationExtractor *-- ScalarExtractor
+    DomainsExtractor *-- DomainsTransformer
 
-    MappingExtractor *-- TransformSource_Composition
-    MappingExtractor *-- TransformTarget_Entity
-    MappingExtractor *-- TransformAttribute_Mapping
-    FilterExtractor *-- TransformFilter
-    ScalarExtractor *-- TransformScalar
-    TransformModelInternal <-- ObjectTransformer
-    TransformModelsExternal <-- ObjectTransformer
-    TransformSource_Composition <-- ObjectTransformer
-    TransformTarget_Entity <-- ObjectTransformer
-    TransformAttribute_Mapping <-- ObjectTransformer
-    TransformFilter <-- ObjectTransformer
-    TransformScalar <-- ObjectTransformer
+    StereotypeExtractor *-- StereotypeTransformer
+
+    MappingExtractor *-- TargetEntityTransformer
+    MappingExtractor *-- MappingAttributesTransformer
+    MappingExtractor *-- SourceCompositionTransformer
+
+    ModelExtractor *-- ModelInternalTransformer
+    ModelExtractor *-- ModelsExternalTransformer
+    ModelExtractor *-- RelationshipsTransformer
+```
+
+De bovenstaande klassediagram laat de onderliggende overerving van de basisklassen `BaseExtractor` en `BaseTransformer` niet zien.
+
+```mermaid
+classDiagram
+
+BaseExtractor <|-- BaseTransformer
+ClassExtractor <|-- BaseExtractor
+ClassTransformer <|-- BaseTransformer
 ```
 
 ## Mogelijke uitbreidingen
@@ -367,5 +294,13 @@ Mogelijkheid om veranderingen tussen modelversies te vergelijken.
 ---
 
 ### ::: src.pd_extractor.mapping_target_transform.TargetEntityTransformer
+
+---
+
+### ::: src.pd_extractor.base_extractor.BaseExtractor
+
+---
+
+### ::: src.pd_extractor.base_transformer.BaseTransformer
 
 ---

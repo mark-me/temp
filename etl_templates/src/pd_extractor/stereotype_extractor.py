@@ -1,12 +1,12 @@
 from logtools import get_logger
 
-from .base_extractor import ExtractorBase
+from .base_extractor import BaseExtractor
 from .stereotype_transform import StereotypeTransformer
 
 logger = get_logger(__name__)
 
 
-class StereotypeExtractor(ExtractorBase):
+class StereotypeExtractor(BaseExtractor):
     """Extraheert Power Designer document objecten die filters, aggregaten en scalars representeren"""
 
     def __init__(self, pd_content: dict, stereotype_input: str, file_pd_ldm: str):

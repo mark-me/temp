@@ -5,7 +5,7 @@ from pathlib import Path
 import xmltodict
 from logtools import get_logger
 
-from .base_extractor import ExtractorBase
+from .base_extractor import BaseExtractor
 from .domains_extractor import DomainsExtractor
 from .mapping_extractor import MappingExtractor
 from .model_extractor import ModelExtractor
@@ -14,7 +14,7 @@ from .stereotype_extractor import StereotypeExtractor
 logger = get_logger(__name__)
 
 
-class PDDocument(ExtractorBase):
+class PDDocument(BaseExtractor):
     """Representeert een logisch datamodel bestand gemaakt in Power Designer
     Dit bestand biedt de mogelijkheid om model en mapping data te extraheren en herstructureert deze data naar een meer
     leesbare format. De output gemaakt op basis van dit bestand is input voor DDL- en ETL generatie.

@@ -1,6 +1,6 @@
 from logtools import get_logger
 
-from .base_extractor import ExtractorBase
+from .base_extractor import BaseExtractor
 from .mapping_attributes_transform import MappingAttributesTransformer
 from .mapping_composition_transform import SourceCompositionTransformer
 from .mapping_target_transform import TargetEntityTransformer
@@ -8,7 +8,7 @@ from .mapping_target_transform import TargetEntityTransformer
 logger = get_logger(__name__)
 
 
-class MappingExtractor(ExtractorBase):
+class MappingExtractor(BaseExtractor):
     """Extraheert ETL specificaties (mappings) vanuit een Power Designer LDM waarin mappings zijn geïmplementeerd met behulp van de
     CrossBreeze MDDE extensie.
     Transformeert de data in een meer leesbaar format door overbodige informatie te verwijderen en relevante model informatie

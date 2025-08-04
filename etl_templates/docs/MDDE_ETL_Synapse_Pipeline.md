@@ -6,16 +6,16 @@ Deze documentatie beschrijft de ETL pipelines die gebruik maken van de standaard
 
 ### Azure Synapse pipeline : MDDE/SQLPOOL2/PL_MDDE_Orchestration_Main
 
-![Deployment](images/pl_mdde_orchestration_main.png){ width="360" }
+![Deployment](images/pl_mdde_orchestration_main.PNG){ width="360" }
 
 Dit is de hoofdpijpline die de combinatie  runlevel en runlevelstage uitleest/sorteert uit de `Config`-tabel.
 Voor elke unieke runlevel/runlevelstage combinatie wordt de subpipeline `PL_MDDE_Orchestration_Loop` aangeroepen (For Each mechanisme). De runlevel,runlevelstage en Loadrunid (van de pipeline) wordt  meegegeven.
-Hierbij wordt wel gewacht totdat de subpipeline  voor een runlevel/runlevelstage combinatie afgerond is alvorens de volgende combinatie opgestart wordt. 
+Hierbij wordt wel gewacht totdat de subpipeline  voor een runlevel/runlevelstage combinatie afgerond is alvorens de volgende combinatie opgestart wordt.
 
 
 ### Azure Synapse pipeline : MDDE/SQLPOOL2/PL_MDDE_Orchestration_Loop
 
-![Deployment](images/pl_mdde_orchestration_loop.png){ width="360" } 
+![Deployment](images/pl_mdde_orchestration_loop.PNG){ width="360" }
 
 De configuratie wordt gelezen uit de `Config`-tabel voor de meegegeven runlevel en runlevelstage.
 Op basis van de configuratie wordt er parallel sessies opgestart om  de  hoofd storeprocedure (`sp_LoadEntityData`) aan te roepen.

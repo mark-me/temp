@@ -73,94 +73,6 @@ De visualisatiecomponent maakt gebruik van `pyvis` in combinatie met `networkx` 
 
 Deze bestanden kunnen lokaal of via een webserver geopend worden en zijn geschikt voor analyses, presentaties of documentatie.
 
----
-
-## 🚀 Gebruik
-
-De map ```dependency_checker``` bevat een bestand ```example.py``` dat laat zien hoe alle klassen gebruikt kunnen worden voor bovenstaande doeleinden.
-
-Het voorbeeld verwijst naar een lijst van voorbeeld-RETW-bestanden die geplaatst zijn in de submap ```retw_examples```. De volgorde van de bestanden in de lijst is niet relevant voor de functionaliteit, dus je kunt eigen bestanden in willekeurige volgorde aan de lijst toevoegen.
-
-<details><summary>Voorbeeld code</summary>
-
-```python title="etl_templates\src\dependencies_checker\example.py"
-import json
-
-from dependencies_checker import DagReporting, EntityRef, EtlFailure
-
-if __name__ == "__main__":
-    """Examples of the class use-cases
-    """
-    dir_output = "etl_templates/output/etl_report/"
-    dir_RETW = "etl_templates/src/dependencies_checker/retw_examples/"
-    # List of RETW files to process, order of the list items is irrelevant
-    lst_files_RETW = [
-        "Usecase_Aangifte_Behandeling.json",
-        "Usecase_Test_BOK.json",
-        "DMS_LDM_AZURE_SL.json",
-    ]
-    lst_files_RETW = [dir_RETW + file for file in lst_files_RETW]
-    dag = DagReporting()
-    dag.add_RETW_files(files_RETW=lst_files_RETW)
-
-    """File dependencies
-    * Visualizes of the total network of files, entities and mappings
-    * Visualizes of a given entity's network of connected files, entities and mappings
-    * Visualizes dependencies between files, based on entities they have in common
-    * Lists entities which are used in mappings, but are not defined in a Power Designer document
-    """
-    # Visualization of the total network of files, entities and mappings
-    dag.plot_graph_total(file_html=f"{dir_output}all.html")
-    # Visualization of a given entity's network of connected files, entities and mappings
-    entity = EntityRef("Da_Central_CL", "AggrProcedureCategory")
-    dag.plot_entity_journey(
-        entity=entity,
-        file_html=f"{dir_output}entity_journey.html",
-    )
-    # Visualization of dependencies between files, based on entities they have in common
-    dag.plot_file_dependencies(
-        file_html=f"{dir_output}file_dependencies.html", include_entities=True
-    )
-    # Entities which are used in mappings, but are not defined in a Power Designer document
-    lst_entities = dag.get_entities_without_definition()
-    with open(f"{dir_output}entities_not_defined.jsonl", "w", encoding="utf-8") as file:
-        for item in lst_entities:
-            file.write(json.dumps(item) + "\n")
-
-    """ETL Flow (DAG)
-    * Determine the ordering of the mappings in an ETL flow
-    * Visualizes the ETL flow for all RETW files combined
-    """
-    # Determine the ordering of the mappings in an ETL flow: a list of mapping dictionaries with their RunLevel and RunLevelStage
-    lst_mapping_order = dag.get_mapping_order()
-    with open(f"{dir_output}mapping_order.jsonl", "w", encoding="utf-8") as file:
-        for item in lst_mapping_order:
-            file.write(json.dumps(item) + "\n")
-    # Visualization of the ETL flow for all RETW files combined
-    dag.plot_etl_dag(file_html=f"{dir_output}ETL_flow.html")
-
-    """Failure simulation
-    * Set a failed object status
-    * Visualization of the total network of files, entities and mappings
-    """
-    lst_entities_failed = [
-        EntityRef("Da_Central_CL", "AggrLastStatus"),
-        EntityRef("Da_Central_BOK", "AggrLastStatus"),
-    ]  # Set for other examples
-    etl_simulator = EtlFailure()
-    # Adding RETW files to generate complete ETL DAG
-    etl_simulator.add_RETW_files(files_RETW=lst_files_RETW)
-    # Set failed node
-    etl_simulator.set_entities_failed(lst_entities_failed)
-    # Create fallout report file
-    lst_mapping_order = etl_simulator.get_report_fallout()
-    with open(f"{dir_output}dag_run_fallout.json", "w", encoding="utf-8") as file:
-        json.dump(lst_mapping_order, file, indent=4)
-    # Create fallout visualization
-    etl_simulator.plot_etl_fallout(file_html=f"{dir_output}dag_run_report.html")
-```
-</details>
-
 ## Klassenstructuur
 
 ```mermaid
@@ -224,17 +136,19 @@ In een Power Designer-document (en het corresponderende RETW-bestand) worden all
 
 ### Belangrijke componenten
 
-* **```DagGenerator```**: Deze klasse vormt de basis van het project. Het ontleedt RETW-bestanden, extraheert entiteiten en mappings, en bouwt de DAG. Belangrijke methoden zijn ```add_RETW_file``` (voegt een RETW-bestand toe), ```get_dag_total``` (geeft de totale DAG terug), ```get_dag_ETL``` (geeft de ETL-flow DAG terug), en andere methoden om specifieke sub-grafen op te halen.
+* **`DagBuilder`**: Deze klasse vormt de basis van het project. Het ontleedt RETW-bestanden, extraheert modelinformatie, entiteiten en mappings, en bouwt de DAG. Belangrijke methoden zijn `add_RETW_file` (voegt een RETW-bestand toe), `get_dag_total` (geeft de totale DAG terug), `get_dag_ETL` (geeft de ETL-flow DAG terug), en andere methoden om specifieke sub-grafen op te halen.
 
-* **```DagReporting```**: Deze klasse gebruikt de DAG van ```DagGenerator``` om inzichten en visualisaties te leveren. Methoden zijn onder andere ```get_mapping_order``` (bepaalt de uitvoeringsvolgorde), ```plot_graph_total``` (visualiseert de totale DAG), ```plot_etl_dag``` (visualiseert de ETL-flow), en andere methoden om afhankelijkheden en relaties weer te geven.
+* **`DagImplementation`**: Deze klasse voegt technische implementatie keuzes toe aan de DAG.
 
-* **```EtlFailure```**: Deze klasse simuleert en analyseert de impact van falende ETL-jobs. De methode ```set_entities_failed``` specificeert de falende componenten, en ```get_report_fallout``` en ```plot_etl_fallout``` leveren rapportages en visualisaties van de gevolgen.
+* **`DagReporting`**: Deze klasse gebruikt de DAG van `DagImplementation` om inzichten en visualisaties te leveren. Methoden zijn onder andere `get_mapping_order` (bepaalt de uitvoeringsvolgorde), `plot_graph_total` (visualiseert de totale DAG), `plot_etl_dag` (visualiseert de ETL-flow), en andere methoden om afhankelijkheden en relaties weer te geven.
 
-* **```EntityRef```** en **```MappingRef```**: Deze namedtuples representeren respectievelijk entiteiten en mappings, en geven een gestructureerde manier om ze in de DAG te refereren.
+* **`EtlFailure`**: Deze klasse simuleert en analyseert de impact van falende ETL-jobs. De methode `set_entities_failed` specificeert de falende componenten, en `get_report_fallout` en `plot_etl_fallout` leveren rapportages en visualisaties van de gevolgen.
 
-* **```VertexType```** en **```EdgeType```**: Deze enums definiëren de typen knopen en verbindingen in de DAG, wat bijdraagt aan duidelijkheid en onderhoudbaarheid van de code.
+* **`EntityRef`** en **`MappingRef`**: Deze namedtuples representeren respectievelijk entiteiten en mappings, en geven een gestructureerde manier om ze in de DAG te refereren.
 
-Het project gebruikt een graaf-gebaseerde aanpak om ETL-afhankelijkheden te representeren en analyseren, en biedt waardevolle inzichten voor het begrijpen en optimaliseren van het ETL-proces. ```DagGenerator``` bouwt de DAG, ```DagReporting``` verzorgt analyse en visualisatie, en ```EtlFailure``` simuleert foutscenario's.
+* **`VertexType`** en **`EdgeType`**: Deze enums definiëren de typen knopen en verbindingen in de DAG, wat bijdraagt aan duidelijkheid en onderhoudbaarheid van de code.
+
+Het project gebruikt een graaf-gebaseerde aanpak om ETL-afhankelijkheden te representeren en analyseren, en biedt waardevolle inzichten voor het begrijpen en optimaliseren van het ETL-proces. `DagBuilder` bouwt de DAG, `DagReporting` verzorgt analyse en visualisatie, en `EtlFailure` simuleert foutscenario's.
 
 ### Klassendiagram
 
@@ -247,58 +161,13 @@ In deze sectie worden de klassen beschreven, waarvoor ze gebruikt worden en hoe 
       hideEmptyMembersBox: true
 ---
 classDiagram
-  DagGenerator <|-- DagReporting
+  DagImplementation <|-- DagReporting
+  DagBuilder <|-- DagImplementation
   DagReporting <|-- EtlFailure
-  DagGenerator *-- EdgeType
-  DagGenerator *-- VertexType
-  EntityRef --> DagGenerator
-  MappingRef --> DagGenerator
-
-  class EntityRef{
-    <<namedtuple>>
-    CodeModel
-    CodeEntity
-  }
-  class MappingRef{
-    <<namedtuple>>
-    CodeModel
-    CodeMapping
-  }
-  class VertexType{
-    <<enumeration>>
-    ENTITY
-    MAPPING
-    FILE
-    ERROR
-  }
-  class EdgeType{
-    <<enumeration>>
-    FILE_ENTITY
-    FILE_MAPPING
-    ENTITY_SOURCE
-    ENTITY_TARGET
-  }
-  class DagGenerator{
-    +build_dag(list|str files_RETW)
-    +get_dag_total()
-    +get_dag_single_retw_file(str file_RETW)
-    +get_dag_file_dependencies(bool include_entities)
-    +get_dag_entity(EntityRef entity)
-    +get_dag_ETL()
-  }
-  class DagReporting{
-    +get_mapping_order() list
-    +plot_graph_total(str file_html)
-    +plot_graph_retw_file(str file_retw, str file_html)
-    +plot_file_dependencies(str file_html, bool include_entities)
-    +plot_entity_journey(EntityRef entity, str file_html)
-    +plot_etl_dag(str file_html)
-  }
-  class EtlFailure{
-    +set_pd_objects_failed(list)
-    +get_report_fallout() list
-    +plot_etl_fallout(str file_html)
-  }
+  DagBuilder *-- EdgeType
+  DagBuilder *-- VertexType
+  EntityRef --> DagBuilder
+  MappingRef --> DagBuilder
 ```
 
 ## Mogelijke uitbreidingen
@@ -315,6 +184,10 @@ Functionaliteit om afhankelijkheden of de DAG te vergelijken tussen twee versies
 ## API referentie
 
 ### ::: src.integrator.dag_builder.DagBuilder
+
+### ::: src.integrator.dag_builder.EntityRef
+
+### ::: src.integrator.dag_builder.MappingRef
 
 ---
 
@@ -337,3 +210,17 @@ Functionaliteit om afhankelijkheden of de DAG te vergelijken tussen twee versies
 ---
 
 ### ::: src.integrator.dag_etl_failure.EtlFailure
+
+---
+
+### ETL Simulation
+
+#### ::: src.integrator.dag_etl_simulator.EtlSimulator
+
+#### ::: src.integrator.dag_etl_simulator.MappingStatus
+
+#### ::: src.integrator.dag_etl_simulator.FailureStrategy
+
+#### ::: src.failure_reporting.main
+
+#### ::: src.failure_reporting.build_dag

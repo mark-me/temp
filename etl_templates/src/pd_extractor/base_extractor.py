@@ -5,7 +5,7 @@ from logtools import get_logger
 logger = get_logger(__name__)
 
 
-class ExtractorBase:
+class BaseExtractor:
     def __init__(self, file_pd_ldm: str):
         self.file_pd_ldm = file_pd_ldm
 

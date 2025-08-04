@@ -1,6 +1,6 @@
 from logtools import get_logger
 
-from .base_extractor import ExtractorBase
+from .base_extractor import BaseExtractor
 from .model_internal_transform import ModelInternalTransformer
 from .models_external_transform import ModelsExternalTransformer
 from .model_relationships_transform import RelationshipsTransformer
@@ -8,7 +8,7 @@ from .model_relationships_transform import RelationshipsTransformer
 logger = get_logger(__name__)
 
 
-class ModelExtractor(ExtractorBase):
+class ModelExtractor(BaseExtractor):
     """Collectie van functies die gebruikt worden om de relevante objecten uit een Power Designer LDM te extraheren"""
 
     def __init__(self, pd_content: dict, file_pd_ldm: str):

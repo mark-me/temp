@@ -1,15 +1,16 @@
 from copy import deepcopy
 from enum import Enum
+from pathlib import Path
 
 import igraph as ig
 from logtools import get_logger
 
+from .dag_builder import MappingRef
+from .dag_implementation import DeadlockPrevention
 from .dag_reporting import (
     DagReporting,
     VertexType,
 )
-from .dag_builder import MappingRef
-from .dag_implementation import DeadlockPrevention
 
 logger = get_logger(__name__)
 
@@ -43,9 +44,6 @@ class EtlSimulator(DagReporting):
         """Initialiseert een nieuwe EtlSimulator instantie voor het simuleren van ETL-DAG's.
 
         Zet de standaardwaarden voor de simulatie-DAG, statuskleuren, entiteitkleur en gefaalde mappings.
-
-        Returns:
-            None
         """
         super().__init__()
         self.dag_simulation: ig.Graph = None
@@ -58,13 +56,13 @@ class EtlSimulator(DagReporting):
         self.color_entity = "lemonchiffon"
         self.vs_mapping_failed: list[MappingRef] = []
 
-    def build_dag(self, files_RETW) -> None:
+    def build_dag(self, files_RETW: list[Path]) -> None:
         """Bouwt de ETL-DAG op basis van de opgegeven RETW-bestanden.
 
         Initialiseert de simulatie-DAG en wijst hiërarchieniveaus en standaardstatussen toe aan de knooppunten.
 
         Args:
-            files_RETW: De RETW-bestanden die gebruikt worden om de DAG te bouwen.
+            files_RETW (list[Path]): De RETW-bestanden die gebruikt worden om de DAG te bouwen.
 
         Returns:
             None
@@ -332,8 +330,7 @@ class EtlSimulator(DagReporting):
         de ETL-DAG met de impact van falen.
 
         Args:
-            failure_strategy (FailureStrategy): De toe te passen faalstrategie.
-            file_html (str): Het pad naar het HTML-bestand waarin de visualisatie wordt opgeslagen.
+            file_png (str): Het pad naar het PNG-bestand waarin de visualisatie wordt opgeslagen.
 
         Returns:
             None
