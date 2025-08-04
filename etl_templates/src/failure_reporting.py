@@ -76,6 +76,7 @@ def main():
     args = parser.parse_args()
 
     path_output = Path("etl_templates/intermediate")
+    path_output.mkdir(parents=True, exist_ok=True)
     etl_simulator = build_dag(file_config=Path(args.config_file))
 
     failed_mappings = [

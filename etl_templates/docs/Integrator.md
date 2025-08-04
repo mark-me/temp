@@ -61,6 +61,15 @@ Deze modulaire opbouw maakt het mogelijk om de componenten afzonderlijk of in co
     - De pure ETL-flow (entiteiten en mappings zonder bestandseenheden)
   - Detectie van ontbrekende entiteitsdefinities in bestanden.
 
+### `EtlSimulator`
+
+- **Doel**: Rapportage- en grafiekhulpmiddelen bieden om gebruikers in staat te stellen verschillende faalstrategieën te simuleren en hun verspreiding door de DAG te analyseren. Dit is geen standaard onderdeel van de Genesis Orkestratie.
+- **Functionaliteiten**:
+  - Een ETL-DAG op te bouwen vanuit configuratiebestanden.
+  - Verschillende faalstrategieën te simuleren en hun verspreiding door de DAG te analyseren.
+  - De status van elke mapping (ETL-stap) te volgen en te visualiseren in het geval van fouten.
+  - Rapporten en visualisaties te genereren waarin wordt weergegeven welke componenten door fouten worden beïnvloed.
+- **Gebruik**: Omdat de `EtlSimulator` geen standaard onderdeel is van de Orchestrator, wordt deze apart gebruikt in het script `etl_templates/src/failure_reporting.py`
 ---
 
 ## Visualisatie
@@ -134,22 +143,6 @@ In een Power Designer-document (en het corresponderende RETW-bestand) worden all
 
 * Voor consistente identificatie van entiteiten over documenten heen, wordt een hash toegepast op de combinatie van de Code- en CodeModel-eigenschappen van een entiteit.
 
-### Belangrijke componenten
-
-* **`DagBuilder`**: Deze klasse vormt de basis van het project. Het ontleedt RETW-bestanden, extraheert modelinformatie, entiteiten en mappings, en bouwt de DAG. Belangrijke methoden zijn `add_RETW_file` (voegt een RETW-bestand toe), `get_dag_total` (geeft de totale DAG terug), `get_dag_ETL` (geeft de ETL-flow DAG terug), en andere methoden om specifieke sub-grafen op te halen.
-
-* **`DagImplementation`**: Deze klasse voegt technische implementatie keuzes toe aan de DAG.
-
-* **`DagReporting`**: Deze klasse gebruikt de DAG van `DagImplementation` om inzichten en visualisaties te leveren. Methoden zijn onder andere `get_mapping_order` (bepaalt de uitvoeringsvolgorde), `plot_graph_total` (visualiseert de totale DAG), `plot_etl_dag` (visualiseert de ETL-flow), en andere methoden om afhankelijkheden en relaties weer te geven.
-
-* **`EtlFailure`**: Deze klasse simuleert en analyseert de impact van falende ETL-jobs. De methode `set_entities_failed` specificeert de falende componenten, en `get_report_fallout` en `plot_etl_fallout` leveren rapportages en visualisaties van de gevolgen.
-
-* **`EntityRef`** en **`MappingRef`**: Deze namedtuples representeren respectievelijk entiteiten en mappings, en geven een gestructureerde manier om ze in de DAG te refereren.
-
-* **`VertexType`** en **`EdgeType`**: Deze enums definiëren de typen knopen en verbindingen in de DAG, wat bijdraagt aan duidelijkheid en onderhoudbaarheid van de code.
-
-Het project gebruikt een graaf-gebaseerde aanpak om ETL-afhankelijkheden te representeren en analyseren, en biedt waardevolle inzichten voor het begrijpen en optimaliseren van het ETL-proces. `DagBuilder` bouwt de DAG, `DagReporting` verzorgt analyse en visualisatie, en `EtlFailure` simuleert foutscenario's.
-
 ### Klassendiagram
 
 In deze sectie worden de klassen beschreven, waarvoor ze gebruikt worden en hoe ze samenhangen.
@@ -183,44 +176,77 @@ Functionaliteit om afhankelijkheden of de DAG te vergelijken tussen twee versies
 
 ## API referentie
 
-### ::: src.integrator.dag_builder.DagBuilder
+---
 
-### ::: src.integrator.dag_builder.EntityRef
+### DAG Builder
 
-### ::: src.integrator.dag_builder.MappingRef
+`DagBuilder`: Deze klasse vormt de basis van het package. Het ontleedt RETW-bestanden, extraheert modelinformatie, entiteiten en mappings, en bouwt de DAG. Belangrijke methoden zijn `add_RETW_file` (voegt een RETW-bestand toe), `get_dag_total` (geeft de totale DAG terug), `get_dag_ETL` (geeft de ETL-flow DAG terug), en andere methoden om specifieke sub-grafen op te halen.
+
+#### ::: src.integrator.dag_builder.DagBuilder
 
 ---
 
-### ::: src.integrator.dag_builder.EdgeType
+`VertexType` en `EdgeType`: Deze enums definiëren de typen knopen en verbindingen in de DAG, wat bijdraagt aan duidelijkheid en onderhoudbaarheid van de code.
 
-### ::: src.integrator.dag_builder.VertexType
+#### ::: src.integrator.dag_builder.EdgeType
 
----
-
-### ::: src.integrator.dag_implementation.DagImplementation
+#### ::: src.integrator.dag_builder.VertexType
 
 ---
 
-### ::: src.integrator.dag_implementation.DeadlockPrevention
+`EntityRef` en `MappingRef`: Deze namedtuples representeren respectievelijk entiteiten en mappings, en geven een gestructureerde manier om aan ze in de DAG te refereren.
+
+#### ::: src.integrator.dag_builder.EntityRef
+
+#### ::: src.integrator.dag_builder.MappingRef
 
 ---
 
-### ::: src.integrator.dag_reporting.DagReporting
+### DAG implementation functionaliteiten
+
+`DagImplementation`: Deze klasse voegt technische implementatie keuzes toe aan de DAG.
+
+#### ::: src.integrator.dag_implementation.DagImplementation
 
 ---
 
-### ::: src.integrator.dag_etl_failure.EtlFailure
+Er kunnen nu twee typen dead-locks voorkomen worden met een `DeadlockPrevention` type: deadlocks op brontabellen en dead-locks op doeltabellen.
+
+#### ::: src.integrator.dag_implementation.DeadlockPrevention
 
 ---
 
-### ETL Simulation
+### Rapporteren over de DAG
 
-#### ::: src.integrator.dag_etl_simulator.EtlSimulator
+`DagReporting`: Deze klasse gebruikt de DAG van `DagImplementation` om inzichten en visualisaties te leveren. Methoden zijn onder andere  `plot_graph_total` (visualiseert de totale DAG met de PD files die gebruikt zijn), `plot_etl_dag` (visualiseert de ETL-flow), en andere methoden om afhankelijkheden en relaties weer te geven.
 
-#### ::: src.integrator.dag_etl_simulator.MappingStatus
+#### ::: src.integrator.dag_reporting.DagReporting
 
-#### ::: src.integrator.dag_etl_simulator.FailureStrategy
+---
+
+### ETL Simulatie
+
+`etl_templates/src/failure_reporting.py` biedt een opdrachtregeltool voor het simuleren en rapporteren van fouten in ETL-processen (Extract, Transform, Load), specifiek binnen de context van het "Genesis" ETL-systeem. Het orkestreert de extractie van datamodellen uit Power Designer-bestanden, bouwt een ETL-simulatie-DAG (Directed Acyclic Graph), en genereert visuele rapporten van faalscenario’s. De tool is bedoeld voor gebruik door data engineers of ontwikkelaars om de impact van specifieke mapping-fouten in ETL-pijplijnen te analyseren.
 
 #### ::: src.failure_reporting.main
 
 #### ::: src.failure_reporting.build_dag
+
+---
+
+`EtlSimulator` definieert een ETL (Extract, Transform, Load) DAG (Directed Acyclic Graph) simulatieframework, gericht op het modelleren, simuleren en visualiseren van de impact van fouten binnen ETL-pijplijnen.
+
+#### ::: src.integrator.dag_etl_simulator.EtlSimulator
+
+---
+
+`MappingStatus`: Een opsomming van mogelijke statussen van ETL-mappings (bijv. Success, Failed, Did Not Run, Success but needs restoring).
+
+#### ::: src.integrator.dag_etl_simulator.MappingStatus
+
+---
+
+`FailureStrategy`: Een opsomming van verschillende strategieën voor het simuleren van ETL-fouten (bijv. alleen opvolgers, alle gedeelde doelwitten, siblings, hele subcomponent, run-level).
+
+#### ::: src.integrator.dag_etl_simulator.FailureStrategy
+
