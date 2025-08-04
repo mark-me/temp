@@ -20,18 +20,18 @@ Deze modulaire opbouw maakt het mogelijk om de componenten afzonderlijk of in co
 
 - **Doel**: Opbouwen en beheren van de ruwe DAG op basis van inputbestanden.
 - **Functionaliteiten**:
-  - Inlezen van één of meerdere RETW-bestanden.
-  - Parseren van modellen, mappings en entiteiten.
-  - Genereren van een `igraph.Graph` met knopen en randen die respectievelijk objecten en afhankelijkheden representeren.
-  - Genereert unieke en stabiele knoop-ID’s op basis van MD5-hashing.
-  - Ondersteuning voor subgraaf-extractie:
-    - Per bestand
-    - Per entiteit
-    - Op basis van mappings
-  - Annotatie van knopen met statistieken zoals ETL-levels en run-levels.
-  - Detectie van inconsistente of onvolledige flows via foutmeldingen en logging.
+    - Inlezen van één of meerdere RETW-bestanden.
+    - Parseren van modellen, mappings en entiteiten.
+    - Genereren van een `igraph.Graph` met knopen en randen die respectievelijk objecten en afhankelijkheden representeren.
+    - Genereert unieke en stabiele knoop-ID’s op basis van MD5-hashing.
+    - Ondersteuning voor subgraaf-extractie:
+        - Per bestand
+        - Per entiteit
+        - Op basis van mappings
+    - Annotatie van knopen met statistieken zoals ETL-levels en run-levels.
+    - Detectie van inconsistente of onvolledige flows via foutmeldingen en logging.
 
-#### Bouwen van de ETL DAG
+**Bouwen van de ETL DAG**
 
 De `DagBuilder` gebruikt [grafen](https://nl.wikipedia.org/wiki/Graaf_(wiskunde)){target="_blank"}, meer specifiek een [DAG](https://nl.wikipedia.org/wiki/Gerichte_acyclische_graaf){target="_blank"}, wat een netwerkvoorstelling is van de bestanden, entiteiten (bijv. tabellen) en mappings. Deze sectie legt uit hoe de DAG gecreëerd wordt.
 
@@ -68,7 +68,7 @@ In een Power Designer-document (en het corresponderende RETW-bestand) worden all
     - Bieden van een gesorteerde `run config` die klaar is voor deployment of schedulers.
     - Mogelijkheid tot uitbreiden met aangepaste strategieën voor conflictoplossing.
 
-#### Bepaling van uitvoeringsvolgorde mappings
+**Bepaling van uitvoeringsvolgorde mappings**
 
 Hieronder is een schematische weergave te zien van hoe de run-levels en run-level-stages samenhangen. Het onderstaande voorbeeld is gebaseed op een `DeadlockPrevention` om dead-locks te voorkomen op bron entiteiten.
 
@@ -128,13 +128,14 @@ graph LR
         - De pure ETL-flow (entiteiten en mappings zonder bestandseenheden)
     - Detectie van ontbrekende entiteitsdefinities in bestanden.
 
-#### Visualisatie
+**Visualisatie**
 
 De visualisatiecomponent maakt gebruik van `pyvis` in combinatie met `networkx` om interactieve HTML-bestanden te genereren. Visualisaties bieden:
-- **Zoom & pan-functionaliteit**
-- **Klikbare knopen met tooltips**
-- **Hiërarchische lay-out op basis van uitvoeringsvolgorde**
-- **Visuele onderscheidingen tussen types (bestand, entiteit, mapping)**
+
+- Zoom & pan-functionaliteit
+- Klikbare knopen met tooltips
+- Hiërarchische lay-out
+- Visuele onderscheidingen tussen types (bestand, entiteit, mapping)
 
 Deze bestanden kunnen lokaal of via een webserver geopend worden en zijn geschikt voor analyses, presentaties of documentatie.
 
