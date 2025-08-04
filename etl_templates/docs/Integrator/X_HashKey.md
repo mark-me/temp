@@ -5,7 +5,7 @@ Bij het laden van entiteiten in het datawarehouse wordt gebruik gemaakt van sour
 
 ## Functieomschrijving
 
-De Python-functie [`__build_x_hashkey(mapping)`](#src.generator.ddl_views_source.DDLSourceViews.__build_x_hashkey) van de klasse `DDLSourceViews` genereert een SQL-expressie voor de `X_HashKey` door:
+De Python-functie [`_mappings_add_hashkey(vs_mapping)`](#src.generator.ddl_views_source.DDLSourceViews.__build_x_hashkey) van de klasse `DagImplementation` genereert een SQL-expressie voor de `X_HashKey` door:
 
 1. Alle attributen in de mapping te verwerken.
 2. Voor elk attribuut een `fn_IsNull(...)`-expressie te maken om `NULL`-waarden te voorkomen.
