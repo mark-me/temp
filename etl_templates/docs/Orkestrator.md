@@ -54,7 +54,7 @@ sequenceDiagram
 * Extraheert logical data models en mappings uit PowerDesigner LDM-bestanden met behulp van de klasse `PDDocument`.
 * Slaat de geëxtraheerde data op als JSON-bestanden voor verdere verwerking.
 
-**[Integreren Power Designer documenten](Integrator.md) (`_inspect_etl_dag(files_RETW: list)`)**
+**[Integreren Power Designer documenten](Integrator/Integrator.md) (`_inspect_etl_dag(files_RETW: list)`)**
 
 * Integreert de extracten van de Power Designer modellen tot één ETL flow.
 * Voegt technische keuzes toe aan de ETL flow.
@@ -66,7 +66,7 @@ sequenceDiagram
 * Maakt gebruik van de klasse `DDLGenerator` om deploy-code (zoals DDL-scripts) te genereren op basis van de geëxtraheerde data en afhankelijkheden.
 * Behandelt en logt eventuele fouten die tijdens de codegeneratie optreden.
 
-**[Genereren van deployment-scripts](Deploy_MDDE.md) (`_generate_mdde_deployment(mapping_order: list)`)**
+**[Genereren van deployment-scripts](Deploy_MDDE/Deploy_MDDE.md) (`_generate_mdde_deployment(mapping_order: list)`)**
 
 * Roept de klasse DeploymentMDDE aan om post-deployment scripts te genereren volgens de vastgestelde mappingvolgorde.
 

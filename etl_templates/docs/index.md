@@ -74,7 +74,7 @@ De Orkestrator-flow wordt bepaald door een configuratiebestand. Meer informatie 
 
 De Extractor neemt een Power Designer-logisch datamodeldocument (herkenbaar aan de extensie .ldm) en extraheert model- en mapping-relevante informatie in een JSON-bestand (vaak aangeduid als een RETW-bestand). Meer informatie over dit proces is te vinden op de [Extractor-pagina](Extractor.md).
 
-### Bepaling afhankelijkheden
+### Integreren ETL DAG
 
 De **`integrator`**-package biedt een modulaire en uitbreidbare set Python-componenten voor het modelleren, analyseren, implementeren en visualiseren van **ETL-workflows** op basis van **Directed Acyclic Graphs (DAG’s)**. Deze workflows worden gedefinieerd aan de hand van RETW JSON-bestanden. Deze package
 
@@ -82,7 +82,7 @@ De **`integrator`**-package biedt een modulaire en uitbreidbare set Python-compo
 - Breidt deze structuur uit met uitvoeringslogica, zoals run-levels en deadlock-preventie.
 - Visualiseert- en voegt rapportagemogelijkheden toe.
 
-Meer informatie is te vinden op de pagina [Integreren extracten](Integrator.md).
+Meer informatie is te vinden op de pagina [Integreren ETL DAG](Integrator/Integrator.md).
 
 ### Generator code DB objecten
 
@@ -90,7 +90,7 @@ De Generator gebruikt de output van de Extractor om code te genereren die databa
 
 ### Generator MDDE deployment code
 
-De MDDE Deployment zorgt ervoor dat de ETL processen in een pipeline kunnen worden gezet voor de ETL orchestratie. Meer informatie hierover is te vinden op de [Deployment MDDE-pagina](Deploy_MDDE.md).
+De MDDE Deployment zorgt ervoor dat de ETL processen in een pipeline kunnen worden gezet voor de ETL orchestratie. Meer informatie hierover is te vinden op de [Deployment MDDE-pagina](Deploy_MDDE/Deploy_MDDE.md).
 
 ### DevOps repository management
 
@@ -100,8 +100,8 @@ De Repository Handler plaatst de gegenereerde code automatisch in een DevOps-rep
 
 Genesis bevat daarnaast handige tools voor Data Modellers en Data Engineers om:
 
-* de [impact van wijzigingen](Integrator.md) te bepalen;
-* [afhankelijkheden tussen Power Designer-documenten](Integrator.md) te analyseren;
+* de [impact van wijzigingen](Integrator/Integrator.md) te bepalen;
+* [afhankelijkheden tussen Power Designer-documenten](Integrator/Integrator.md) te analyseren;
 * met behulp van de [Logger](Logtools.md) automatisch issues vast te leggen in modellen en mappings;
 * met [Documentatie generatie](Documentation_Creation.md) Markdown-bestanden en docstrings om te zetten in leesbare documentatiepagina’s.
 

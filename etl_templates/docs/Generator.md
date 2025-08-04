@@ -71,10 +71,6 @@ classDiagram
 
 In de generator wordt ook bepaald hoe Business keys worden opgebouwd, meer documentatie hierover is te vinden op de [Business Keys pagina](Business_Keys.md).
 
-## Change detection
-
-Om wijzigingen in de tabellen tijdens het incrementeel laadproces te ondersteunen worden Hashkeys gebruikt. Hierover is meer documentatie te vinden op de [Change Detection pagina](X_HashKey.md)
-
 ---
 
 ## API referentie

@@ -45,9 +45,9 @@ nav:
     - Configuratie: Configuration.md
     - Orkestrator: Orkestrator.md
     - Power Designer extractie: Extractor.md
-    - Integreren extracten: Integrator.md
+    - Integreren ETL DAG: Integrator/Integrator.md
     - Code DB & ETL objecten: Generator.md
-    - MDDE deployment code  : Deploy_MDDE.md
+    - MDDE deployment code  : Deploy_MDDE/Deploy_MDDE.md
     - DevOps repository management: Repository_Manager.md
     - Hulp packages:
       - Logging: Logtools.md

@@ -1,5 +1,5 @@
 # Change Detection
-![Generator](images/incremental.png){ align=right width="90" }
+![Generator](../images/incremental.png){ align=right width="90" }
 
 Bij het laden van entiteiten in het datawarehouse wordt gebruik gemaakt van source views die een `X_HashKey` bevatten om te bepalen of een record is gewijzigd sinds de vorige laadronde. Deze sleutel wordt opgebouwd op basis van alle attributen van de bronentiteit en wordt toegevoegd aan de views die door het ETL-proces worden gebruikt.
 

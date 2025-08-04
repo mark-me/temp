@@ -1,6 +1,6 @@
 # ETL Laadprocedures
 
-![Deployment](images/etl.png){ align=right width="90" }
+![Deployment](../images/etl.png){ align=right width="90" }
 
 Deze documentatie beschrijft de standaard laadprocedures die worden gebruikt in onze ETL-omgeving. Het doel van deze procedures is om op een gestandaardiseerde manier data uit brontabellen te laden naar doeltabellen binnen dezelfde database en schema.
 
