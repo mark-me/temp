@@ -89,27 +89,43 @@ class MappingExtractor(BaseExtractor):
             list[dict]: Een lijst met de getransformeerde broncompositie voor de mapping.
         """
         mapping = self._normalize_mapping_name(mapping)
+
+        # Transform target entity
         trf_target_entity = TargetEntityTransformer(file_pd_ldm=self.file_pd_ldm)
         lst_entity_target = trf_target_entity.transform(
             mapping=mapping,
             dict_objects=dict_objects,
         )
+
+        # Transform mapping attributes
         dict_attributes_combined = dict_attributes | dict_variables
         trf_attribute_mapping = MappingAttributesTransformer(file_pd_ldm=self.file_pd_ldm)
-        attribute_mappings = trf_attribute_mapping.transform(
+        mapping = trf_attribute_mapping.transform(
             dict_entity_target=lst_entity_target,
             dict_attributes=dict_attributes_combined,
         )
+
+        # Transform source compositions
         trf_source_composition = SourceCompositionTransformer(
             file_pd_ldm=self.file_pd_ldm
         )
-        source_composition = trf_source_composition.transform(
-            mapping=attribute_mappings,
+        mapping = trf_source_composition.transform(
+            mapping=mapping,
             dict_attributes=dict_attributes_combined,
             dict_objects=dict_objects,
             dict_datasources=dict_datasources,
         )
-        return source_composition
+        return mapping
+
+    def _normalize_mapping_name(self, mapping: dict) -> dict:
+        """Vervangt spaties in de mappingnaam door underscores en logt een waarschuwing indien nodig."""
+        if " " in mapping["a:Name"]:
+            logger.warning(
+                f"Er staan spatie(s) in de mapping naam staan voor '{mapping['a:Name']}' uit {self.file_pd_ldm}."
+            )
+            mapping["a:Name"] = mapping["a:Name"].replace(" ", "_")
+        logger.debug(f"Start mapping voor '{mapping['a:Name']} uit {self.file_pd_ldm}")
+        return mapping
 
     def _create_entities_dict(self, models: list[dict]) -> dict:
         """Maakt een dictionary van entiteiten zonder stereotype uit de opgegeven modellen.
@@ -323,12 +339,3 @@ class MappingExtractor(BaseExtractor):
                 lst_mappings = []
         return lst_mappings
 
-    def _normalize_mapping_name(self, mapping: dict) -> dict:
-        """Vervangt spaties in de mappingnaam door underscores en logt een waarschuwing indien nodig."""
-        if " " in mapping["a:Name"]:
-            logger.warning(
-                f"Er staan spatie(s) in de mapping naam staan voor '{mapping['a:Name']}' uit {self.file_pd_ldm}."
-            )
-            mapping["a:Name"] = mapping["a:Name"].replace(" ", "_")
-        logger.debug(f"Start mapping voor '{mapping['a:Name']} uit {self.file_pd_ldm}")
-        return mapping

@@ -31,13 +31,6 @@ class SourceCompositionTransformer(BaseTransformer):
         Returns:
             dict: De getransformeerde mapping met verrijkte source composition data.
         """
-        def _filter_scalar_business_rules(items):
-            return [
-                item
-                for item in items
-                if item["Entity"]["Stereotype"] != "mdde_ScalarBusinessRule"
-            ]
-
         logger.debug(
             f"Start composities voor het extraheren van mapping '{mapping['Name']}' for {self.file_pd_ldm}"
         )
@@ -58,7 +51,11 @@ class SourceCompositionTransformer(BaseTransformer):
             mapping.pop("c:DataSource")
         mapping = self._mapping_update(mapping=mapping)
         lst_source_composition_items = mapping["SourceComposition"]
-        lst_source_composition_items = _filter_scalar_business_rules(lst_source_composition_items)
+        lst_source_composition_items = [
+                item
+                for item in lst_composition_items
+                if item["Entity"]["Stereotype"] != "mdde_ScalarBusinessRule"
+            ]
         mapping.pop("SourceComposition")
         mapping["SourceComposition"] = lst_source_composition_items
         return mapping
