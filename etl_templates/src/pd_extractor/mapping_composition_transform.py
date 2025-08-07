@@ -35,15 +35,14 @@ class SourceCompositionTransformer(BaseTransformer):
             f"Start composities voor het extraheren van mapping '{mapping['Name']}' for {self.file_pd_ldm}"
         )
 
-        composition = self._get_composition_list(mapping)
-        composition = self._compositions_remove_mdde_examples(composition)
-        lst_composition_items = self._extract_composition_items(composition)
+        lst_composition_items = self._get_composition_list(mapping)
         lst_composition_items = self._transform_composition_items(
             lst_composition_items, dict_objects, dict_attributes
         )
 
         mapping["SourceComposition"] = lst_composition_items
         mapping.pop("c:ExtendedCompositions", None)
+
         if "c:DataSource" in mapping:
             mapping = self._mapping_datasource(
                 mapping=mapping, dict_datasources=dict_datasources
@@ -65,7 +64,10 @@ class SourceCompositionTransformer(BaseTransformer):
         path_keys = ["c:ExtendedCompositions", "o:ExtendedComposition"]
         composition = self._get_nested(data=mapping, keys=path_keys)
         composition = [composition] if isinstance(composition, dict) else composition
-        return self.clean_keys(composition)
+        composition = self.clean_keys(composition)
+        composition = self._compositions_remove_mdde_examples(composition)
+        composition = self._extract_composition_items(composition)
+        return composition
 
     def _extract_composition_items(self, composition: dict) -> list[dict]:
         lst_composition_items = []
