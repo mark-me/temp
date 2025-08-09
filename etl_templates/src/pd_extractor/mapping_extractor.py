@@ -95,6 +95,8 @@ class MappingExtractor(BaseExtractor):
         mapping = trf_target_entity.transform(
             dict_objects=dict_objects,
         )
+
+        # Transform mapping attributes
         dict_attributes_combined = dict_attributes | dict_variables
         trf_source_composition = SourceCompositionTransformer(
             file_pd_ldm=self.file_pd_ldm,
@@ -325,12 +327,3 @@ class MappingExtractor(BaseExtractor):
                 lst_mappings = []
         return lst_mappings
 
-    def _normalize_mapping_name(self, mapping: dict) -> dict:
-        """Vervangt spaties in de mappingnaam door underscores en logt een waarschuwing indien nodig."""
-        if " " in mapping["a:Name"]:
-            logger.warning(
-                f"Er staan spatie(s) in de mapping naam staan voor '{mapping['a:Name']}' uit {self.file_pd_ldm}."
-            )
-            mapping["a:Name"] = mapping["a:Name"].replace(" ", "_")
-        logger.debug(f"Start mapping voor '{mapping['a:Name']} uit {self.file_pd_ldm}")
-        return mapping
