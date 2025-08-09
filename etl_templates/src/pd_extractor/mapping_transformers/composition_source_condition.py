@@ -25,13 +25,12 @@ class SourceConditionTransform(BaseTransformer):
         Returns:
             dict: De bijgewerkte compositie dictionary met getransformeerde source condities.
         """
-        lst_conditions = self._extract_source_conditions()
-        lst_conditions = self.clean_keys(lst_conditions)
-        for i, condition in enumerate(lst_conditions):
+        conditions = self._extract_source_conditions()
+        for i, condition in enumerate(conditions):
             self._process_source_condition(
                 condition=condition, index=i, dict_attributes=dict_attributes
             )
-        self.composition["SourceConditions"] = lst_conditions
+        self.composition["SourceConditions"] = conditions
         return self.composition
 
     def _extract_source_conditions(self) -> list[dict]:
@@ -51,6 +50,7 @@ class SourceConditionTransform(BaseTransformer):
         ]
         conditions = self._get_nested(data=self.composition, keys=path_keys)
         conditions = [conditions] if isinstance(conditions, dict) else conditions
+        conditions = self.clean_keys(conditions)
         return conditions
 
     def _process_source_condition(
@@ -65,24 +65,71 @@ class SourceConditionTransform(BaseTransformer):
             composition (dict): De compositie waartoe de conditie behoort.
         """
         condition["Order"] = index
-        parent_literal = ""
-        if extended_attr_text := self._get_nested(
-            data=condition, keys=["ExtendedAttributesText"]
-        ):
-            parent_literal = self._extract_value_from_attribute_text(
-                text=extended_attr_text,
-                preceded_by="mdde_ParentLiteralValue,",
-            )
-        lst_components = condition["c:ExtendedCollections"]["o:ExtendedCollection"]
-        lst_components = (
-            [lst_components] if isinstance(lst_components, dict) else lst_components
-        )
-        source_condition_variable = self._source_condition_components(
-            lst_components=lst_components,
+        parent_literal = self._extract_parent_literal(condition)
+        components = self._extract_components(condition)
+        source_condition_variable = self._transform_components(
+            lst_components=components,
             dict_attributes=dict_attributes,
             parent_literal=parent_literal,
         )
-        if len(source_condition_variable) > 0:
+        self._set_source_condition_variable(
+            condition, source_condition_variable, parent_literal
+        )
+        condition.pop("c:ExtendedCollections")
+
+    def _extract_parent_literal(self, condition: dict) -> str:
+        """Haalt de parent literal waarde op uit een source conditie.
+
+        Deze functie zoekt naar de parent literal waarde in de ExtendedAttributesText van de conditie en retourneert deze als string.
+
+        Args:
+            condition (dict): De conditie waaruit de parent literal wordt gehaald.
+
+        Returns:
+            str: De parent literal waarde als string, of een lege string als niet gevonden.
+        """
+        if extended_attr_text := condition.get("ExtendedAttributesText"):
+            return self._extract_value_from_attribute_text(
+                text=extended_attr_text,
+                preceded_by="mdde_ParentLiteralValue,",
+            )
+        return ""
+
+    def _extract_components(self, condition: dict) -> list[dict]:
+        """Haalt de componenten op uit een source conditie.
+
+        Deze functie retourneert een lijst van componenten, ongeacht of de input een enkele dict of een lijst is.
+
+        Args:
+            condition (dict): De conditie waaruit de componenten worden gehaald.
+
+        Returns:
+            list[dict]: Een lijst van componenten.
+        """
+        path_keys = ["c:ExtendedCollections", "o:ExtendedCollection"]
+        if components := self._get_nested(data=condition, keys=path_keys):
+            components = [components] if isinstance(components, dict) else components
+            components = self.clean_keys(components)
+            return components
+        else:
+            logger.error(
+                f"Kan geen filter componenten vinden voor mapping '{self.mapping['a:Name']}' in '{self.file_pd_ldm}'"
+            )
+            return []
+
+    def _set_source_condition_variable(
+        self, condition: dict, source_condition_variable: dict, parent_literal: str
+    ):
+        """Stelt de SourceConditionVariable in voor een conditie op basis van de gevonden waarden.
+
+        Deze functie bepaalt of de SourceConditionVariable wordt gezet op basis van de componenten, de parent literal, of een waarschuwing wordt gelogd als er geen waarde gevonden is.
+
+        Args:
+            condition (dict): De conditie die wordt verrijkt.
+            source_condition_variable (dict): De gevonden source condition variable.
+            parent_literal (str): De gevonden parent literal waarde.
+        """
+        if source_condition_variable:
             condition["SourceConditionVariable"] = source_condition_variable
         elif parent_literal != "":
             condition["SourceConditionVariable"] = parent_literal
@@ -90,9 +137,8 @@ class SourceConditionTransform(BaseTransformer):
             logger.warning(
                 f"Geen SourceConditionVariable gevonden voor condition {condition.get('Code', '')} in mapping {self.mapping['a:Name']} voor {self.file_pd_ldm}"
             )
-        condition.pop("c:ExtendedCollections")
 
-    def _source_condition_components(
+    def _transform_components(
         self, lst_components: list[dict], dict_attributes: dict, parent_literal: str
     ) -> dict:
         """Vormt om, schoont en verrijkt component data van 1 source conditie
@@ -111,11 +157,11 @@ class SourceConditionTransform(BaseTransformer):
         dict_child = self._get_source_child_attribute(
             lst_components=lst_components, dict_attributes=dict_attributes
         )
-        if len(dict_parent) > 0:
+        if dict_parent:
             if alias_parent is not None:
                 dict_parent.update({"EntityAlias": alias_parent})
             dict_source_condition_attribute["SourceAttribute"] = dict_parent
-        if parent_literal != "" and len(dict_child) > 0:
+        if parent_literal != "" and dict_child:
             dict_source_condition_attribute["SourceAttribute"] = dict_child
             dict_source_condition_attribute["SourceAttribute"]["Expression"] = (
                 parent_literal

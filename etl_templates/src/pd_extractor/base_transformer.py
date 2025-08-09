@@ -16,7 +16,7 @@ class BaseTransformer(BaseExtractor):
         super().__init__(file_pd_ldm=file_pd_ldm)
         self._timestamp_fields = ["a:CreationDate", "a:ModificationDate"]
 
-    def clean_keys(self, content: dict| list) -> dict | list:
+    def clean_keys(self, content: dict | list) -> dict | list:
         """Removes special prefixes from dictionary keys for easier access and manipulation.
 
         This function processes a dictionary or list of dictionaries, removing leading '@' and 'a:' from keys to standardize them.
@@ -108,9 +108,7 @@ class BaseTransformer(BaseExtractor):
             value = ""
         return value
 
-    def _extract_value_from_attribute_text(
-        self, text: str, preceded_by: str
-    ) -> str:
+    def _extract_value_from_attribute_text(self, text: str, preceded_by: str) -> str:
         """Extraheert de opgegeven tekst uit een tekst string. Deze tekst kan voorafgegaan
         worden door een specifieke tekst en wordt afgesloten door een \n of het zit aan het einde van de string
 
@@ -132,7 +130,6 @@ class BaseTransformer(BaseExtractor):
                 f"Geen waardes gevonden in extended_attrs_text voor {self.file_pd_ldm} bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
             )
             return ""
-
 
     def _extract_value_with_indices(
         self, extended_attrs_text: str, preceded_by: str
