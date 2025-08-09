@@ -89,6 +89,8 @@ class MappingExtractor(BaseExtractor):
             list[dict]: Een lijst met de getransformeerde broncompositie voor de mapping.
         """
         mapping = self._normalize_mapping_name(mapping)
+
+        # Transform target entity
         trf_target_entity = TargetEntityTransformer(
             file_pd_ldm=self.file_pd_ldm, mapping=mapping
         )
@@ -96,7 +98,7 @@ class MappingExtractor(BaseExtractor):
             dict_objects=dict_objects,
         )
 
-        # Transform mapping attributes
+        # Transform source compositions
         dict_attributes_combined = dict_attributes | dict_variables
         trf_source_composition = SourceCompositionTransformer(
             file_pd_ldm=self.file_pd_ldm,
@@ -106,6 +108,8 @@ class MappingExtractor(BaseExtractor):
             dict_attributes=dict_attributes_combined,
             dict_objects=dict_objects,
             dict_datasources=dict_datasources)
+
+        # Transform mapping attributes
         trf_attribute_mapping = MappingAttributesTransformer(
             file_pd_ldm=self.file_pd_ldm,
             mapping=mapping
