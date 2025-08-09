@@ -52,6 +52,17 @@ class SourceCompositionTransformer(BaseTransformer):
         return composition
 
     def _extract_composition_items(self, composition: dict) -> list[dict]:
+        """Haalt de compositie-items op uit de opgegeven compositie.
+
+        Deze functie zoekt en retourneert alle relevante compositie-items uit de compositie,
+        en geeft een lege lijst terug als er geen inhoud is.
+
+        Args:
+            composition (dict): De compositie waaruit de items gehaald worden.
+
+        Returns:
+            list[dict]: Een lijst van compositie-items.
+        """
         lst_composition_items = []
         content = composition.get("c:ExtendedComposition.Content")
         if (
@@ -73,7 +84,18 @@ class SourceCompositionTransformer(BaseTransformer):
         dict_objects: dict,
         dict_attributes: dict,
     ) -> list[dict]:
-        """Transformeert en verrijkt individuele compositie-items."""
+        """Transformeert en verrijkt een lijst van compositie-items.
+
+        Deze functie verrijkt elk compositie-item, voegt een volgorde toe, verwijdert overbodige composities en filtert specifieke items.
+
+        Args:
+            composition_items (list[dict]): Lijst van compositie-items die getransformeerd moeten worden.
+            dict_objects (dict): Alle beschikbare objecten voor het verrijken van de compositie-items.
+            dict_attributes (dict): Alle attributen voor het verwerken van de compositie-items.
+
+        Returns:
+            list[dict]: Een lijst van getransformeerde en gefilterde compositie-items.
+        """
         for i, composition_item in enumerate(composition_items):
             composition_item = self._enrich_composition_item(
                 composition_item,
@@ -161,9 +183,6 @@ class SourceCompositionTransformer(BaseTransformer):
                 composition["ExtendedAttributesText"],
                 preceded_by="mdde_JoinType,",
             )
-            logger.debug(
-                f"Compositie {composition['JoinType']} voor '{composition['Name']}' in {self.file_pd_ldm}"
-            )
         else:
             logger.warning(
                 f"Geen Join type gevonden in de 'ExtendedAttributesText' voor '{composition['Name']}' in {self.file_pd_ldm}"
@@ -203,9 +222,6 @@ class SourceCompositionTransformer(BaseTransformer):
             ][0]
             id_entity = entity["c:Content"][type_entity]["@Ref"]
             entity = dict_objects[id_entity]
-            logger.debug(
-                f"Composition entiteit '{entity['Name']}'voor {self.file_pd_ldm}"
-            )
         composition["Entity"] = entity
         composition.pop(root_data)
         return composition
@@ -280,7 +296,7 @@ class SourceCompositionTransformer(BaseTransformer):
         lst_components = self.clean_keys(lst_components)
         for component in lst_components:
             if component["Name"] == "mdde_ParentSourceObject":
-                alias_parent = self._extract_parent_source_object(component=component)
+                alias_parent = component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
             elif component["Name"] == "mdde_ParentAttribute":
                 dict_parent = self._extract_parent_attribute(
                     component=component, dict_attributes=dict_attributes
@@ -299,7 +315,6 @@ class SourceCompositionTransformer(BaseTransformer):
         Returns:
             dict: Een kopie van het child attribute dictionary.
         """
-        logger.debug(f"Child attribute toegevoegd voor {self.file_pd_ldm}")
         type_entity = [
             value
             for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
@@ -307,22 +322,6 @@ class SourceCompositionTransformer(BaseTransformer):
         ][0]
         id_attr = component["c:Content"][type_entity]["@Ref"]
         return dict_attributes[id_attr].copy()
-
-    def _extract_parent_source_object(self, component: dict) -> str:
-        """Haalt de alias van het parent source object op uit het component.
-
-        Deze functie retourneert de referentie naar het parent source object zoals aanwezig in het component.
-
-        Args:
-            component (dict): Het component dat de parent source object referentie bevat.
-
-        Returns:
-            str: De alias van het parent source object.
-        """
-        logger.debug(
-            f"ScalarConditionAttribute alias toegevoegd voor {self.file_pd_ldm}"
-        )
-        return component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
 
     def _extract_parent_attribute(self, component: dict, dict_attributes: dict) -> dict:
         """Haalt het parent attribute dictionary op uit het opgegeven component.

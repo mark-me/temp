@@ -331,3 +331,11 @@ class MappingExtractor(BaseExtractor):
                 lst_mappings = []
         return lst_mappings
 
+    def _normalize_mapping_name(self, mapping: dict) -> dict:
+        """Vervangt spaties in de mappingnaam door underscores en logt een waarschuwing indien nodig."""
+        if " " in mapping["a:Name"]:
+            logger.warning(
+                f"Er staan spatie(s) in de mapping naam staan voor '{mapping['a:Name']}' uit {self.file_pd_ldm}."
+            )
+            mapping["a:Name"] = mapping["a:Name"].replace(" ", "_")
+        return mapping
