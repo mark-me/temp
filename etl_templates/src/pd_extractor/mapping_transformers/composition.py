@@ -1,7 +1,9 @@
 from logtools import get_logger
 
-from .base_transformer import BaseTransformer
-from .mapping_composition_joinconditions_transform import JoinConditionsTransformer
+from ..base_transformer import BaseTransformer
+from .composition_join_conditions import JoinConditionsTransformer
+from .composition_source_condition import SourceConditionTransform
+from .composition_busines_rule import BusinessRuleTransform
 
 logger = get_logger(__name__)
 
@@ -105,9 +107,6 @@ class SourceCompositionTransformer(BaseTransformer):
             composition_item["Order"] = i
             if "c:ExtendedCompositions" in composition_item:
                 composition_item.pop("c:ExtendedCompositions")
-                logger.info(
-                    f"c:ExtendedCompositions is verwijderd van composition_item voor {self.file_pd_ldm}"
-                )
             composition_items[i] = composition_item
         composition_items = [
             item
@@ -161,10 +160,33 @@ class SourceCompositionTransformer(BaseTransformer):
         composition = self._composition_entity(
             composition=composition, dict_objects=dict_objects
         )
-        trf_join_conditions = JoinConditionsTransformer(
-            file_pd_ldm=self.file_pd_ldm, mapping=self.mapping, composition=composition
-        )
-        composition = trf_join_conditions.transform(dict_attributes=dict_attributes)
+        join_type = composition.get("JoinType", "")
+        if join_type == "APPLY":
+            apply_type = composition["Entity"]["Stereotype"]
+            if apply_type == "mdde_FilterBusinessRule":
+                trf_filter = SourceConditionTransform(
+                    file_pd_ldm=self.file_pd_ldm,
+                    mapping=self.mapping,
+                    composition=composition,
+                )
+                self.composition = trf_filter.transform(dict_attributes=dict_attributes)
+            elif apply_type == "mdde_ScalarBusinessRule":
+                trf_business_rule = BusinessRuleTransform(
+                    file_pd_ldm=self.file_pd_ldm,
+                    mapping=self.mapping,
+                    composition=composition,
+                )
+                composition_result = trf_business_rule.transform(
+                    dict_attributes=dict_attributes
+                )
+                composition |= composition_result
+        elif join_type != "FROM":
+            trf_join_conditions = JoinConditionsTransformer(
+                file_pd_ldm=self.file_pd_ldm,
+                mapping=self.mapping,
+                composition=composition,
+            )
+            composition = trf_join_conditions.transform(dict_attributes=dict_attributes)
         return composition
 
     def _set_join_alias_and_type(self, composition: dict):
@@ -182,7 +204,7 @@ class SourceCompositionTransformer(BaseTransformer):
             composition["JoinType"] = self._extract_value_from_attribute_text(
                 composition["ExtendedAttributesText"],
                 preceded_by="mdde_JoinType,",
-            )
+            ).upper()
         else:
             logger.warning(
                 f"Geen Join type gevonden in de 'ExtendedAttributesText' voor '{composition['Name']}' in {self.file_pd_ldm}"
@@ -226,125 +248,6 @@ class SourceCompositionTransformer(BaseTransformer):
         composition.pop(root_data)
         return composition
 
-    def _scalar_condition_components(
-        self, lst_components: list[dict], dict_attributes: dict
-    ) -> dict:
-        """Vormt om, schoont en verrijkt component data van 1 scalar conditie
-
-        Args:
-            lst_components (list[dict]): scalar conditie component
-            dict_attributes (dict): Alle attributen (in- en external)
-
-        Returns:
-            dict: Geschoonde, omgevormde en verrijkte scalar conditie component data
-        """
-        dict_scalar_condition_attribute = {}
-        dict_child = self._get_scalar_child_attribute(
-            lst_components=lst_components, dict_attributes=dict_attributes
-        )
-        dict_parent, alias_parent = self._get_scalar_parent_attribute_and_alias(
-            lst_components=lst_components, dict_attributes=dict_attributes
-        )
-        if len(dict_parent) > 0:
-            if alias_parent is not None:
-                dict_parent.update({"EntityAlias": alias_parent})
-            dict_scalar_condition_attribute["SourceAttribute"] = (
-                dict_parent["EntityAlias"] + "." + dict_parent["Code"]
-            )
-        if len(dict_child) > 0:
-            dict_scalar_condition_attribute["AttributeChild"] = dict_child["Code"]
-        return dict_scalar_condition_attribute
-
-    def _get_scalar_child_attribute(
-        self, lst_components: list[dict], dict_attributes: dict
-    ) -> dict:
-        """Haalt het child attribute dictionary op uit de scalar conditie componenten.
-
-        Args:
-            lst_components (list[dict]): Lijst van componenten.
-            dict_attributes (dict): Dictionary met alle beschikbare attributen.
-
-        Returns:
-            dict: Een kopie van het child attribute dictionary, of leeg dict als niet gevonden.
-        """
-        lst_components = self.clean_keys(content=lst_components)
-        return next(
-            (
-                self._extract_child_attribute(
-                    component=component, dict_attributes=dict_attributes
-                )
-                for component in lst_components
-                if component["Name"] == "mdde_ChildAttribute"
-            ),
-            {},
-        )
-
-    def _get_scalar_parent_attribute_and_alias(
-        self, lst_components: list[dict], dict_attributes: dict
-    ) -> tuple:
-        """Haalt het parent attribute dictionary en alias op uit de scalar conditie componenten.
-
-        Args:
-            lst_components (list[dict]): Lijst van componenten.
-            dict_attributes (dict): Dictionary met alle beschikbare attributen.
-
-        Returns:
-            tuple: (parent attribute dict, alias_parent of None)
-        """
-        dict_parent = {}
-        alias_parent = None
-        lst_components = self.clean_keys(lst_components)
-        for component in lst_components:
-            if component["Name"] == "mdde_ParentSourceObject":
-                alias_parent = component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
-            elif component["Name"] == "mdde_ParentAttribute":
-                dict_parent = self._extract_parent_attribute(
-                    component=component, dict_attributes=dict_attributes
-                )
-        return dict_parent, alias_parent
-
-    def _extract_child_attribute(self, component: dict, dict_attributes: dict) -> dict:
-        """Haalt het child attribute dictionary op uit het opgegeven component.
-
-        Deze functie zoekt het child attribute op dat wordt gerefereerd in het component en retourneert een kopie van het dictionary uit dict_attributes.
-
-        Args:
-            component (dict): Het component dat de child attribute referentie bevat.
-            dict_attributes (dict): Dictionary met alle beschikbare attributen.
-
-        Returns:
-            dict: Een kopie van het child attribute dictionary.
-        """
-        type_entity = [
-            value
-            for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-            if value in component["c:Content"]
-        ][0]
-        id_attr = component["c:Content"][type_entity]["@Ref"]
-        return dict_attributes[id_attr].copy()
-
-    def _extract_parent_attribute(self, component: dict, dict_attributes: dict) -> dict:
-        """Haalt het parent attribute dictionary op uit het opgegeven component.
-
-        Deze functie zoekt het parent attribute op dat wordt gerefereerd in het component en retourneert
-        een kopie van het dictionary uit dict_attributes.
-
-        Args:
-            component (dict): Het component dat de parent attribute referentie bevat.
-            dict_attributes (dict): Dictionary met alle beschikbare attributen.
-
-        Returns:
-            dict: Een kopie van het parent attribute dictionary.
-        """
-        logger.debug(f"ScalarConditionAttribute toegevoegd voor {self.file_pd_ldm}")
-        type_entity = [
-            value
-            for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-            if value in component["c:Content"]
-        ][0]
-        id_attr = component["c:Content"][type_entity]["@Ref"]
-        return dict_attributes[id_attr].copy()
-
     def _mapping_enrich_datasource(self, dict_datasources: dict) -> None:
         """Verrijkt de mapping met de datasource die als bron is aangewezen voor de mapping
         ten behoeve van het genereren van de DDL en ETL
@@ -359,4 +262,3 @@ class SourceCompositionTransformer(BaseTransformer):
             datasource_code = dict_datasources[datasource_alias_id]["Code"]
             self.mapping["DataSource"] = datasource_code
             self.mapping.pop("c:DataSource")
-

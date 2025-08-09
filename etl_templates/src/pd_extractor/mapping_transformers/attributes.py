@@ -1,6 +1,6 @@
 from logtools import get_logger
 
-from .base_transformer import BaseTransformer
+from ..base_transformer import BaseTransformer
 
 logger = get_logger(__name__)
 
@@ -157,7 +157,7 @@ class MappingAttributesTransformer(BaseTransformer):
                     for composition in lst_scalarexpression:
                         if composition["Id"] == alias_id:
                             mappingexpression = composition.get("Expression")
-                    map["Expression"] = mappingexpression
+                            map["Expression"] = mappingexpression
                     map.pop("EntityAlias")
         else:
             logger.warning(

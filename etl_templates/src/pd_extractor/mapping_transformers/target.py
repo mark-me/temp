@@ -1,6 +1,6 @@
 from logtools import get_logger
 
-from .base_transformer import BaseTransformer
+from ..base_transformer import BaseTransformer
 
 logger = get_logger(__name__)
 

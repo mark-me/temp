@@ -1,9 +1,9 @@
 from logtools import get_logger
 
 from .base_extractor import BaseExtractor
-from .mapping_attributes_transform import MappingAttributesTransformer
-from .mapping_composition_transform import SourceCompositionTransformer
-from .mapping_target_transform import TargetEntityTransformer
+from .mapping_transformers.attributes import MappingAttributesTransformer
+from .mapping_transformers.composition import SourceCompositionTransformer
+from .mapping_transformers.target import TargetEntityTransformer
 
 logger = get_logger(__name__)
 
