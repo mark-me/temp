@@ -164,13 +164,15 @@ class SourceCompositionTransformer(BaseTransformer):
         if join_type == "APPLY":
             apply_type = composition["Entity"]["Stereotype"]
             if apply_type == "mdde_FilterBusinessRule":
-                trf_filter = SourceConditionTransform(
+                # Source conditions
+                trf_source_condition = SourceConditionTransform(
                     file_pd_ldm=self.file_pd_ldm,
                     mapping=self.mapping,
                     composition=composition,
                 )
-                self.composition = trf_filter.transform(dict_attributes=dict_attributes)
+                self.composition = trf_source_condition.transform(dict_attributes=dict_attributes)
             elif apply_type == "mdde_ScalarBusinessRule":
+                # Business rules
                 trf_business_rule = BusinessRuleTransform(
                     file_pd_ldm=self.file_pd_ldm,
                     mapping=self.mapping,
@@ -181,6 +183,7 @@ class SourceCompositionTransformer(BaseTransformer):
                 )
                 composition |= composition_result
         elif join_type != "FROM":
+            # Joing conditions
             trf_join_conditions = JoinConditionsTransformer(
                 file_pd_ldm=self.file_pd_ldm,
                 mapping=self.mapping,
