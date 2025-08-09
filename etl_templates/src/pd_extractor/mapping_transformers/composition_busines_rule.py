@@ -60,7 +60,9 @@ class BusinessRuleTransform(BaseTransformer):
         """
         # Retrieves the SQL expression and its variables from the composition.
         sql_expression = self.composition["Entity"]["SqlExpression"]
-        lst_sql_expression_variables = self.composition["Entity"]["SqlExpressionVariables"]
+        lst_sql_expression_variables = self.composition["Entity"][
+            "SqlExpressionVariables"
+        ]
         dict_scalar_conditions = self._create_scalar_conditions_lookup(
             lst_scalar_conditions=self.composition["ScalarConditions"]
         )
@@ -82,9 +84,9 @@ class BusinessRuleTransform(BaseTransformer):
         Returns:
             list[dict]: Een lijst met scalar condities uit de compositie.
         """
-        lst_conditions = self.composition["c:ExtendedCompositions"]["o:ExtendedComposition"][
-            "c:ExtendedComposition.Content"
-        ]["o:ExtendedSubObject"]
+        lst_conditions = self.composition["c:ExtendedCompositions"][
+            "o:ExtendedComposition"
+        ]["c:ExtendedComposition.Content"]["o:ExtendedSubObject"]
         if isinstance(lst_conditions, dict):
             lst_conditions = [lst_conditions]
         return lst_conditions
@@ -142,7 +144,9 @@ class BusinessRuleTransform(BaseTransformer):
                     )
         return sql_expression
 
-    def _create_scalar_conditions_lookup(self, lst_scalar_conditions: list[dict]) -> dict:
+    def _create_scalar_conditions_lookup(
+        self, lst_scalar_conditions: list[dict]
+    ) -> dict:
         """Maakt een lookup dictionary van scalar condities voor snelle toegang tot target en source variabelen.
 
         Deze functie zet een lijst van scalar condities om naar een dictionary met Id, TargetVariable en SourceVariable per conditie.
@@ -196,7 +200,6 @@ class BusinessRuleTransform(BaseTransformer):
             dict_scalar_condition_attribute["AttributeChild"] = dict_child["Code"]
         return dict_scalar_condition_attribute
 
-
     def _extract_child_attribute(self, component: dict, dict_attributes: dict) -> dict:
         """Haalt het child attribute dictionary op uit het opgegeven component.
 
@@ -209,11 +212,7 @@ class BusinessRuleTransform(BaseTransformer):
         Returns:
             dict: Een kopie van het child attribute dictionary.
         """
-        type_entity = [
-            value
-            for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-            if value in component["c:Content"]
-        ][0]
+        type_entity = self.determine_reference_type(data=component["c:Content"])
         id_attr = component["c:Content"][type_entity]["@Ref"]
         return dict_attributes[id_attr].copy()
 
@@ -279,10 +278,6 @@ class BusinessRuleTransform(BaseTransformer):
             dict: Een kopie van het parent attribute dictionary.
         """
         logger.debug(f"ScalarConditionAttribute toegevoegd voor {self.file_pd_ldm}")
-        type_entity = [
-            value
-            for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-            if value in component["c:Content"]
-        ][0]
+        type_entity = self.determine_reference_type(data=component["c:Content"])
         id_attr = component["c:Content"][type_entity]["@Ref"]
         return dict_attributes[id_attr].copy()

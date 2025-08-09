@@ -108,16 +108,18 @@ class JoinConditionsTransformer(BaseTransformer):
         """
         if "c:ExtendedCollections" not in condition:
             logger.warning(
-                f"Er zijn geen c:ExtendedCollections, controleer model voor ongeldige mapping {self.mapping["a:Name"]} in {self.file_pd_ldm} "
+                f"Er zijn geen c:ExtendedCollections, controleer model voor ongeldige mapping {self.mapping['a:Name']} in {self.file_pd_ldm} "
             )
         lst_components = condition["c:ExtendedCollections"]["o:ExtendedCollection"]
         lst_components = (
             [lst_components] if isinstance(lst_components, dict) else lst_components
         )
-        condition["JoinConditionComponents"] = self._transform_join_condition_components(
-            lst_components=lst_components,
-            dict_attributes=dict_attributes,
-            alias_child=self.composition["Id"],
+        condition["JoinConditionComponents"] = (
+            self._transform_join_condition_components(
+                lst_components=lst_components,
+                dict_attributes=dict_attributes,
+                alias_child=self.composition["Id"],
+            )
         )
         condition.pop("c:ExtendedCollections")
 
@@ -178,7 +180,7 @@ class JoinConditionsTransformer(BaseTransformer):
                 )
             else:
                 logger.warning(
-                    f"Ongeldige join item in conditie '{type_component}' voor mapping '{self.mapping["a:Name"]}' in {self.file_pd_ldm}"
+                    f"Ongeldige join item in conditie '{type_component}' voor mapping '{self.mapping['a:Name']}' in {self.file_pd_ldm}"
                 )
         return dict_child, dict_parent, alias_parent
 
@@ -195,11 +197,7 @@ class JoinConditionsTransformer(BaseTransformer):
             dict: Een kopie van het child attribute dictionary.
         """
         logger.debug(f"Child attribute toegevoegd voor {self.file_pd_ldm}")
-        type_entity = [
-            value
-            for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-            if value in component["c:Content"]
-        ][0]
+        type_entity = self.determine_reference_type(data=component["c:Content"])
         id_attr = component["c:Content"][type_entity]["@Ref"]
         return dict_attributes[id_attr].copy()
 
@@ -219,7 +217,7 @@ class JoinConditionsTransformer(BaseTransformer):
         parent_alias = self._get_nested(data=component, keys=path_keys)
         if not parent_alias:
             logger.error(
-                f"Kan geen parent alias vinden voor een join conditie in mapping '{self.mapping["a:Name"]}' in '{self.file_pd_ldm}'"
+                f"Kan geen parent alias vinden voor een join conditie in mapping '{self.mapping['a:Name']}' in '{self.file_pd_ldm}'"
             )
         return parent_alias
 
@@ -239,14 +237,11 @@ class JoinConditionsTransformer(BaseTransformer):
             dict: Een kopie van het parent attribute dictionary.
         """
         if content := component.get("c:Content"):
-            logger.debug(f"Parent attribute toegevoegd voor {self.file_pd_ldm}")
-            type_entity = [
-                value
-                for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-                if value in content
-            ][0]
+            type_entity = self.determine_reference_type(data=content)
             id_attr = content[type_entity]["@Ref"]
             return dict_attributes[id_attr].copy()
         else:
-            logger.error(f"Kan geen attribuut vinden voor '{self.mapping["a:Name"]}' in '{self.file_pd_ldm}'")
+            logger.error(
+                f"Kan geen attribuut vinden voor '{self.mapping['a:Name']}' in '{self.file_pd_ldm}'"
+            )
             return {}

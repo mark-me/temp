@@ -170,7 +170,9 @@ class SourceCompositionTransformer(BaseTransformer):
                     mapping=self.mapping,
                     composition=composition,
                 )
-                self.composition = trf_source_condition.transform(dict_attributes=dict_attributes)
+                self.composition = trf_source_condition.transform(
+                    dict_attributes=dict_attributes
+                )
             elif apply_type == "mdde_ScalarBusinessRule":
                 # Business rules
                 trf_business_rule = BusinessRuleTransform(
@@ -240,11 +242,7 @@ class SourceCompositionTransformer(BaseTransformer):
             return composition
         entity = self.clean_keys(entity)
         if "c:Content" in entity:
-            type_entity = [
-                value
-                for value in ["o:Entity", "o:Shortcut"]
-                if value in entity["c:Content"]
-            ][0]
+            type_entity = self.determine_reference_type(data=entity["c:Content"])
             id_entity = entity["c:Content"][type_entity]["@Ref"]
             entity = dict_objects[id_entity]
         composition["Entity"] = entity

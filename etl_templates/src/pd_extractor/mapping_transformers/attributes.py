@@ -6,8 +6,7 @@ logger = get_logger(__name__)
 
 
 class MappingAttributesTransformer(BaseTransformer):
-    """Collectie van functies om attribuut mappings conform het afgestemde JSON format op te bouwen om ETL generatie te faciliteren
-    """
+    """Collectie van functies om attribuut mappings conform het afgestemde JSON format op te bouwen om ETL generatie te faciliteren"""
 
     def __init__(self, file_pd_ldm: str, mapping: dict):
         """_summary_
@@ -82,11 +81,9 @@ class MappingAttributesTransformer(BaseTransformer):
             attr_map=attr_map
         )
         if "c:SourceFeatures" in attr_map:
-            type_entity = [
-                value
-                for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-                if value in attr_map["c:SourceFeatures"]
-            ][0]
+            type_entity = self.determine_reference_type(
+                data=attr_map["c:SourceFeatures"]
+            )
             id_attr = attr_map["c:SourceFeatures"][type_entity]["@Ref"]
             if id_attr in dict_attributes:
                 if (
@@ -109,11 +106,11 @@ class MappingAttributesTransformer(BaseTransformer):
                     attr_map["EntityAlias"] = id_entity_alias
             else:
                 logger.warning(
-                    f"{id_attr} van {self.file_pd_ldm}is niet gevonden binnen bron attributen"
+                    f"Bronattribuut '{id_attr}' niet gevonden in mapping '{self.mapping["a:Name"]}' uit '{self.file_pd_ldm}'"
                 )
             attr_map.pop("c:SourceFeatures", None)
         else:
-            logger.warning(f"Source attributes van {self.file_pd_ldm} niet gevonden")
+            logger.warning(f"Geen source attributen gevonden in mapping '{self.mapping["a:Name"]}' uit '{self.file_pd_ldm}'")
 
     def _extract_entity_alias(self, attr_map: dict) -> tuple[bool, str | None]:
         """Extraheert de entity alias uit de attribuut mapping indien aanwezig.
@@ -135,10 +132,6 @@ class MappingAttributesTransformer(BaseTransformer):
         id_entity_alias = self._get_nested(data=attr_map, keys=path_keys)
         if id_entity_alias:
             has_entity_alias = True
-            logger.info(
-                "Ongebruikt object; file:pd_transform_attribute_mapping; object:id_entity_alias"
-            )
-            logger.info(f"Object bevat volgende data: '{id_entity_alias}'")
             attr_map.pop("c:ExtendedCollections")
         return has_entity_alias, id_entity_alias
 
@@ -149,7 +142,9 @@ class MappingAttributesTransformer(BaseTransformer):
         Returns:
             dict: mapping met de zojuist toegevoegde expressie
         """
-        if lst_mapping := self._get_nested(data=self.mapping, keys=["AttributeMapping"]):
+        if lst_mapping := self._get_nested(
+            data=self.mapping, keys=["AttributeMapping"]
+        ):
             for map in lst_mapping:
                 if alias_id := self._get_nested(data=map, keys=["EntityAlias"]):
                     lst_scalarexpression = self.mapping.get("SourceComposition")

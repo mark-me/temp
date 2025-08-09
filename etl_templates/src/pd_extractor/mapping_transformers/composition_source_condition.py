@@ -141,21 +141,11 @@ class SourceConditionTransform(BaseTransformer):
         lst_components = self.clean_keys(lst_components)
         for component in lst_components:
             if component["Name"] == "mdde_ParentSourceObject":
-                logger.debug(
-                    f"SourceConditionAttribute alias toegevoegd voor {self.file_pd_ldm}"
-                )
                 alias_parent = self._get_nested(
                     data=component, keys=["c:Content", "o:ExtendedSubObject", "@Ref"]
                 )
             elif component["Name"] == "mdde_ParentAttribute":
-                logger.debug(
-                    f"SourceConditionAttribute alias toegevoegd voor {self.file_pd_ldm}"
-                )
-                type_entity = [
-                    value
-                    for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-                    if value in component["c:Content"]
-                ][0]
+                type_entity = self.determine_reference_type(data=component["c:Content"])
                 id_attr = component["c:Content"][type_entity]["@Ref"]
                 dict_parent = dict_attributes[id_attr].copy()
         return dict_parent, alias_parent
@@ -173,13 +163,9 @@ class SourceConditionTransform(BaseTransformer):
             dict: Een kopie van het child attribute dictionary, of leeg dict als niet gevonden.
         """
         lst_components = self.clean_keys(lst_components)
+        lst_components = [x for x in lst_components if x["Name"] == "mdde_ChildAttribute"]
         for component in lst_components:
-            if component["Name"] == "mdde_ChildAttribute":
-                type_entity = [
-                    value
-                    for value in ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-                    if value in component["c:Content"]
-                ][0]
-                id_attr = component["c:Content"][type_entity]["@Ref"]
-                return dict_attributes[id_attr].copy()
+            type_entity = self.determine_reference_type(data=component["c:Content"])
+            id_attr = component["c:Content"][type_entity]["@Ref"]
+            return dict_attributes[id_attr].copy()
         return {}
