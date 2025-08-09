@@ -219,7 +219,7 @@ class JoinConditionsTransformer(BaseTransformer):
         parent_alias = self._get_nested(data=component, keys=path_keys)
         if not parent_alias:
             logger.error(
-                f"Kan geen parent alias vinden voor een mapping in {self.file_pd_ldm}"
+                f"Kan geen parent alias vinden voor een join conditie in mapping '{self.mapping["a:Name"]}' in '{self.file_pd_ldm}'"
             )
         return parent_alias
 

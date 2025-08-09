@@ -134,7 +134,7 @@ class BusinessRuleTransform(BaseTransformer):
                     source_variable = dict_scalar_conditions[condition][
                         "SourceVariable"
                     ]
-                    pattern = r"" + variable + r"\b"
+                    pattern = f"{variable}" + r"\b"
                     sql_expression = re.sub(pattern, source_variable, sql_expression)
                 else:
                     logger.info(
