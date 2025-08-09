@@ -39,7 +39,7 @@ class MappingAttributesTransformer(BaseTransformer):
                 self._process_attribute_map(
                     attr_map=attr_map, dict_attributes=dict_attributes
                 )
-                lst_attr_maps[j] = attr_map.copy()
+                lst_attr_maps[j] = attr_map
             self.mapping["AttributeMapping"] = lst_attr_maps
             self.mapping.pop("c:StructuralFeatureMaps", None)
         else:
@@ -147,13 +147,13 @@ class MappingAttributesTransformer(BaseTransformer):
         ):
             for map in lst_mapping:
                 if alias_id := self._get_nested(data=map, keys=["EntityAlias"]):
-                    lst_scalarexpression = self.mapping.get("SourceComposition")
+                    lst_scalarexpression = self.mapping.get("SourceComposition", [])
                     # Lookup the alias_id in composition. For the attributemapping we'll replace the entityalias with the expression we've created in the sourcecomposition
                     for composition in lst_scalarexpression:
                         if composition["Id"] == alias_id:
                             mappingexpression = composition.get("Expression")
                             map["Expression"] = mappingexpression
-                    map.pop("EntityAlias")
+                    map.pop("EntityAlias", None)
         else:
             logger.warning(
                 f"Attributemapping van {self.mapping['Name']} in '{self.file_pd_ldm}' ontbreekt voor update"

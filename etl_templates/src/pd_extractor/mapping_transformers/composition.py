@@ -162,37 +162,65 @@ class SourceCompositionTransformer(BaseTransformer):
         )
         join_type = composition.get("JoinType", "")
         if join_type == "APPLY":
-            apply_type = composition["Entity"]["Stereotype"]
-            if apply_type == "mdde_FilterBusinessRule":
-                # Source conditions
-                trf_source_condition = SourceConditionTransform(
-                    file_pd_ldm=self.file_pd_ldm,
-                    mapping=self.mapping,
-                    composition=composition,
-                )
-                self.composition = trf_source_condition.transform(
-                    dict_attributes=dict_attributes
-                )
-            elif apply_type == "mdde_ScalarBusinessRule":
-                # Business rules
-                trf_business_rule = BusinessRuleTransform(
-                    file_pd_ldm=self.file_pd_ldm,
-                    mapping=self.mapping,
-                    composition=composition,
-                )
-                composition_result = trf_business_rule.transform(
-                    dict_attributes=dict_attributes
-                )
-                composition |= composition_result
+            composition = self._handle_apply_type(composition, dict_attributes)
         elif join_type != "FROM":
-            # Joing conditions
-            trf_join_conditions = JoinConditionsTransformer(
+            composition = self._handle_join_conditions(composition, dict_attributes)
+        return composition
+
+    def _handle_apply_type(self, composition: dict, dict_attributes: dict) -> dict:
+        """Handelt het verrijken van een compositie af op basis van het apply type.
+
+        Deze functie bepaalt het type business rule en roept de juiste transformatie aan voor filter of scalar business rules.
+
+        Args:
+            composition (dict): De compositie die verrijkt moet worden.
+            dict_attributes (dict): Alle attributen van het Power Designer LDM document om de composities te verrijken.
+
+        Returns:
+            dict: De verrijkte compositie.
+        """
+        apply_type = composition["Entity"]["Stereotype"]
+        if apply_type == "mdde_FilterBusinessRule":
+            trf_source_condition = SourceConditionTransform(
                 file_pd_ldm=self.file_pd_ldm,
                 mapping=self.mapping,
                 composition=composition,
             )
-            composition = trf_join_conditions.transform(dict_attributes=dict_attributes)
+            self.composition = trf_source_condition.transform(
+                dict_attributes=dict_attributes
+            )
+            return composition
+        elif apply_type == "mdde_ScalarBusinessRule":
+            trf_business_rule = BusinessRuleTransform(
+                file_pd_ldm=self.file_pd_ldm,
+                mapping=self.mapping,
+                composition=composition,
+            )
+            composition_result = trf_business_rule.transform(
+                dict_attributes=dict_attributes
+            )
+            composition |= composition_result
+            return composition
         return composition
+
+    def _handle_join_conditions(self, composition: dict, dict_attributes: dict) -> dict:
+        """Handelt het verrijken van een compositie af voor join condities.
+
+        Deze functie roept de JoinConditionsTransformer aan om de join condities te transformeren en te verrijken.
+
+        Args:
+            composition (dict): De compositie die verrijkt moet worden.
+            dict_attributes (dict): Alle attributen van het Power Designer LDM document om de composities te verrijken.
+
+        Returns:
+            dict: De verrijkte compositie.
+        """
+        trf_join_conditions = JoinConditionsTransformer(
+            file_pd_ldm=self.file_pd_ldm,
+            mapping=self.mapping,
+            composition=composition,
+        )
+        return trf_join_conditions.transform(dict_attributes=dict_attributes)
 
     def _set_join_alias_and_type(self, composition: dict):
         """Stelt de JoinAlias, JoinAliasName en JoinType in voor de compositie.

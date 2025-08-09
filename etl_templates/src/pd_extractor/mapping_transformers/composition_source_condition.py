@@ -14,7 +14,7 @@ class SourceConditionTransform(BaseTransformer):
         self.mapping = mapping
         self.composition = composition
 
-    def transform(self, dict_attributes: dict):
+    def transform(self, dict_attributes: dict) -> dict:
         """Transformeert de source condities in de compositie en verrijkt deze met entiteit en attribuut data.
 
         Deze functie verwerkt alle source condities voor de huidige mapping en werkt de compositie bij met de getransformeerde condities.
@@ -34,14 +34,14 @@ class SourceConditionTransform(BaseTransformer):
         self.composition["SourceConditions"] = lst_conditions
         return self.composition
 
-    def _extract_source_conditions(self):
+    def _extract_source_conditions(self) -> list[dict]:
         """Haalt de lijst van source condities uit de compositie.
 
         Args:
             composition (dict): De compositie waaruit de source condities worden gehaald.
 
         Returns:
-            list: Een lijst met source condities uit de compositie.
+            list[dict]: Een lijst met source condities uit de compositie.
         """
         path_keys = [
             "c:ExtendedCompositions",
@@ -49,11 +49,9 @@ class SourceConditionTransform(BaseTransformer):
             "c:ExtendedComposition.Content",
             "o:ExtendedSubObject",
         ]
-        lst_conditions = self._get_nested(data=self.composition, keys=path_keys)
-        lst_conditions = (
-            [lst_conditions] if isinstance(lst_conditions, dict) else lst_conditions
-        )
-        return lst_conditions
+        conditions = self._get_nested(data=self.composition, keys=path_keys)
+        conditions = [conditions] if isinstance(conditions, dict) else conditions
+        return conditions
 
     def _process_source_condition(
         self, index: int, dict_attributes: dict, condition: dict
@@ -163,7 +161,9 @@ class SourceConditionTransform(BaseTransformer):
             dict: Een kopie van het child attribute dictionary, of leeg dict als niet gevonden.
         """
         lst_components = self.clean_keys(lst_components)
-        lst_components = [x for x in lst_components if x["Name"] == "mdde_ChildAttribute"]
+        lst_components = [
+            x for x in lst_components if x["Name"] == "mdde_ChildAttribute"
+        ]
         for component in lst_components:
             type_entity = self.determine_reference_type(data=component["c:Content"])
             id_attr = component["c:Content"][type_entity]["@Ref"]
