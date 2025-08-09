@@ -109,7 +109,7 @@ class BaseTransformer(BaseExtractor):
         return value
 
     def _extract_value_from_attribute_text(
-        self, extended_attrs_text: str, preceded_by: str
+        self, text: str, preceded_by: str
     ) -> str:
         """Extraheert de opgegeven tekst uit een tekst string. Deze tekst kan voorafgegaan
         worden door een specifieke tekst en wordt afgesloten door een \n of het zit aan het einde van de string
@@ -121,12 +121,12 @@ class BaseTransformer(BaseExtractor):
         Returns:
             str: De waarde die geassocieerd wordt met de voorafgaande tekst
         """
-        idx_check = extended_attrs_text.find(preceded_by)
+        idx_check = text.find(preceded_by)
         if idx_check > 0:
             logger.info(
                 f"'{idx_check}' waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
             )
-            return self._extract_value_with_indices(extended_attrs_text, preceded_by)
+            return self._extract_value_with_indices(text, preceded_by)
         else:
             logger.info(
                 f"Geen waardes gevonden in extended_attrs_text voor {self.file_pd_ldm} bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
