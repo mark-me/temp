@@ -130,6 +130,7 @@ class BusinessRuleTransform(BaseTransformer):
             target_variable = dict_scalar_conditions[condition][
                 "TargetVariable"
             ].upper()
+            found_match = False
             for variable in lst_sql_expression_variables:
                 variable_compare = variable[1:]
                 if target_variable == variable_compare:
@@ -138,10 +139,12 @@ class BusinessRuleTransform(BaseTransformer):
                     ]
                     pattern = f"{variable}" + r"\b"
                     sql_expression = re.sub(pattern, source_variable, sql_expression)
-                else:
-                    logger.info(
-                        f"Er is geen sql_expression gevonden voor {self.file_pd_ldm}"
-                    )
+                    found_match = True
+                    break
+            if not found_match:
+                logger.info(
+                    f"Er is geen sql_expression gevonden voor {self.file_pd_ldm}"
+                )
         return sql_expression
 
     def _create_scalar_conditions_lookup(
