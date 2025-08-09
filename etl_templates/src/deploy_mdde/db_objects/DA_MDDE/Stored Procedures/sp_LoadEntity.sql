@@ -1,4 +1,6 @@
-﻿CREATE PROC [DA_MDDE].[sp_LoadEntity] @par_runid [NVARCHAR] (500), @par_Schema [NVARCHAR] (500), @par_Mapping [NVARCHAR] (500), @par_Source [NVARCHAR] (500), @par_Destination [NVARCHAR] (500), @par_loadtype [int], @par_DisableCheckColumnsAndDatatypes [bit]
+﻿DROP  PROC [DA_MDDE].[sp_LoadEntity]
+GO
+CREATE PROC [DA_MDDE].[sp_LoadEntity] @par_runid [NVARCHAR] (500), @par_Schema [NVARCHAR] (500), @par_Mapping [NVARCHAR] (500), @par_Source [NVARCHAR] (500), @par_Destination [NVARCHAR] (500), @par_loadtype [int], @par_DisableCheckColumnsAndDatatypes [bit]
 AS
 /***************************************************************************************************
 Script Name         sp_LoadEntity.sql
@@ -38,7 +40,7 @@ DECLARE @ObjectID BIGINT
 DECLARE @PipelineRunID NVARCHAR(36)
 DECLARE @ActivityID NVARCHAR(36)
 DECLARE @TriggerID NVARCHAR(36)
-DECLARE @SourceCode NVARCHAR(10)
+DECLARE @SourceCode NVARCHAR(200)
 DECLARE @Object NVARCHAR(200)
 DECLARE @State NVARCHAR(50)
 DECLARE @User NVARCHAR(128)
@@ -85,6 +87,8 @@ BEGIN TRY
 		SET @LogMessage = CONCAT (N'Begin laden van mapping: ', '''', @par_Mapping, '''', ' voor tabel: ', QUOTENAME(@par_Schema), '.', QUOTENAME(@par_Destination))
 
 		EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage
+
+		EXEC [DA_MDDE].[sp_StartEntity_Execution] @par_runid ,@par_schema ,@par_mapping 
 	END
 
 	/* Check if source with destination (datatype and length). */
@@ -130,12 +134,32 @@ BEGIN TRY
 								--c.[Mapping] AS PrecedingMapping,
 								--ISNULL(c.[LoadOutcome],'N/A') AS PrecedingOutcome
 								FROM [DA_MDDE].[ConfigExecution] b
-								LEFT JOIN [DA_MDDE].[LoadDependencies] d ON b.[Model] = d.[Model] AND b.[Mapping] = d.[Mapping]
-								LEFT JOIN [DA_MDDE].[ConfigExecution] c ON c.[Model] = d.[PrecedingModel] AND c.[Mapping] = d.[PrecedingMapping] AND c.[LoadRunId] = @par_runid
+								INNER JOIN [DA_MDDE].[LoadDependencies] d ON b.[Model] = d.[Model] AND b.[Mapping] = d.[Mapping]
+								INNER JOIN [DA_MDDE].[ConfigExecution] c ON c.[Model] = d.[PrecedingModel] AND c.[Mapping] = d.[PrecedingMapping] AND c.[LoadRunId] = @par_runid
 								WHERE b.[LoadRunId] = @par_runid AND b.[Model] = @par_model AND b.[Mapping] = @par_Mapping
 								AND ISNULL(c.[LoadOutcome],'N/A') <> 'OK'
+
+	SET @LogMessage = CONCAT('Check Load Predecending NOK: ' ,@checkPrecedingNOK)
+	EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage
+	
+	
+	
 	IF @checkPrecedingNOK > 0
 		BEGIN
+			SELECT 				b.[Model],
+								b.[Schema],
+								b.[Mapping],
+
+								c.[Model] AS PrecedingModel,
+								c.[Schema] AS PrecedingSchema,
+								c.[Mapping] AS PrecedingMapping,
+								ISNULL(c.[LoadOutcome],'N/A') AS PrecedingOutcome
+								FROM [DA_MDDE].[ConfigExecution] b
+								INNER JOIN [DA_MDDE].[LoadDependencies] d ON b.[Model] = d.[Model] AND b.[Mapping] = d.[Mapping]
+								INNER JOIN [DA_MDDE].[ConfigExecution] c ON c.[Model] = d.[PrecedingModel] AND c.[Mapping] = d.[PrecedingMapping] AND c.[LoadRunId] = @par_runid
+								WHERE b.[LoadRunId] = @par_runid AND b.[Model] = @par_model AND b.[Mapping] = @par_Mapping
+								AND ISNULL(c.[LoadOutcome],'N/A') <> 'OK'
+
 			EXEC [DA_MDDE].[sp_UpdateEntity_Execution] @par_runid, @par_schema, @par_mapping, 'Did Not Start'
 
 			SET @LogMessage = CONCAT (N'', 'One or more Preceding mappings has a loadoutcome <> OK ')
@@ -164,7 +188,8 @@ BEGIN CATCH
 	SET @LogMessage = CONCAT ('Update Config Table with outcome NOK: ', CONCAT (QUOTENAME(@par_Schema), '.', QUOTENAME(@par_Source)))
 	EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage
 
-	EXEC [DA_MDDE].[sp_UpdateConfig_Error] @par_runid, @par_Schema, @par_Mapping, 0
+	/* Avi, deze moeten wij nog maken.....*/
+	--EXEC [DA_MDDE].[sp_UpdateConfig_Error] @par_runid, @par_Schema, @par_Mapping, 0
 
 	SET @LogMessage = CONCAT ('Error Message: ', @ErrorMessage)
 	EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage

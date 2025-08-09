@@ -8,13 +8,13 @@ SELECT
             [{{attributemapping.AttributeTarget.Code}}] = {{ attributemapping.AttributesSource.EntityAlias }}.[{{attributemapping.AttributesSource.Code}}],
         {% endif %}
     {% endfor %}
-    [X_StartDate] = CAST(GETDATE() AS DATE),
+    [X_StartDate] = CAST(GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time' AS DATE),
     [X_EndDate] = '2099-12-31',
     {{ mapping.X_Hashkey }},
     [X_IsCurrent] = 1,
     [X_IsReplaced] = 0,
     [X_RunId] = '',
-    [X_LoadDateTime] = GETDATE(),
+    [X_LoadDateTime] = GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time',
     [X_Bron] = '{{mapping.DataSource}}'
     {% for sourceObject in mapping.SourceComposition %}
         {% if sourceObject.JoinType != 'APPLY' %}

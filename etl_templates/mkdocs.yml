@@ -42,8 +42,9 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Componenten:
-    - Configuratie: Configuration.md
-    - Orkestrator: Orkestrator.md
+    - Workflow:
+      - Orkestrator: Orchestrator/Orchestrator.md
+      - Configuratie: Orchestrator/Configuration.md
     - Power Designer extractie: Extractor.md
     - Integreren ETL DAG: Integrator/Integrator.md
     - Code DB & ETL objecten: Generator.md

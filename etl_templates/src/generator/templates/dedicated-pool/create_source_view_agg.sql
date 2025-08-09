@@ -20,20 +20,11 @@ SELECT
 
             {% if 'JoinConditions' in sourceObject %}
                 ON {% for joinCondition in sourceObject.JoinConditions %}
-                    {% if CodeModel | upper == 'DA_CENTRAL' and joinCondition.ParentLiteral != '' %}
-                        {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Code }}] = {{ joinCondition.ParentLiteral }}
-
-                        {% elif CodeModel | upper != 'DA_CENTRAL' and joinCondition.ParentLiteral != '' %}
-                        {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Name }}] = {{ joinCondition.ParentLiteral }}
-                    {% endif %}
-
-                    {% if CodeModel | upper == 'DA_CENTRAL' and joinCondition.ParentLiteral == '' %}
+                    {% if joinCondition.ParentLiteral == '' %}
                         {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Code }}] = {{ joinCondition.JoinConditionComponents.AttributeParent.EntityAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeParent.Code }}]
-
-                        {% elif CodeModel | upper != 'DA_CENTRAL' and joinCondition.ParentLiteral == '' %}
-                        {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Name }}] = {{ joinCondition.JoinConditionComponents.AttributeParent.EntityAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeParent.Name }}]
+                    {% else %}
+                        {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Code }}] = {{ joinCondition.ParentLiteral }}
                     {% endif %}
-
                     {%- if not loop.last -%}
                         AND
                     {% endif %}

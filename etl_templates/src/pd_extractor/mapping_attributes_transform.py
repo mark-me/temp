@@ -6,23 +6,30 @@ logger = get_logger(__name__)
 
 
 class MappingAttributesTransformer(BaseTransformer):
-    """Collectie van functies om attribuut mappings conform het afgestemde JSON format op te bouwen om ETL generatie te faciliteren"""
+    """Collectie van functies om attribuut mappings conform het afgestemde JSON format op te bouwen om ETL generatie te faciliteren
+    """
 
-    def __init__(self, file_pd_ldm: str):
+    def __init__(self, file_pd_ldm: str, mapping: dict):
+        """_summary_
+
+        Args:
+            file_pd_ldm (str): Bestandsnaam van het Power Designer document waar de data uit komt
+            mapping (dict): Mapping waarvoor de mapping attributes voor worden getransformeerd
+        """
         super().__init__(file_pd_ldm=file_pd_ldm)
+        self.mapping = mapping
 
-    def transform(self, dict_entity_target: dict, dict_attributes: dict) -> dict:
+    def transform(self, dict_attributes: dict) -> dict:
         """Verrijkt, schoont en hangt attribuut mappings om ten behoeven van een mapping
 
         Args:
-            dict_entity_target (dict): Entity gevoed door de mapping
             dict_attributes (dict): Alle attributen van het Power Designer LDM die beschikbaar zijn als bron voor de attribuut mapping
 
         Returns:
             dict: Mapping met geschoonde en verrijkte attribuut mapping
         """
         key_path = ["c:StructuralFeatureMaps", "o:DefaultStructuralFeatureMapping"]
-        if lst_attr_maps := self._get_nested(data=dict_entity_target, keys=key_path):
+        if lst_attr_maps := self._get_nested(data=self.mapping, keys=key_path):
             lst_attr_maps = (
                 [lst_attr_maps] if isinstance(lst_attr_maps, dict) else lst_attr_maps
             )
@@ -34,13 +41,14 @@ class MappingAttributesTransformer(BaseTransformer):
                     attr_map=attr_map, dict_attributes=dict_attributes
                 )
                 lst_attr_maps[j] = attr_map.copy()
-            dict_entity_target["AttributeMapping"] = lst_attr_maps
-            dict_entity_target.pop("c:StructuralFeatureMaps", None)
+            self.mapping["AttributeMapping"] = lst_attr_maps
+            self.mapping.pop("c:StructuralFeatureMaps", None)
         else:
             logger.error(
-                f"attributemapping voor {dict_entity_target['Name']} van {self.file_pd_ldm} niet gevonden"
+                f"Geen Attribute-mapping voor {self.mapping['Name']} van {self.file_pd_ldm} gevonden"
             )
-        return dict_entity_target
+        self._attribute_scalars()
+        return self.mapping
 
     def _process_attribute_map(self, attr_map: dict, dict_attributes: dict) -> None:
         logger.debug(
@@ -62,33 +70,6 @@ class MappingAttributesTransformer(BaseTransformer):
             logger.warning(
                 f"{id_attr} van {self.file_pd_ldm} is niet gevonden binnen target attributen"
             )
-
-    def _extract_entity_alias(self, attr_map: dict):
-        """Extraheert de entity alias uit de attribuut mapping indien aanwezig.
-
-        Args:
-            attr_map (dict): De attribuut mapping.
-
-        Returns:
-            tuple: (has_entity_alias (bool), id_entity_alias (str of None))
-        """
-        has_entity_alias = False
-        path_keys = [
-            "c:ExtendedCollections",
-            "o:ExtendedCollection",
-            "c:Content",
-            "o:ExtendedSubObject",
-            "@Ref",
-        ]
-        id_entity_alias = self._get_nested(data=attr_map, keys=path_keys)
-        if id_entity_alias:
-            has_entity_alias = True
-            logger.info(
-                "Ongebruikt object; file:pd_transform_attribute_mapping; object:id_entity_alias"
-            )
-            logger.info(f"Object bevat volgende data: '{id_entity_alias}'")
-            attr_map.pop("c:ExtendedCollections")
-        return has_entity_alias, id_entity_alias
 
     def _process_source_features(self, attr_map: dict, dict_attributes: dict):
         """Verwerkt de source features van een attribuut mapping.
@@ -133,3 +114,52 @@ class MappingAttributesTransformer(BaseTransformer):
             attr_map.pop("c:SourceFeatures", None)
         else:
             logger.warning(f"Source attributes van {self.file_pd_ldm} niet gevonden")
+
+    def _extract_entity_alias(self, attr_map: dict) -> tuple[bool, str | None]:
+        """Extraheert de entity alias uit de attribuut mapping indien aanwezig.
+
+        Args:
+            attr_map (dict): De attribuut mapping.
+
+        Returns:
+            tuple: (has_entity_alias (bool), id_entity_alias (str of None))
+        """
+        has_entity_alias = False
+        path_keys = [
+            "c:ExtendedCollections",
+            "o:ExtendedCollection",
+            "c:Content",
+            "o:ExtendedSubObject",
+            "@Ref",
+        ]
+        id_entity_alias = self._get_nested(data=attr_map, keys=path_keys)
+        if id_entity_alias:
+            has_entity_alias = True
+            logger.info(
+                "Ongebruikt object; file:pd_transform_attribute_mapping; object:id_entity_alias"
+            )
+            logger.info(f"Object bevat volgende data: '{id_entity_alias}'")
+            attr_map.pop("c:ExtendedCollections")
+        return has_entity_alias, id_entity_alias
+
+    def _attribute_scalars(self) -> None:
+        """Creëert een expressie string die gebruikt wordt in de attribute mapping
+        wanneer een bron attribuut verwijst naar een scalar
+
+        Returns:
+            dict: mapping met de zojuist toegevoegde expressie
+        """
+        if lst_mapping := self._get_nested(data=self.mapping, keys=["AttributeMapping"]):
+            for map in lst_mapping:
+                if alias_id := self._get_nested(data=map, keys=["EntityAlias"]):
+                    lst_scalarexpression = self.mapping.get("SourceComposition")
+                    # Lookup the alias_id in composition. For the attributemapping we'll replace the entityalias with the expression we've created in the sourcecomposition
+                    for composition in lst_scalarexpression:
+                        if composition["Id"] == alias_id:
+                            mappingexpression = composition.get("Expression")
+                    map["Expression"] = mappingexpression
+                    map.pop("EntityAlias")
+        else:
+            logger.warning(
+                f"Attributemapping van {self.mapping['Name']} in '{self.file_pd_ldm}' ontbreekt voor update"
+            )

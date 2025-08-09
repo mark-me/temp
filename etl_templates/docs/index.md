@@ -4,7 +4,7 @@
 
 Genesis is een modulair Python-framework dat Power Designer-modellen omzet naar bruikbare database- en ETL-code. Het helpt data-engineers en modelleurs om complexe datamodellen automatisch te vertalen naar uitvoerbare oplossingen in Azure DevOps.
 
-Dankzij een configureerbare, stap-voor-stap workflow kunnen modeldata worden geëxtraheerd, afhankelijkheden geanalyseerd, deployment-scripts gegenereerd en repositories bijgewerkt — volledig geautomatiseerd en reproduceerbaar.
+Dankzij een configureerbare, stap-voor-stap workflow kunnen model- en mappingdata worden geëxtraheerd, data uit de  Power Designer bestanden worden geïntegreerd, deployment-scripts gegenereerd en repositories bijgewerkt — volledig geautomatiseerd en reproduceerbaar.
 
 ## Hoe werkt Genesis?
 
@@ -46,7 +46,7 @@ graph
     class RETW,Dependency,Generator,DeployMDDE,RepositoryHandler functional
 ```
 
-Het Python-script, [```main.py```](#src.main.main) in de directory ```src```, dient als het startpunt waarmee de "Genesis" workflow-orkestrator wordt opgestart, waarbij een [configuratiebestand](Configuration.md) kan worden gespecificeerd als parameter. De DevOps repository push kan overslagen worden door de parameter `-s` te gerbuiken
+Het Python-script, [```main.py```](#src.main.main) in de directory ```src```, dient als het startpunt waarmee de "Genesis" workflow-orkestrator wordt opgestart, waarbij een [configuratiebestand](Orchestrator/Configuration.md) kan worden gespecificeerd als parameter. De DevOps operaties kunnen overslagen worden door de parameter `-s` te gebruiken bij het opstarten van het main script via de command line.
 
 ```bash
 python main.py etl_templates/config.yml -s
@@ -64,11 +64,11 @@ Genesis is ontwikkeld voor:
 
 ### Orkestrator
 
-Het startpunt voor de "Genesis" is de workflow-orkestrator waar alle andere belangrijke componenten samenkomen. De voornaamste functie is het beheren en uitvoeren van de stappen die in de configuratie zijn gedefinieerd, mogelijk inclusief uitrol-stappen. Meer informatie over dit proces is te vinden op de [Orkestrator-pagina](Orkestrator.md).
+De verschillende stappen in "Genesis"  worden door de workflow-orkestrator doorlopen, en is de plek waar alle andere belangrijke componenten samenkomen. De voornaamste functie is het beheren en uitvoeren van de stappen die in de configuratie zijn gedefinieerd, mogelijk inclusief uitrol-stappen. Meer informatie over dit proces is te vinden op de [Orkestrator-pagina](Orchestrator/Orchestrator.md).
 
 #### Configuratie
 
-De Orkestrator-flow wordt bepaald door een configuratiebestand. Meer informatie over configuratiebestanden en de methodes waarmee deze worden ingelezen en geverifieerd is te vinden op de [Configuratie-pagina](Configuration.md)
+De Orkestrator-flow wordt bepaald door een configuratiebestand. Meer informatie over configuratiebestanden en de methodes waarmee deze worden ingelezen en geverifieerd is te vinden op de [Configuratie-pagina](Orchestrator/Configuration.md)
 
 ### Power Designer extractie
 
@@ -76,11 +76,11 @@ De Extractor neemt een Power Designer-logisch datamodeldocument (herkenbaar aan 
 
 ### Integreren ETL DAG
 
-De **`integrator`**-package biedt een modulaire en uitbreidbare set Python-componenten voor het modelleren, analyseren, implementeren en visualiseren van **ETL-workflows** op basis van **Directed Acyclic Graphs (DAG’s)**. Deze workflows worden gedefinieerd aan de hand van RETW JSON-bestanden. Deze package
+De ETL DAG Integrator biedt een modulaire en uitbreidbare set Python-componenten voor het modelleren, analyseren, implementeren en visualiseren van **ETL-workflows** op basis van **Directed Acyclic Graphs (DAG’s)**. Deze workflows worden gedefinieerd aan de hand output van de Power Designer extractie. Deze package:
 
-- Bouwt de structuur van de ETL-DAG.
-- Breidt deze structuur uit met uitvoeringslogica, zoals run-levels en deadlock-preventie.
-- Visualiseert- en voegt rapportagemogelijkheden toe.
+- bouwt de structuur van de ETL-DAG,
+- breidt deze structuur uit met uitvoeringslogica, zoals run volgorde en parallellisatie en deadlock-preventie, en
+- voegt visualisatie- en rapportagemogelijkheden toe.
 
 Meer informatie is te vinden op de pagina [Integreren ETL DAG](Integrator/Integrator.md).
 
@@ -113,13 +113,13 @@ etl_templates
 ├───input # Placeholder voor Power Designer documenten
 ├───site  # Gegenereerde HTML documentatie (niet aanwezig in repo).
 └───src
-    ├───dependencies_checker   # Bepaling afhankelijkheden
     ├───deploy_mdde            # MDDE deployment code
     ├───generator              # Code DB objecten
+    ├───integrator             # Integreren ETL DAG
+    ├───logtools               # Logging en issue tracking
     └───orchestrator
     |      ├───config_file.py  # Configuratie lezen
     |      └───orchestrator.py # Orkestrator
-    ├───logtools               # Logging en issue tracking
     ├───pd_extractor           # Power Designer extractie
     ├───repository_manager     # DevOps repository management
     └───main.py         # Start-script Genesis

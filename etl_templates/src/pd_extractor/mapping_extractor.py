@@ -89,27 +89,29 @@ class MappingExtractor(BaseExtractor):
             list[dict]: Een lijst met de getransformeerde broncompositie voor de mapping.
         """
         mapping = self._normalize_mapping_name(mapping)
-        trf_target_entity = TargetEntityTransformer(file_pd_ldm=self.file_pd_ldm)
-        lst_entity_target = trf_target_entity.transform(
-            mapping=mapping,
+        trf_target_entity = TargetEntityTransformer(
+            file_pd_ldm=self.file_pd_ldm, mapping=mapping
+        )
+        mapping = trf_target_entity.transform(
             dict_objects=dict_objects,
         )
         dict_attributes_combined = dict_attributes | dict_variables
-        trf_attribute_mapping = MappingAttributesTransformer(file_pd_ldm=self.file_pd_ldm)
-        attribute_mappings = trf_attribute_mapping.transform(
-            dict_entity_target=lst_entity_target,
-            dict_attributes=dict_attributes_combined,
-        )
         trf_source_composition = SourceCompositionTransformer(
-            file_pd_ldm=self.file_pd_ldm
+            file_pd_ldm=self.file_pd_ldm,
+            mapping=mapping
         )
-        source_composition = trf_source_composition.transform(
-            mapping=attribute_mappings,
+        mapping = trf_source_composition.transform(
             dict_attributes=dict_attributes_combined,
             dict_objects=dict_objects,
-            dict_datasources=dict_datasources,
+            dict_datasources=dict_datasources)
+        trf_attribute_mapping = MappingAttributesTransformer(
+            file_pd_ldm=self.file_pd_ldm,
+            mapping=mapping
         )
-        return source_composition
+        mapping = trf_attribute_mapping.transform(
+            dict_attributes=dict_attributes_combined,
+        )
+        return mapping
 
     def _create_entities_dict(self, models: list[dict]) -> dict:
         """Maakt een dictionary van entiteiten zonder stereotype uit de opgegeven modellen.

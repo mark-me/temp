@@ -7,7 +7,8 @@ ignore-warnings: False
 power-designer:
   folder: "./Data model/Central/UsecasePoC"
   files:
-    - "UsecaseV2.25b.ldm"
+    - "Staging/UsecasePoC.ldm"
+    - "Staging/DA_Staging_Central.ldm"
     - "DM_FactPoC.ldm"
     - "DM_DimPoC.ldm"
 

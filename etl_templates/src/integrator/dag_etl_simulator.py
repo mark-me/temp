@@ -20,7 +20,7 @@ class FailureStrategy(Enum):
 
     Elke strategie bepaalt op een andere manier welke componenten in de ETL-DAG worden beïnvloed door een falende mapping.
     """
-    ONLY_SUCCESSORS = "Only successors"
+    DIRECT_PREDECESSORS = "Direct predecessors"
     ALL_OF_SHARED_TARGET = "All shared targets"
     SIBLINGS_OF_MAPPINGS = "Sibling mappings"
     SIBLINGS_OF_AGGREGATES = "Sibling aggregates"
@@ -163,7 +163,7 @@ class EtlSimulator(DagReporting):
                 vx["run_status"] = MappingStatus.NOK
             else:
                 vx["run_status"] = MappingStatus.OK
-            if failure_strategy == FailureStrategy.ONLY_SUCCESSORS:
+            if failure_strategy == FailureStrategy.DIRECT_PREDECESSORS:
                 self._apply_strategy_only_successors(vs_run_stage=vs_run_stage)
             elif failure_strategy == FailureStrategy.ALL_OF_SHARED_TARGET:
                 self._apply_strategy_shared_target(vs_run_stage=vs_run_stage)

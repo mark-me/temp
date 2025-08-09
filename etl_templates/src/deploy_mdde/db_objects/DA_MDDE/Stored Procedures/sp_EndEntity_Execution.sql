@@ -1,6 +1,6 @@
-CREATE PROC [DA_MDDE].[sp_StartEntity_Execution] @par_runid [UNIQUEIDENTIFIER],@par_schema [NVARCHAR](500),@par_mapping [NVARCHAR](500) AS
+CREATE PROC [DA_MDDE].[sp_EndEntity_Execution] @par_runid [UNIQUEIDENTIFIER],@par_schema [NVARCHAR](500),@par_mapping [NVARCHAR](500), @RowCountInsert [BigInt] , @RowCountUpdate [BigInt], @RowCountDelete [BigInt] AS
 /***************************************************************************************************
-Script Name         sp_StartEntity_Execution.sql
+Script Name         sp_EndEntity_Execution.sql
 Create Date:        2025-07-31
 Author:             Jeroen Poll
 Description:        PROC
@@ -23,8 +23,11 @@ BEGIN
 	DECLARE @sql NVARCHAR(MAX) = ''
 	SET @sql = CONCAT ('UPDATE [DA_MDDE].[ConfigExecution]  '
 	, ' SET '
-	, ' [LoadStartDateTime] = GETDATE() AT TIME ZONE ''UTC'' AT TIME ZONE ''W. Europe Standard Time'','
-	, ' [LoadOutcome] =  ''Running'''
+	, ' [LoadEndDateTime] = GETDATE() AT TIME ZONE ''UTC'' AT TIME ZONE ''W. Europe Standard Time'','
+	, ' [RowCountInsert] = ', @RowCountInsert ,','
+	, ' [RowCountUpdate] = ', @RowCountUpdate ,','
+	, ' [RowCountDelete] = ', @RowCountDelete ,','
+	, ' [LoadOutcome] =  ''OK'''
 	, ' WHERE 1=1 '
 	, ' AND [LoadRunId] = ', '''', @par_runid , ''''
 	, ' AND [Schema] = ', '''', @par_schema , ''''

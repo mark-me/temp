@@ -22,19 +22,19 @@ RESET = "\x1b[0m"
 
 
 class ExtractionIssuesFound(Exception):
-    """Exception raised when extraction issues are found and processing should stop."""
+    """Exceptie die optreedt wanneer er 'breaking issues' zijn aangetroffen in de geëxtraheerde Power Designer modellen en/of mappings."""
 
 
 class Orchestrator:
     """Orkestreert de Power Designer extractie en deployment workflow.
 
-    Manages the extraction of data, dependency checking, code generation, and repository interactions.
+    Workflow van Genesis van Extractie tot code generatie.
     """
 
     def __init__(self, file_config: str):
         """Initialiseert de Orkestrator.
 
-        Sets up the configuration based on the provided file path.
+        Neemt de configuratie over van het ingestelde configuratiebestandspad, en beschrijft stappen die de
 
         Args:
             file_config (Path): Locatie configuratiebestand
@@ -85,7 +85,7 @@ class Orchestrator:
             )
 
     @staticmethod
-    def _decorator_proces_issues(func):
+    def detect_issues(func: callable) -> callable:
         """
         Decorator die het verwerkingsproces van een stap omhult en issues afhandelt.
 
@@ -158,7 +158,7 @@ class Orchestrator:
 
         return wrapper
 
-    @_decorator_proces_issues
+    @detect_issues
     def _extract_to_json(self) -> list[Path]:
         """
         Extraheert data uit Power Designer bestanden en schrijft deze naar JSON-bestanden.
@@ -200,7 +200,7 @@ class Orchestrator:
                 )
         return lst_files_RETW
 
-    @_decorator_proces_issues
+    @detect_issues
     def _integrate_files(self, files_RETW: list[Path]) -> DagImplementation:
         """
         Integreert de opgegeven RETW-bestanden tot een ETL-DAG en genereert visualisaties.
@@ -243,7 +243,7 @@ class Orchestrator:
         dag.plot_mappings(file_html=path_output)
         print(f"{BOLD_BLUE}\t* Mappings: {UNDERLINE}{path_output}{RESET}")
 
-    @_decorator_proces_issues
+    @detect_issues
     def _generate_mdde_deployment(self, dag_etl: DagImplementation) -> None:
         """
         Genereert MDDE deployment scripts op basis van de ETL-DAG.
@@ -278,7 +278,7 @@ class Orchestrator:
             datamart_clusters=mapping_clusters,
         )
 
-    @_decorator_proces_issues
+    @detect_issues
     def _generate_code(self, dag_etl: DagImplementation) -> None:
         """
         Genereert de deployment code op basis van de opgegeven ETL-DAG.
@@ -296,7 +296,7 @@ class Orchestrator:
         ddl_generator = DDLGenerator(params=self.config.generator)
         ddl_generator.generate_ddls(dag_etl=dag_etl)
 
-    @_decorator_proces_issues
+    @detect_issues
     def _add_to_repository(self) -> None:
         """Voegt de gegenereerde code toe aan de DevOps repository.
 

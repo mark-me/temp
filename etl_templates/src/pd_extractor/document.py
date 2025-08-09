@@ -126,11 +126,10 @@ class PDDocument(BaseExtractor):
         """
         extractor = StereotypeExtractor(
             pd_content=pd_content,
-            stereotype_input="mdde_FilterBusinessRule",
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start filter extraction")
-        filters = extractor.get_objects(dict_domains=domains)
+        filters = extractor.get_filters(dict_domains=domains)
         logger.debug("Finished filter extraction")
         return filters
 
@@ -148,11 +147,10 @@ class PDDocument(BaseExtractor):
         """
         extractor = StereotypeExtractor(
             pd_content=pd_content,
-            stereotype_input="mdde_ScalarBusinessRule",
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start scalar extraction")
-        lst_scalars = extractor.get_objects(dict_domains=domains)
+        lst_scalars = extractor.get_scalars(dict_domains=domains)
         logger.debug("Finished scalar extraction")
         return lst_scalars
 
@@ -170,11 +168,10 @@ class PDDocument(BaseExtractor):
         """
         extractor = StereotypeExtractor(
             pd_content=pd_content,
-            stereotype_input="mdde_AggregateBusinessRule",
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start aggregate extraction")
-        lst_aggregates = extractor.get_objects(dict_domains=domains)
+        lst_aggregates = extractor.get_aggregates(dict_domains=domains)
         logger.debug("Finished aggregate extraction")
         return lst_aggregates
 
