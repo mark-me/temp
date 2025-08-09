@@ -15,45 +15,29 @@ class JoinConditionsTransformer(BaseTransformer):
         self.composition = composition
 
     def transform(self, dict_attributes: dict) -> dict:
-        """Handelt de verschillende condities van de compositie af, zoals join, source en scalar condities.
+        """Transforms join conditions in the composition and enriches them with entity and attribute data.
+
+        This method processes all join conditions for the current mapping and updates the composition accordingly.
 
         Args:
-            composition (dict): De compositie waarvoor de condities worden afgehandeld.
-            dict_attributes (dict): Alle attributen (in- en external).
-        """
-        if "c:ExtendedCompositions" in self.composition:
-            join_type = self.composition.get("JoinType", "").upper()
-            if join_type not in ["FROM", "APPLY"]:
-                self._composition_join_conditions(
-                    dict_attributes=dict_attributes
-                )
-        return self.composition
-
-    def _composition_join_conditions(
-        self, dict_attributes: dict
-    ) -> None:
-        """Schoont en verrijkt data van de join condities van 1 van de composities
-
-        Args:
-            composition (dict): Compositie data
-            dict_attributes (dict): Alle attributen (in- en external)
+            dict_attributes (dict): All attributes (internal and external) used for enrichment.
 
         Returns:
-            None
+            dict: The updated composition dictionary with transformed join conditions.
         """
-        logger.debug(
-            f"Join conditities in {self.composition["Name"]} transformeren voor mapping '{self.mapping['a:Name']} for {self.file_pd_ldm}'"
-        )
-        lst_conditions = self._extract_conditions_from_composition()
+        lst_conditions = self._get_conditions()
         lst_conditions = self.clean_keys(lst_conditions)
 
         for i, condition in enumerate(lst_conditions):
-            self._process_condition(condition=condition, index=i, dict_attributes=dict_attributes)
+            self._process_condition(
+                condition=condition, index=i, dict_attributes=dict_attributes
+            )
 
         self.composition["JoinConditions"] = lst_conditions
         self.composition.pop("c:ExtendedCompositions")
+        return self.composition
 
-    def _extract_conditions_from_composition(self):
+    def _get_conditions(self):
         """Haalt de lijst van condities uit de compositie.
 
         Deze functie retourneert alle condities die aanwezig zijn in de opgegeven compositie.
@@ -73,9 +57,7 @@ class JoinConditionsTransformer(BaseTransformer):
         )
         return lst_conditions
 
-    def _process_condition(
-        self, condition: dict, index: int, dict_attributes: dict
-    ):
+    def _process_condition(self, condition: dict, index: int, dict_attributes: dict):
         """Verwerkt een enkele join conditie binnen een compositie.
 
         Deze functie stelt de volgorde, operator, parent literal en componenten in voor een join conditie.
@@ -87,11 +69,10 @@ class JoinConditionsTransformer(BaseTransformer):
             dict_attributes (dict): Alle attributen (in- en external).
         """
         condition["Order"] = index
-        logger.debug(
-            f"Join conditities transformeren voor {index} '{condition['Name']}' voor {self.file_pd_ldm}"
-        )
         self._set_condition_operator_and_literal(condition)
-        self._set_condition_components(condition=condition, dict_attributes=dict_attributes)
+        self._set_condition_components(
+            condition=condition, dict_attributes=dict_attributes
+        )
 
     def _set_condition_operator_and_literal(self, condition: dict):
         """Stelt de operator en parent literal in voor een join conditie.
@@ -115,9 +96,7 @@ class JoinConditionsTransformer(BaseTransformer):
         condition["Operator"] = "=" if condition_operator == "" else condition_operator
         condition["ParentLiteral"] = parent_literal
 
-    def _set_condition_components(
-        self, condition: dict, dict_attributes: dict
-    ):
+    def _set_condition_components(self, condition: dict, dict_attributes: dict):
         """Stelt de componenten van een join conditie in voor een gegeven conditie.
 
         Deze functie haalt de componenten op uit de conditie, verwerkt deze en voegt ze toe aan de conditie.
@@ -129,20 +108,20 @@ class JoinConditionsTransformer(BaseTransformer):
         """
         if "c:ExtendedCollections" not in condition:
             logger.warning(
-                f"Er zijn geen c:ExtendedCollections, controleer model voor ongeldige mapping in {self.file_pd_ldm} "
+                f"Er zijn geen c:ExtendedCollections, controleer model voor ongeldige mapping {self.mapping["a:Name"]} in {self.file_pd_ldm} "
             )
         lst_components = condition["c:ExtendedCollections"]["o:ExtendedCollection"]
         lst_components = (
             [lst_components] if isinstance(lst_components, dict) else lst_components
         )
-        condition["JoinConditionComponents"] = self._join_condition_components(
+        condition["JoinConditionComponents"] = self._transform_join_condition_components(
             lst_components=lst_components,
             dict_attributes=dict_attributes,
             alias_child=self.composition["Id"],
         )
         condition.pop("c:ExtendedCollections")
 
-    def _join_condition_components(
+    def _transform_join_condition_components(
         self, lst_components: list, dict_attributes: dict, alias_child: str
     ) -> dict:
         """Vormt om, schoont en verrijkt component data van 1 join conditie
@@ -169,7 +148,18 @@ class JoinConditionsTransformer(BaseTransformer):
         return dict_components
 
     def _extract_join_components(self, lst_components: list, dict_attributes: dict):
-        """Extraheert child, parent en parent alias uit de join componenten."""
+        """Extraheert het child attribute, parent attribute en parent alias uit join conditie componenten.
+
+        Deze methode verwerkt een lijst van join conditie componenten en retourneert de relevante child en
+        parent attribute dictionaries, evenals de parent alias indien aanwezig.
+
+        Args:
+            lst_components (list): De lijst van join conditie componenten.
+            dict_attributes (dict): Dictionary met alle beschikbare attributen.
+
+        Returns:
+            tuple: Een tuple met het child attribute dict, parent attribute dict en parent alias.
+        """
         dict_child = {}
         dict_parent = {}
         alias_parent = None
