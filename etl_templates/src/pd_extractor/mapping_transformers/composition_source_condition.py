@@ -15,28 +15,26 @@ class SourceConditionTransform(BaseTransformer):
         self.composition = composition
 
     def transform(self, dict_attributes: dict):
-        """Schoont en verrijkt data van de source (bron) conditie van 1 van de composities
+        """Transformeert de source condities in de compositie en verrijkt deze met entiteit en attribuut data.
+
+        Deze functie verwerkt alle source condities voor de huidige mapping en werkt de compositie bij met de getransformeerde condities.
 
         Args:
-            composition (dict): Compositie data
-            dict_attributes (dict): Alle attributen (in- en external)
+            dict_attributes (dict): Alle attributen (intern en extern) die gebruikt worden voor verrijking.
 
         Returns:
-            None
+            dict: De bijgewerkte compositie dictionary met getransformeerde source condities.
         """
-        logger.debug(
-            f"Source conditie transformeren voor compositie  {self.composition['Name']} for {self.file_pd_ldm}"
-        )
-        lst_conditions = self._extract_source_conditions_from_composition()
+        lst_conditions = self._extract_source_conditions()
         lst_conditions = self.clean_keys(lst_conditions)
-
         for i, condition in enumerate(lst_conditions):
-            self._process_source_condition(condition=condition, index=i, dict_attributes=dict_attributes)
+            self._process_source_condition(
+                condition=condition, index=i, dict_attributes=dict_attributes
+            )
         self.composition["SourceConditions"] = lst_conditions
         return self.composition
 
-
-    def _extract_source_conditions_from_composition(self):
+    def _extract_source_conditions(self):
         """Haalt de lijst van source condities uit de compositie.
 
         Args:
@@ -57,7 +55,6 @@ class SourceConditionTransform(BaseTransformer):
         )
         return lst_conditions
 
-
     def _process_source_condition(
         self, index: int, dict_attributes: dict, condition: dict
     ) -> None:
@@ -75,7 +72,7 @@ class SourceConditionTransform(BaseTransformer):
             data=condition, keys=["ExtendedAttributesText"]
         ):
             parent_literal = self._extract_value_from_attribute_text(
-                extended_attr_text,
+                text=extended_attr_text,
                 preceded_by="mdde_ParentLiteralValue,",
             )
         lst_components = condition["c:ExtendedCollections"]["o:ExtendedCollection"]
@@ -93,7 +90,7 @@ class SourceConditionTransform(BaseTransformer):
             condition["SourceConditionVariable"] = parent_literal
         else:
             logger.warning(
-                f"Geen SourceConditionVariable gevonden voor condition {condition.get('Code', '')} in compositie{self.composition.get('Name', '')} voor {self.file_pd_ldm}"
+                f"Geen SourceConditionVariable gevonden voor condition {condition.get('Code', '')} in mapping {self.mapping['a:Name']} voor {self.file_pd_ldm}"
             )
         condition.pop("c:ExtendedCollections")
 

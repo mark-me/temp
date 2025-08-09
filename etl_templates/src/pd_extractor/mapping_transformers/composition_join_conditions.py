@@ -15,15 +15,15 @@ class JoinConditionsTransformer(BaseTransformer):
         self.composition = composition
 
     def transform(self, dict_attributes: dict) -> dict:
-        """Transforms join conditions in the composition and enriches them with entity and attribute data.
+        """Transformeert de join condities in de compositie en verrijkt deze met entiteit en attribuut data.
 
-        This method processes all join conditions for the current mapping and updates the composition accordingly.
+        Deze functie verwerkt alle join condities voor de huidige mapping en werkt de compositie bij met de getransformeerde condities.
 
         Args:
-            dict_attributes (dict): All attributes (internal and external) used for enrichment.
+            dict_attributes (dict): Alle attributen (intern en extern) die gebruikt worden voor verrijking.
 
         Returns:
-            dict: The updated composition dictionary with transformed join conditions.
+            dict: De bijgewerkte compositie dictionary met getransformeerde join condities.
         """
         lst_conditions = self._get_conditions()
         lst_conditions = self.clean_keys(lst_conditions)
@@ -38,12 +38,12 @@ class JoinConditionsTransformer(BaseTransformer):
         return self.composition
 
     def _get_conditions(self):
-        """Haalt de lijst van condities uit de compositie.
+        """Haalt de lijst van join condities uit de compositie.
 
         Deze functie retourneert alle condities die aanwezig zijn in de opgegeven compositie.
 
         Returns:
-            list: Een lijst met condities uit de compositie.
+            list: Een lijst met join condities uit de compositie.
         """
         path_keys = [
             "c:ExtendedCompositions",
@@ -171,14 +171,14 @@ class JoinConditionsTransformer(BaseTransformer):
                     component, dict_attributes
                 )
             elif type_component == "mdde_ParentSourceObject":
-                alias_parent = self._extract_join_parent_source_object(component)
+                alias_parent = self._extract_join_parent_alias(component)
             elif type_component == "mdde_ParentAttribute":
                 dict_parent = self._extract_join_parent_attribute(
                     component, dict_attributes
                 )
             else:
                 logger.warning(
-                    f"Ongeldige join item in conditie '{type_component}' for {self.file_pd_ldm}"
+                    f"Ongeldige join item in conditie '{type_component}' voor mapping '{self.mapping["a:Name"]}' in {self.file_pd_ldm}"
                 )
         return dict_child, dict_parent, alias_parent
 
@@ -203,18 +203,19 @@ class JoinConditionsTransformer(BaseTransformer):
         id_attr = component["c:Content"][type_entity]["@Ref"]
         return dict_attributes[id_attr].copy()
 
-    def _extract_join_parent_source_object(self, component: dict) -> str:
-        """Haalt de alias van het parent source object op voor een join conditie component.
+    def _extract_join_parent_alias(self, component: dict) -> str:
+        """Haalt de parent alias op uit een join conditie component.
+
+        Deze functie zoekt de parent alias op in het component en retourneert deze als string.
 
         Args:
-            component (dict): Het component dat de parent source object referentie bevat.
+            component (dict): Het component dat de parent alias referentie bevat.
 
         Returns:
-            str: De alias van het parent source object.
+            str: De parent alias als string, of None als niet gevonden.
         """
         path_keys = ["c:Content", "o:ExtendedSubObject", "@Ref"]
         logger.debug(f"Parent entity alias toegevoegd voor {self.file_pd_ldm}")
-        self._get_nested(data=component, keys=path_keys)
         parent_alias = self._get_nested(data=component, keys=path_keys)
         if not parent_alias:
             logger.error(
@@ -225,7 +226,10 @@ class JoinConditionsTransformer(BaseTransformer):
     def _extract_join_parent_attribute(
         self, component: dict, dict_attributes: dict
     ) -> dict:
-        """Haalt het parent attribute dictionary op voor een join conditie component.
+        """Haalt het parent attribute dictionary op uit een join conditie component.
+
+        Deze functie zoekt het parent attribute op dat wordt gerefereerd in het component en
+        retourneert een kopie van het dictionary uit dict_attributes.
 
         Args:
             component (dict): Het component dat de parent attribute referentie bevat.
@@ -243,3 +247,6 @@ class JoinConditionsTransformer(BaseTransformer):
             ][0]
             id_attr = content[type_entity]["@Ref"]
             return dict_attributes[id_attr].copy()
+        else:
+            logger.error(f"Kan geen attribuut vinden voor '{self.mapping["a:Name"]}' in '{self.file_pd_ldm}'")
+            return {}

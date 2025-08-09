@@ -16,24 +16,32 @@ class BusinessRuleTransform(BaseTransformer):
         self.mapping = mapping
         self.composition = composition
 
-    def transform(self, dict_attributes: dict) -> None:
-        """Schoont en verrijkt data van de scalar condities van 1 van de composities
+    def transform(self, dict_attributes: dict) -> dict:
+        """Transformeert de scalar condities en SQL-expressie in de compositie en verrijkt deze met entiteit en attribuut data.
+
+        Deze functie verwerkt alle scalar condities voor de huidige mapping, vervangt variabelen in de SQL-expressie en werkt de compositie bij met de getransformeerde expressie.
 
         Args:
-            composition (dict): Compositie data
-            dict_attributes (dict): Alle attributen (in- en external)
+            dict_attributes (dict): Alle attributen (intern en extern) die gebruikt worden voor verrijking.
 
         Returns:
-            None
+            dict: De bijgewerkte compositie dictionary met getransformeerde expressie.
         """
-        logger.debug(
-            f"Source conditions transformeren voor compositie  {self.composition['Name']} voor {self.file_pd_ldm}"
-        )
-        lst_conditions = self._extract_scalar_conditions_from_composition()
-        lst_conditions = self.clean_keys(lst_conditions)
+        self._process_all_scalar_conditions(dict_attributes)
+        self._process_sql_expression()
+        return self.composition
 
-        for i in range(len(lst_conditions)):
-            condition = lst_conditions[i]
+    def _process_all_scalar_conditions(self, dict_attributes: dict) -> None:
+        """Verwerkt alle scalar condities en voegt deze toe aan de compositie.
+
+        Deze functie haalt alle scalar condities op, verwerkt ze en voegt ze toe aan de compositie.
+
+        Args:
+            dict_attributes (dict): Alle attributen (intern en extern) die gebruikt worden voor verrijking.
+        """
+        lst_conditions = self._extract_scalar_conditions()
+        lst_conditions = self.clean_keys(lst_conditions)
+        for i, condition in enumerate(lst_conditions):
             condition["Order"] = i
             self._process_scalar_condition(
                 condition=condition, dict_attributes=dict_attributes
@@ -41,33 +49,38 @@ class BusinessRuleTransform(BaseTransformer):
             lst_conditions[i] = condition
         self.composition["ScalarConditions"] = lst_conditions
 
+    def _process_sql_expression(self) -> None:
+        """Vervangt variabelen in de SQL-expressie en werkt de compositie bij met de aangepaste expressie.
+
+        Deze functie haalt de SQL-expressie en variabelen op, vervangt de variabelen met de juiste waarden
+        uit de scalar condities, en slaat het resultaat op in de compositie.
+
+        Returns:
+            None
+        """
+        # Retrieves the SQL expression and its variables from the composition.
         sql_expression = self.composition["Entity"]["SqlExpression"]
-        lst_sql_expression_variables = self.composition["Entity"][
-            "SqlExpressionVariables"
-        ]
-        dict_scalar_conditions = self._build_scalar_conditions_dict(
+        lst_sql_expression_variables = self.composition["Entity"]["SqlExpressionVariables"]
+        dict_scalar_conditions = self._create_scalar_conditions_lookup(
             lst_scalar_conditions=self.composition["ScalarConditions"]
         )
-
         sql_expression = self._replace_sql_expression_variables(
             sql_expression=sql_expression,
             lst_sql_expression_variables=lst_sql_expression_variables,
             dict_scalar_conditions=dict_scalar_conditions,
         )
-
         if sql_expression is not None:
             self.composition["Expression"] = sql_expression
         self.composition.pop("ScalarConditions")
-        return self.composition
 
-    def _extract_scalar_conditions_from_composition(self) -> list:
+    def _extract_scalar_conditions(self) -> list[dict]:
         """Haalt de lijst van scalar condities uit de compositie.
 
         Args:
             composition (dict): De compositie waaruit de scalar condities worden gehaald.
 
         Returns:
-            list: Een lijst met scalar condities uit de compositie.
+            list[dict]: Een lijst met scalar condities uit de compositie.
         """
         lst_conditions = self.composition["c:ExtendedCompositions"]["o:ExtendedComposition"][
             "c:ExtendedComposition.Content"
@@ -76,7 +89,7 @@ class BusinessRuleTransform(BaseTransformer):
             lst_conditions = [lst_conditions]
         return lst_conditions
 
-    def _process_scalar_condition(self, condition: dict, dict_attributes: dict):
+    def _process_scalar_condition(self, condition: dict, dict_attributes: dict) -> None:
         """Verwerkt een enkele scalar conditie binnen een compositie.
 
         Args:
@@ -129,14 +142,16 @@ class BusinessRuleTransform(BaseTransformer):
                     )
         return sql_expression
 
-    def _build_scalar_conditions_dict(self, lst_scalar_conditions: list[dict]) -> dict:
-        """Bouwt een dictionary van scalar condities op basis van hun Id.
+    def _create_scalar_conditions_lookup(self, lst_scalar_conditions: list[dict]) -> dict:
+        """Maakt een lookup dictionary van scalar condities voor snelle toegang tot target en source variabelen.
+
+        Deze functie zet een lijst van scalar condities om naar een dictionary met Id, TargetVariable en SourceVariable per conditie.
 
         Args:
             lst_scalar_conditions (list[dict]): Lijst van scalar conditie dictionaries.
 
         Returns:
-            dict: Dictionary met scalar conditie Id's als sleutel en relevante variabelen als waarde.
+            dict: Dictionary met per conditie de Id, TargetVariable en SourceVariable.
         """
         dict_scalar_conditions = {
             scalar_condition["Id"]: {

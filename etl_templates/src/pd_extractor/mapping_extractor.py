@@ -44,8 +44,8 @@ class MappingExtractor(BaseExtractor):
         Returns:
             list[dict]: Een lijst van getransformeerde mappingdefinities.
         """
-        dict_entities = self._create_entities_dict(models=models)
-        dict_filters = self._create_filters_dict(filters=filters)
+        dict_entities = self._create_entities_lookup(models=models)
+        dict_filters = self._create_filters_lookup(filters=filters)
         dict_scalars = self._create_scalars_dict(scalars=scalars)
         dict_aggregates = self._create_aggregates_dict(aggregates=aggregates)
         dict_objects = dict_entities | dict_filters | dict_scalars | dict_aggregates
@@ -101,54 +101,53 @@ class MappingExtractor(BaseExtractor):
         # Transform source compositions
         dict_attributes_combined = dict_attributes | dict_variables
         trf_source_composition = SourceCompositionTransformer(
-            file_pd_ldm=self.file_pd_ldm,
-            mapping=mapping
+            file_pd_ldm=self.file_pd_ldm, mapping=mapping
         )
         mapping = trf_source_composition.transform(
             dict_attributes=dict_attributes_combined,
             dict_objects=dict_objects,
-            dict_datasources=dict_datasources)
+            dict_datasources=dict_datasources,
+        )
 
         # Transform mapping attributes
         trf_attribute_mapping = MappingAttributesTransformer(
-            file_pd_ldm=self.file_pd_ldm,
-            mapping=mapping
+            file_pd_ldm=self.file_pd_ldm, mapping=mapping
         )
         mapping = trf_attribute_mapping.transform(
             dict_attributes=dict_attributes_combined,
         )
         return mapping
 
-    def _create_entities_dict(self, models: list[dict]) -> dict:
-        """Maakt een dictionary van entiteiten zonder stereotype uit de opgegeven modellen.
+    def _create_entities_lookup(self, models: list[dict]) -> dict:
+        """Maakt een dictionary van entiteiten uit de opgegeven modellen.
 
-        Deze functie doorloopt alle modellen en entiteiten en voegt entiteiten zonder stereotype toe aan de dictionary.
+        Deze functie doorloopt alle modellen en entiteiten en voegt de entiteiten zonder stereotype toe aan de dictionary.
 
         Args:
             models (list[dict]): Lijst van model dictionaries.
 
         Returns:
-            dict: Dictionary met entiteiten zonder stereotype, waarbij de sleutel het interne ID is.
+            dict: Dictionary met entiteiten, waarbij de sleutel het interne ID is.
         """
-
         dict_result = {}
         for model in models:
-            entities = model["Entities"]
+            entities = [
+                entity for entity in model["Entities"] if "Stereotype" not in entity
+            ]
             for entity in entities:
-                if "Stereotype" not in entity:
-                    dict_result[entity["Id"]] = {
-                        "Id": entity["Id"],
-                        "Name": entity["Name"],
-                        "Code": entity["Code"],
-                        "IdModel": model["Id"],
-                        "NameModel": model["Name"],
-                        "CodeModel": model["Code"],
-                        "IsDocumentModel": model["IsDocumentModel"],
-                        "Stereotype": None,
-                    }
+                dict_result[entity["Id"]] = {
+                    "Id": entity["Id"],
+                    "Name": entity["Name"],
+                    "Code": entity["Code"],
+                    "IdModel": model["Id"],
+                    "NameModel": model["Name"],
+                    "CodeModel": model["Code"],
+                    "IsDocumentModel": model["IsDocumentModel"],
+                    "Stereotype": None,
+                }
         return dict_result
 
-    def _create_filters_dict(self, filters: list[dict]) -> dict:
+    def _create_filters_lookup(self, filters: list[dict]) -> dict:
         """Maakt een dictionary van filterobjecten uit de opgegeven lijst van filters.
 
         Deze functie zet elke filter om naar een dictionary met relevante eigenschappen, waarbij het interne ID als sleutel wordt gebruikt.
@@ -159,17 +158,18 @@ class MappingExtractor(BaseExtractor):
         Returns:
             dict: Dictionary met filters, waarbij de sleutel het interne ID is.
         """
+        keys = [
+            "Id",
+            "Name",
+            "Code",
+            "CodeModel",
+            "Variables",
+            "Stereotype",
+            "SqlVariable",
+            "SqlExpression",
+        ]
         dict_result = {
-            filter["Id"]: {
-                "Id": filter["Id"],
-                "Name": filter["Name"],
-                "Code": filter["Code"],
-                "CodeModel": filter["CodeModel"],
-                "Variables": filter["Variables"],
-                "Stereotype": filter["Stereotype"],
-                "SqlVariable": filter["SqlVariable"],
-                "SqlExpression": filter["SqlExpression"],
-            }
+            filter["Id"]: {key: filter[key] for key in keys if key in filter}
             for filter in filters
         }
         return dict_result
@@ -185,18 +185,19 @@ class MappingExtractor(BaseExtractor):
         Returns:
             dict: Dictionary met scalars, waarbij de sleutel het interne ID is.
         """
+        keys = [
+            "Id",
+            "Name",
+            "Code",
+            "CodeModel",
+            "Variables",
+            "Stereotype",
+            "SqlVariable",
+            "SqlExpression",
+            "SqlExpressionVariables",
+        ]
         dict_result = {
-            scalar["Id"]: {
-                "Id": scalar["Id"],
-                "Name": scalar["Name"],
-                "Code": scalar["Code"],
-                "CodeModel": scalar["CodeModel"],
-                "Variables": scalar["Variables"],
-                "Stereotype": scalar["Stereotype"],
-                "SqlVariable": scalar["SqlVariable"],
-                "SqlExpression": scalar["SqlExpression"],
-                "SqlExpressionVariables": scalar["SqlExpressionVariables"],
-            }
+            scalar["Id"]: {key: scalar[key] for key in keys if key in scalar}
             for scalar in scalars
         }
         return dict_result
@@ -212,15 +213,16 @@ class MappingExtractor(BaseExtractor):
         Returns:
             dict: Dictionary met aggregaten, waarbij de sleutel het interne ID is.
         """
+        keys = [
+            "Id",
+            "Name",
+            "Code",
+            "CodeModel",
+            "Attributes",
+            "Stereotype",
+        ]
         dict_result = {
-            aggregate["Id"]: {
-                "Id": aggregate["Id"],
-                "Name": aggregate["Name"],
-                "Code": aggregate["Code"],
-                "CodeModel": aggregate["CodeModel"],
-                "Variables": aggregate["Attributes"],
-                "Stereotype": aggregate["Stereotype"],
-            }
+            aggregate["Id"]: {key: aggregate[key] for key in keys if key in aggregate}
             for aggregate in aggregates
         }
         return dict_result
@@ -273,8 +275,7 @@ class MappingExtractor(BaseExtractor):
         dict_result = {}
         stereotypes = filters + scalars
         for stereotype in stereotypes:
-            variables = stereotype["Variables"]
-            for var in variables:
+            for var in stereotype["Variables"]:
                 dict_result[var["Id"]] = {
                     "Id": var["Id"],
                     "Name": var["Name"],
