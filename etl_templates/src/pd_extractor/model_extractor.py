@@ -1,9 +1,9 @@
 from logtools import get_logger
 
 from .base_extractor import BaseExtractor
-from .model_internal_transform import ModelInternalTransformer
-from .models_external_transform import ModelsExternalTransformer
-from .model_relationships_transform import RelationshipsTransformer
+from .model_transformers.model_internal import ModelInternalTransformer
+from .model_transformers.model_relationships import RelationshipsTransformer
+from .model_transformers.models_external import ModelsExternalTransformer
 
 logger = get_logger(__name__)
 
