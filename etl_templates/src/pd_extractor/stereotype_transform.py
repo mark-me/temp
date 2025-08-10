@@ -248,22 +248,17 @@ class StereotypeTransformer(BaseTransformer):
         Returns:
             list[str]: de individuele variabelen die samen de sql-expressie vormen
         """
-        lst_expression_variables = []
-        # Count the number of placeholder variables in the SqlExpression
-        number_of_variables = sql_expression.count("@")
-        j = 0
-        k = number_of_variables
+        expression_variables = []
+        k = sql_expression.count("@") # Count the number of placeholder variables in the SqlExpression
         expression_variable = None
-        # Start loop to split the SqlExpression further
-        while j < k:
+        for _ in range(k):
             idx_start = sql_expression.find("@", 1)
             # Look for the first non word character after idx_start to not find the @ from the variable
             find_non_alpha = re.search("[\W]", sql_expression[idx_start + 1 :])
             # Idx_end is the start_position plus the position of the first alphanumeric character
             idx_end = idx_start + find_non_alpha.start()
             expression_variable = sql_expression[idx_start : idx_end + 1]
-            lst_expression_variables = (*lst_expression_variables, expression_variable)
+            expression_variables = (*expression_variables, expression_variable)
             # remove the variable from the sql_expression string
             sql_expression = sql_expression[idx_end + 1 :]
-            j += 1
-        return lst_expression_variables
+        return expression_variables
