@@ -28,19 +28,19 @@ class MappingAttributesTransformer(BaseTransformer):
             dict: Mapping met geschoonde en verrijkte attribuut mapping
         """
         key_path = ["c:StructuralFeatureMaps", "o:DefaultStructuralFeatureMapping"]
-        if lst_attr_maps := self._get_nested(data=self.mapping, keys=key_path):
-            lst_attr_maps = (
-                [lst_attr_maps] if isinstance(lst_attr_maps, dict) else lst_attr_maps
+        if attr_maps := self._get_nested(data=self.mapping, keys=key_path):
+            attr_maps = (
+                [attr_maps] if isinstance(attr_maps, dict) else attr_maps
             )
-            lst_attr_maps = self.clean_keys(lst_attr_maps)
-            for j in range(len(lst_attr_maps)):
-                attr_map = lst_attr_maps[j].copy()
+            attr_maps = self.clean_keys(attr_maps)
+            for j in range(len(attr_maps)):
+                attr_map = attr_maps[j].copy()
                 attr_map["Order"] = j
                 self._process_attribute_map(
                     attr_map=attr_map, dict_attributes=dict_attributes
                 )
-                lst_attr_maps[j] = attr_map
-            self.mapping["AttributeMapping"] = lst_attr_maps
+                attr_maps[j] = attr_map
+            self.mapping["AttributeMapping"] = attr_maps
             self.mapping.pop("c:StructuralFeatureMaps", None)
         else:
             logger.error(
@@ -142,10 +142,10 @@ class MappingAttributesTransformer(BaseTransformer):
         Returns:
             dict: mapping met de zojuist toegevoegde expressie
         """
-        if lst_mapping := self._get_nested(
+        if mappings := self._get_nested(
             data=self.mapping, keys=["AttributeMapping"]
         ):
-            for map in lst_mapping:
+            for map in mappings:
                 if alias_id := self._get_nested(data=map, keys=["EntityAlias"]):
                     lst_scalarexpression = self.mapping.get("SourceComposition", [])
                     # Lookup the alias_id in composition. For the attributemapping we'll replace the entityalias with the expression we've created in the sourcecomposition
