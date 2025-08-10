@@ -15,7 +15,7 @@ class ModelsExternalTransformer(BaseTransformer):
         """Doelmodellen bevatten verwijzingen naar entiteiten uit een ander model. Het doelmodel wordt verrijkt met deze entiteiten
 
         Args:
-            lst_models (list[dict]): Data van de doelmodellen
+            models (list[dict]): Data van de doelmodellen
             dict_entities (dict): Bevat alle externe entiteiten
 
         Returns:
@@ -51,7 +51,7 @@ class ModelsExternalTransformer(BaseTransformer):
         transformeert de attribuutdata en retourneert een geschoonde lijst van entiteiten.
 
         Args:
-            lst_entities (list[dict] | dict): Externe entiteiten of een enkele entiteit.
+            entities (list[dict] | dict): Externe entiteiten of een enkele entiteit.
 
         Returns:
             list[dict]: Geschoonde en getransformeerde entiteiten.
@@ -67,22 +67,21 @@ class ModelsExternalTransformer(BaseTransformer):
             entity.pop("c:SubShortcuts")
         return entities
 
-    def _entity_attribute(self, entity: list[dict] | dict) -> dict:
+    def _entity_attribute(self, entity: dict) -> dict:
         """Vormt om en schoont attributen van een entiteit
 
         Args:
-            entity (list[dict] | dict): Power Designer content dat een entiteit vertegenwoordigd
+            entity (dict): Power Designer content dat een entiteit vertegenwoordigd
 
         Returns:
             dict: Entiteit data met omgevormde en geschoonde attribuut data
         """
-        lst_attributes = entity["c:SubShortcuts"]["o:Shortcut"]
-        if isinstance(lst_attributes, dict):
-            lst_attributes = [lst_attributes]
-        for i, attr in enumerate(lst_attributes):
+        attributes = entity["c:SubShortcuts"]["o:Shortcut"]
+        attributes = [attributes] if isinstance(attributes, dict) else attributes
+        for i, attr in enumerate(attributes):
             if "c:FullShortcutReplica" in attr:
                 attr.pop("c:FullShortcutReplica")
             attr["Order"] = i
-        lst_attributes = self.clean_keys(lst_attributes)
-        entity["Attributes"] = lst_attributes
+        attributes = self.clean_keys(attributes)
+        entity["Attributes"] = attributes
         return entity

@@ -36,9 +36,6 @@ class SourceConditionTransform(BaseTransformer):
     def _extract_source_conditions(self) -> list[dict]:
         """Haalt de lijst van source condities uit de compositie.
 
-        Args:
-            composition (dict): De compositie waaruit de source condities worden gehaald.
-
         Returns:
             list[dict]: Een lijst met source condities uit de compositie.
         """
@@ -59,7 +56,6 @@ class SourceConditionTransform(BaseTransformer):
         """Verwerkt een enkele source conditie binnen een compositie.
 
         Args:
-            condition (dict): De conditie die verwerkt wordt.
             index (int): De volgorde van de conditie in de lijst.
             dict_attributes (dict): Alle attributen (in- en external).
             composition (dict): De compositie waartoe de conditie behoort.
@@ -148,7 +144,7 @@ class SourceConditionTransform(BaseTransformer):
         source attribute(s) moeten worden toegevoegd aan de conditie.
 
         Args:
-            lst_components (list[dict]): Lijst van componenten van de source conditie.
+            components (list[dict]): Lijst van componenten van de source conditie.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
             parent_literal (str): De parent literal waarde.
 
@@ -179,7 +175,7 @@ class SourceConditionTransform(BaseTransformer):
         """Haalt het parent attribute dictionary en alias op uit de source conditie componenten.
 
         Args:
-            lst_components (list): Lijst van componenten.
+            components (list): Lijst van componenten.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:
@@ -205,16 +201,14 @@ class SourceConditionTransform(BaseTransformer):
         """Haalt het child attribute dictionary op uit de source conditie componenten.
 
         Args:
-            lst_components (list[dict]): Lijst van componenten.
+            components (list[dict]): Lijst van componenten.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:
             dict: Een kopie van het child attribute dictionary, of leeg dict als niet gevonden.
         """
         components = self.clean_keys(components)
-        components = [
-            x for x in components if x["Name"] == "mdde_ChildAttribute"
-        ]
+        components = [x for x in components if x["Name"] == "mdde_ChildAttribute"]
         for component in components:
             type_entity = self.determine_reference_type(data=component["c:Content"])
             id_attr = component["c:Content"][type_entity]["@Ref"]

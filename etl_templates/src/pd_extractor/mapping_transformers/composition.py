@@ -26,9 +26,9 @@ class SourceCompositionTransformer(BaseTransformer):
         Deze functie verwerkt de mapping, haalt compositie-items op, verrijkt deze, filtert specifieke items en voegt de resultaten toe aan de mapping.
 
         Args:
-            dict_objects (dict): Alle objecten (entiteiten, filters, scalars, aggregaten).
-            dict_attributes (dict): Alle attributen.
-            dict_datasources (dict): Alle datasources.
+            dict_objects (dict): Lookup voor alle objecten (entiteiten, filters, scalars, aggregaten).
+            dict_attributes (dict): Lookup voor alle attributen.
+            dict_datasources (dict): Lookup voor alle datasources.
 
         Returns:
             dict: De getransformeerde mapping met verrijkte source composition data.
@@ -45,7 +45,16 @@ class SourceCompositionTransformer(BaseTransformer):
         return self.mapping
 
     def _extract_composition(self, mapping: dict) -> list[dict]:
-        """Haalt de lijst van composities op uit de mapping."""
+        """Haalt de compositie uit de mapping en verwijdert MDDE voorbeeld composities.
+
+        Deze functie zoekt de compositie op in de mapping, schoont deze en filtert voorbeeld composities eruit.
+
+        Args:
+            mapping (dict): De mapping waaruit de compositie gehaald wordt.
+
+        Returns:
+            list[dict]: De geschoonde compositie zonder MDDE voorbeeld composities.
+        """
         path_keys = ["c:ExtendedCompositions", "o:ExtendedComposition"]
         composition = self._get_nested(data=mapping, keys=path_keys)
         composition = self.clean_keys(composition)
@@ -120,7 +129,7 @@ class SourceCompositionTransformer(BaseTransformer):
         """Verwijderd de MDDE voorbeeld compositie veronderstelt dat er 1 compositie overblijft
 
         Args:
-            lst_compositions (list[dict]): Composities, inclusief MDDE voorbeeld composities
+            compositions (list[dict]): Composities, inclusief MDDE voorbeeld composities
 
         Returns:
             dict: Composities zonder de MDDE extensie voorbeelden

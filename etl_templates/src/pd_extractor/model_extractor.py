@@ -156,7 +156,7 @@ class ModelExtractor(BaseExtractor):
         of None als er geen relaties zijn gevonden.
 
         Args:
-            lst_entity (list[dict]): Lijst van entiteiten waarvoor relaties gezocht worden.
+            entities (list[dict]): Lijst van entiteiten waarvoor relaties gezocht worden.
 
         Returns:
             list[dict] | None: Lijst van relaties of None als er geen relaties zijn gevonden.

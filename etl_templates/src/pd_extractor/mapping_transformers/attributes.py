@@ -50,6 +50,14 @@ class MappingAttributesTransformer(BaseTransformer):
         return self.mapping
 
     def _process_attribute_map(self, attr_map: dict, dict_attributes: dict) -> None:
+        """Verwerkt een enkele attribuut mapping en verrijkt deze met target en source attributen.
+
+        Deze functie zoekt het target attribuut op, koppelt het aan de mapping en verwerkt de bronattributen.
+
+        Args:
+            attr_map (dict): De attribuut mapping die verwerkt wordt.
+            dict_attributes (dict): Alle attributen van het Power Designer LDM.
+        """
         logger.debug(
             f"Start attributemapping voor  {attr_map['Id']} van {self.file_pd_ldm} "
         )

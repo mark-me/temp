@@ -18,7 +18,7 @@ class StereotypeTransformer(BaseTransformer):
 
         Args:
             lst_objects (list): List van stereotype objecten
-            dict_domains (dict): Domain data
+            stereo_types (dict): Domain data
 
         Returns:
             list: Geschoonde en verrijkte stereotype objecten
@@ -37,7 +37,7 @@ class StereotypeTransformer(BaseTransformer):
         """Verwerkt de SQL expressie van een stereotype object en verrijkt het object met variabelen.
 
         Args:
-            objects (dict): Het stereotype object dat verrijkt wordt.
+            stereo_type (dict): Het stereotype object dat verrijkt wordt.
         """
         if "ExtendedAttributesText" in stereo_type:
             sql_expression = self.extract_value_from_attribute_text(
@@ -55,7 +55,7 @@ class StereotypeTransformer(BaseTransformer):
         """Splitst de SQL expressie op basis van het stereotype.
 
         Args:
-            objects (dict): Het stereotype object.
+            stereo_type (dict): Het stereotype object.
             sql_expression (str): De SQL expressie.
 
         Returns:
@@ -89,7 +89,7 @@ class StereotypeTransformer(BaseTransformer):
         """Wijs de juiste velden toe aan het stereotype object op basis van de gesplitste SQL expressie.
 
         Args:
-            objects (dict): Het stereotype object.
+            stereo_type (dict): Het stereotype object.
             sql_expression_split (list): De gesplitste SQL expressie.
         """
         stereo_type["SqlVariable"] = sql_expression_split[0].strip()
@@ -106,7 +106,7 @@ class StereotypeTransformer(BaseTransformer):
         """Schoont de variabelen van een object en verrijkt deze met domain data
 
         Args:
-            object (dict): Stereotype object
+            stereo_type (dict): Stereotype object
             dict_domains (dict): Domain data
 
         Returns:
@@ -126,7 +126,7 @@ class StereotypeTransformer(BaseTransformer):
         """Extraheert en schoont de variabelen van een object.
 
         Args:
-            object (dict): Stereotype object
+            stereo_type (dict): Stereotype object
 
         Returns:
             list[dict]: Geschoonde variabelen
@@ -143,7 +143,7 @@ class StereotypeTransformer(BaseTransformer):
         """Verrijkt de variabelen met domain data.
 
         Args:
-            lst_variables (list[dict]): Geschoonde variabelen
+            variables (list[dict]): Geschoonde variabelen
             dict_domains (dict): Domain data
 
         Returns:
@@ -165,7 +165,7 @@ class StereotypeTransformer(BaseTransformer):
     def _object_identifiers(self, stereo_type: dict) -> dict:
         """Schoon de identifier(s) (sleutels) van een stereotype object
         Args:
-            object (dict): Stereotype object
+            stereo_type (dict): Stereotype object
 
         Returns:
             dict: Stereotype object met geschoonde identifier(s)
@@ -186,7 +186,16 @@ class StereotypeTransformer(BaseTransformer):
 
 
     def _check_primary_identifier(self, stereo_type: dict) -> tuple[bool, str | None]:
-        """Controleert of er een primaire identifier aanwezig is en retourneert de status en het id."""
+        """Controleert of een object een primaire identifier heeft en retourneert deze indien aanwezig.
+
+        Deze functie bepaalt of het stereotype object een primaire identifier bevat en geeft de Id van deze identifier terug.
+
+        Args:
+            stereo_type (dict): Stereotype object
+
+        Returns:
+            tuple[bool, str | None]: Een tuple met een boolean die aangeeft of er een primaire identifier is en de Id van de primaire identifier (of None).
+        """
         has_primary = "c:PrimaryIdentifier" in stereo_type
         primary_id = None
         if has_primary:
@@ -194,7 +203,16 @@ class StereotypeTransformer(BaseTransformer):
         return has_primary, primary_id
 
     def _extract_identifiers(self, stereo_type: dict) -> list | None:
-        """Extraheert de identifiers uit het object."""
+        """Extraheert de identifiers van een stereotype object.
+
+        Deze functie zoekt naar identifiers in het stereotype object en retourneert deze als een lijst.
+
+        Args:
+            stereo_type (dict): Stereotype object
+
+        Returns:
+            list | None: Lijst van identifiers of None als er geen identifiers zijn gevonden.
+        """
         path_keys = ["c:Identifiers", "o:Identifier"]
         if identifiers := self._get_nested(data=stereo_type, keys=path_keys):
             if isinstance(identifiers, dict):
@@ -216,7 +234,7 @@ class StereotypeTransformer(BaseTransformer):
 
         Args:
             identifiers (list[dict]): Lijst van identifier dictionaries.
-            dict_object (dict): Het stereotype object waartoe de identifiers behoren.
+            stereo_type (dict): Het stereotype object waartoe de identifiers behoren.
             dict_vars (dict): Dictionary met variabelen op basis van hun Id.
             has_primary (bool): Of er een primaire identifier aanwezig is.
             primary_id (str | None): De Id van de primaire identifier, indien aanwezig.
@@ -242,7 +260,6 @@ class StereotypeTransformer(BaseTransformer):
     def _extract_expression_variables(self, sql_expression: str) -> list[str]:
         """Split de sql expressie van een scalar in 1 of meerdere variabelen
         Args:
-            object (dict): Stereotype object
             sql_expression (string): volledige sql-expressie van de scalar
 
         Returns:

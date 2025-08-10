@@ -66,7 +66,6 @@ class JoinConditionsTransformer(BaseTransformer):
         Args:
             condition (dict): De conditie die verwerkt wordt.
             index (int): De volgorde van de conditie in de lijst.
-            composition (dict): De compositie waartoe de conditie behoort.
             dict_attributes (dict): Alle attributen (in- en external).
         """
         condition["Order"] = index
@@ -104,7 +103,6 @@ class JoinConditionsTransformer(BaseTransformer):
 
         Args:
             condition (dict): De conditie waarvoor de componenten worden ingesteld.
-            composition (dict): De compositie waartoe de conditie behoort.
             dict_attributes (dict): Alle attributen (in- en external).
         """
         lst_components = self._get_nested(
@@ -133,7 +131,7 @@ class JoinConditionsTransformer(BaseTransformer):
         """Vormt om, schoont en verrijkt component data van 1 join conditie
 
         Args:
-            lst_components (list): Join conditie componenten
+            components (list): Join conditie componenten
             dict_attributes (dict): Alle attributes (in- en external)
             alias_child (str): De door Power Designer gegenereerde id voor het component (JOIN) van de compositie
 
@@ -160,7 +158,7 @@ class JoinConditionsTransformer(BaseTransformer):
         parent attribute dictionaries, evenals de parent alias indien aanwezig.
 
         Args:
-            lst_components (list): De lijst van join conditie componenten.
+            components (list): De lijst van join conditie componenten.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:

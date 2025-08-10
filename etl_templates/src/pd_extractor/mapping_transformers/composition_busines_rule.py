@@ -11,6 +11,15 @@ class BusinessRuleTransform(BaseTransformer):
     """Vormt mapping data om en verrijkt dit met entiteit en attribuut data"""
 
     def __init__(self, file_pd_ldm: str, mapping: dict, composition: dict):
+        """Initialiseert de BusinessRuleTransform met het opgegeven LDM-bestand, mapping en compositie.
+
+        Deze constructor slaat het pad naar het LDM-bestand, de mapping en de compositie op als attributen van de instantie.
+
+        Args:
+            file_pd_ldm (str): Pad naar het Power Designer LDM-bestand.
+            mapping (dict): Mapping dictionary met business rules.
+            composition (dict): Compositie dictionary die getransformeerd wordt.
+        """
         super().__init__(file_pd_ldm)
         self.file_pd_ldm = file_pd_ldm
         self.mapping = mapping
@@ -69,7 +78,7 @@ class BusinessRuleTransform(BaseTransformer):
         )
         sql_expression = self._replace_sql_expression_variables(
             sql_expression=sql_expression,
-            lst_sql_expression_variables=lst_sql_expression_variables,
+            sql_expression_variables=lst_sql_expression_variables,
             dict_scalar_conditions=dict_scalar_conditions,
         )
         if sql_expression is not None:
@@ -105,7 +114,7 @@ class BusinessRuleTransform(BaseTransformer):
         verrijkt deze met attributen en voegt het resultaat toe aan de conditie.
 
         Args:
-            condition (dict): De business rule die verwerkt moet worden.
+            business_rule (dict): De business rule die verwerkt moet worden.
             dict_attributes (dict): Alle attributen (intern en extern) die gebruikt worden voor verrijking.
         """
         components = self._get_nested(
@@ -120,7 +129,7 @@ class BusinessRuleTransform(BaseTransformer):
     def _replace_sql_expression_variables(
         self,
         sql_expression: str,
-        lst_sql_expression_variables: tuple,
+        sql_expression_variables: tuple,
         dict_scalar_conditions: dict,
     ) -> str:
         """
@@ -131,7 +140,7 @@ class BusinessRuleTransform(BaseTransformer):
 
         Args:
             sql_expression (str): De SQL-expressie waarin variabelen vervangen moeten worden.
-            lst_sql_expression_variables (tuple): Tuple van variabelen die in de expressie voorkomen.
+            sql_expression_variables (tuple): Tuple van variabelen die in de expressie voorkomen.
             dict_scalar_conditions (dict): Dictionary met target en source variabelen per conditie.
 
         Returns:
@@ -142,7 +151,7 @@ class BusinessRuleTransform(BaseTransformer):
                 "TargetVariable"
             ].upper()
             found_match = False
-            for variable in lst_sql_expression_variables:
+            for variable in sql_expression_variables:
                 variable_compare = variable[1:]
                 if target_variable == variable_compare:
                     source_variable = dict_scalar_conditions[condition][
@@ -191,7 +200,7 @@ class BusinessRuleTransform(BaseTransformer):
         Deze functie haalt het child en parent attribute op uit de componenten en bouwt een dictionary met de relevante attributen.
 
         Args:
-            lst_components (list[dict]): Lijst van componenten van de business rule.
+            components (list[dict]): Lijst van componenten van de business rule.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:
@@ -240,7 +249,7 @@ class BusinessRuleTransform(BaseTransformer):
         Deze functie doorzoekt de lijst van componenten naar het child attribute en retourneert het bijbehorende dictionary.
 
         Args:
-            lst_components (list[dict]): Lijst van componenten waarin gezocht wordt.
+            components (list[dict]): Lijst van componenten waarin gezocht wordt.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:
@@ -264,7 +273,7 @@ class BusinessRuleTransform(BaseTransformer):
         """Haalt het parent attribute dictionary en alias op uit de business rule componenten.
 
         Args:
-            lst_components (list[dict]): Lijst van componenten.
+            components (list[dict]): Lijst van componenten.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:

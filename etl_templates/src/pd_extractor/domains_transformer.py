@@ -17,7 +17,7 @@ class DomainsTransformer(BaseTransformer):
         Deze functie converteert timestamps, maakt de domein data schoon en retourneert een dictionary met domeinen.
 
         Args:
-            lst_domains (list[dict]): Lijst van domeinen uit het Power Designer model.
+            domains (list[dict]): Lijst van domeinen uit het Power Designer model.
 
         Returns:
             dict: Dictionary met domeinen, waarbij de sleutel het domein-ID is.

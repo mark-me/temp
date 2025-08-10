@@ -49,7 +49,7 @@ class ModelInternalTransformer(BaseTransformer):
         """Datasource gerelateerde data
 
         Args:
-            lst_datasources (list): Datasource data
+            datasources (list): Datasource data
 
         Returns:
             dict: Geschoonde datasource data (Id, naam en code) te gebruiken in model en mapping
@@ -70,8 +70,8 @@ class ModelInternalTransformer(BaseTransformer):
         """Omvormen van data van interne entiteiten en verrijkt de attributen met domain data
 
         Args:
-            lst_entities (list): Het deel van het PowerDesigner document dat entiteiten beschrijft
-            dict_domains (dict): Alle domains (oftewel datatypes gebruikt voor attributen)
+            entities (list): Het deel van het PowerDesigner document dat entiteiten beschrijft
+            dict_domains (dict): Lookup voor alle domains (oftewel datatypes gebruikt voor attributen)
 
         Returns:
             list: Alle entities
@@ -101,7 +101,7 @@ class ModelInternalTransformer(BaseTransformer):
 
         Args:
             entity (dict): Interne entiteiten inclusief aggregaten
-            dict_domains (list): Alle domains
+            dict_domains (list): Lookup voor alle domains
 
         Returns:
             dict: Entiteit met geschoonde attribuut data
@@ -142,7 +142,7 @@ class ModelInternalTransformer(BaseTransformer):
 
         Args:
             attr (dict): Het attribuut dat verrijkt moet worden.
-            dict_domains (dict): Dictionary met alle domeinen.
+            dict_domains (dict): Lookup voor alle domains.
 
         Returns:
             dict: Het verrijkte attribuut.
@@ -173,7 +173,7 @@ class ModelInternalTransformer(BaseTransformer):
 
         Args:
             entity (dict): Entiteit die verwerkt moet worden.
-            dict_attrs (dict): Alle entiteit attributen.
+            dict_attrs (dict): Lookup voor alle entiteit attributen.
 
         Returns:
             dict: Entiteit met geschoonde en gestructureerde identifier (sleutel) informatie.
