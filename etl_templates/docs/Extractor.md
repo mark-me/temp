@@ -206,22 +206,112 @@ erDiagram
 
 ```mermaid
 classDiagram
-    PDDocument *-- DomainsExtractor
-    PDDocument *-- StereotypeExtractor
+    class PDDocument {
+        +__init__(file_pd_ldm)
+        +extract_to_json(file_output)
+    }
+
+    class ModelExtractor {
+        +__init__(pd_content, file_pd_ldm)
+        +get_models(dict_domains)
+    }
+
+    class MappingExtractor {
+        +__init__(pd_content, file_pd_ldm)
+        +get_mappings(models, filters, scalars, aggregates)
+    }
+
+    class DomainsExtractor {
+        +__init__(pd_content, file_pd_ldm)
+        +get_domains()
+    }
+
+    class StereotypeExtractor {
+        +__init__(pd_content, file_pd_ldm)
+        +get_scalars(dict_domains)
+        +get_aggregates(dict_domains)
+        +get_filters(dict_domains)
+    }
+
+    class MappingAttributesTransformer {
+        +__init__(file_pd_ldm, mapping)
+        +transform(dict_attributes)
+    }
+
+    class SourceCompositionTransformer {
+        +__init__(file_pd_ldm, mapping)
+        +transform(dict_objects, dict_attributes, dict_datasources)
+    }
+
+    class TargetEntityTransformer {
+        +__init__(file_pd_ldm, mapping)
+        +transform(dict_objects)
+    }
+
+    class ModelInternalTransformer {
+        +__init__(file_pd_ldm)
+        +transform(content)
+        +transform_entities(entities, dict_domains)
+        +transform_datasources(datasources)
+    }
+
+    class RelationshipsTransformer {
+        +__init__(file_pd_ldm, entities)
+        +transform(relationships)
+    }
+
+    class ModelsExternalTransformer {
+        +__init__(file_pd_ldm)
+        +transform(models, dict_entities)
+        +transform_entities(entities)
+    }
+
+    class DomainsTransformer {
+        +__init__(file_pd_ldm)
+        +transform(domains)
+    }
+
+    class StereotypeTransformer {
+        +__init__(file_pd_ldm)
+        +transform(stereotypes, dict_domains)
+        +domains(lst_domains)
+    }
+
+    class JoinConditionsTransformer {
+        +__init__(file_pd_ldm, mapping, composition)
+        +transform(dict_attributes)
+    }
+
+    class SourceConditionTransform {
+        +__init__(file_pd_ldm, mapping, composition)
+        +transform(dict_attributes)
+    }
+
+    class BusinessRuleTransform {
+        +__init__(file_pd_ldm, mapping, composition)
+        +transform(dict_attributes)
+    }
+
     PDDocument *-- ModelExtractor
     PDDocument *-- MappingExtractor
+    PDDocument *-- DomainsExtractor
+    PDDocument *-- StereotypeExtractor
+
+    ModelExtractor *-- ModelInternalTransformer
+    ModelExtractor *-- ModelsExternalTransformer
+    ModelExtractor *-- RelationshipsTransformer
+
+    MappingExtractor *-- SourceCompositionTransformer
+    MappingExtractor *-- TargetEntityTransformer
+    MappingExtractor *-- MappingAttributesTransformer
 
     DomainsExtractor *-- DomainsTransformer
 
     StereotypeExtractor *-- StereotypeTransformer
 
-    MappingExtractor *-- TargetEntityTransformer
-    MappingExtractor *-- MappingAttributesTransformer
-    MappingExtractor *-- SourceCompositionTransformer
-
-    ModelExtractor *-- ModelInternalTransformer
-    ModelExtractor *-- ModelsExternalTransformer
-    ModelExtractor *-- RelationshipsTransformer
+    SourceCompositionTransformer *-- JoinConditionsTransformer
+    SourceCompositionTransformer *-- SourceConditionTransform
+    SourceCompositionTransformer *-- BusinessRuleTransform
 ```
 
 De bovenstaande klassediagram laat de onderliggende overerving van de basisklassen `BaseExtractor` en `BaseTransformer` niet zien.
