@@ -116,7 +116,7 @@ class SourceCompositionTransformer(BaseTransformer):
         self.mapping["SourceComposition"] = composition_items
         return composition_items
 
-    def _compositions_remove_mdde_examples(self, lst_compositions: list[dict]) -> dict:
+    def _compositions_remove_mdde_examples(self, compositions: list[dict]) -> dict:
         """Verwijderd de MDDE voorbeeld compositie veronderstelt dat er 1 compositie overblijft
 
         Args:
@@ -127,7 +127,7 @@ class SourceCompositionTransformer(BaseTransformer):
         """
         composition = {}
         compositions_new = []
-        for item in lst_compositions:
+        for item in compositions:
             if "ExtendedBaseCollection.CollectionName" in item:
                 if (
                     item["ExtendedBaseCollection.CollectionName"]
