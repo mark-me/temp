@@ -141,14 +141,18 @@ class SourceConditionTransform(BaseTransformer):
     def _transform_components(
         self, lst_components: list[dict], dict_attributes: dict, parent_literal: str
     ) -> dict:
-        """Vormt om, schoont en verrijkt component data van 1 source conditie
+        """Transformeert componenten van een source conditie naar een dictionary met attributen.
+
+        Deze functie bepaalt op basis van de componenten, attributen en parent literal welke
+        source attribute(s) moeten worden toegevoegd aan de conditie.
 
         Args:
-            lst_components (list[dict]): source conditie component
-            dict_attributes (dict): Alle attributen (in- en external)
+            lst_components (list[dict]): Lijst van componenten van de source conditie.
+            dict_attributes (dict): Dictionary met alle beschikbare attributen.
+            parent_literal (str): De parent literal waarde.
 
         Returns:
-            dict: Geschoonde, omgevormde en verrijkte source conditie component data
+            dict: Een dictionary met de getransformeerde source attribute(s).
         """
         dict_source_condition_attribute = {}
         dict_parent, alias_parent = self._get_source_parent_attribute_and_alias(
