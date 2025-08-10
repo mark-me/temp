@@ -17,9 +17,10 @@ class BusinessRuleTransform(BaseTransformer):
         self.composition = composition
 
     def transform(self, dict_attributes: dict) -> dict:
-        """Transformeert de scalar condities en SQL-expressie in de compositie en verrijkt deze met entiteit en attribuut data.
+        """Transformeert de s en SQL-expressie in de compositie en verrijkt deze met entiteit en attribuut data.
 
-        Deze functie verwerkt alle scalar condities voor de huidige mapping, vervangt variabelen in de SQL-expressie en werkt de compositie bij met de getransformeerde expressie.
+        Deze functie verwerkt alle business rules voor de huidige mapping,
+        vervangt variabelen in de SQL-expressie en werkt de compositie bij met de getransformeerde expressie.
 
         Args:
             dict_attributes (dict): Alle attributen (intern en extern) die gebruikt worden voor verrijking.
@@ -27,27 +28,27 @@ class BusinessRuleTransform(BaseTransformer):
         Returns:
             dict: De bijgewerkte compositie dictionary met getransformeerde expressie.
         """
-        self._process_all_scalar_conditions(dict_attributes)
+        self._process_all_business_rules(dict_attributes)
         self._process_sql_expression()
         return self.composition
 
-    def _process_all_scalar_conditions(self, dict_attributes: dict) -> None:
-        """Verwerkt alle scalar condities en voegt deze toe aan de compositie.
+    def _process_all_business_rules(self, dict_attributes: dict) -> None:
+        """Verwerkt alle business rules in de compositie en verrijkt deze met component data.
 
-        Deze functie haalt alle scalar condities op, verwerkt ze en voegt ze toe aan de compositie.
+        Deze functie haalt alle business rules op, verrijkt ze met attributen en voegt ze toe aan de compositie.
 
         Args:
             dict_attributes (dict): Alle attributen (intern en extern) die gebruikt worden voor verrijking.
         """
-        lst_conditions = self._extract_scalar_conditions()
-        lst_conditions = self.clean_keys(lst_conditions)
-        for i, condition in enumerate(lst_conditions):
-            condition["Order"] = i
-            self._process_scalar_condition(
-                condition=condition, dict_attributes=dict_attributes
+        business_rules = self._extract_business_rules()
+        business_rules = self.clean_keys(business_rules)
+        for i, business_rule in enumerate(business_rules):
+            business_rule["Order"] = i
+            self._process_business_rule(
+                business_rule=business_rule, dict_attributes=dict_attributes
             )
-            lst_conditions[i] = condition
-        self.composition["ScalarConditions"] = lst_conditions
+            business_rules[i] = business_rule
+        self.composition["ScalarConditions"] = business_rules
 
     def _process_sql_expression(self) -> None:
         """Vervangt variabelen in de SQL-expressie en werkt de compositie bij met de aangepaste expressie.
@@ -63,8 +64,8 @@ class BusinessRuleTransform(BaseTransformer):
         lst_sql_expression_variables = self.composition["Entity"][
             "SqlExpressionVariables"
         ]
-        dict_scalar_conditions = self._create_scalar_conditions_lookup(
-            lst_scalar_conditions=self.composition["ScalarConditions"]
+        dict_scalar_conditions = self._create_business_rules_lookup(
+            business_rules=self.composition["ScalarConditions"]
         )
         sql_expression = self._replace_sql_expression_variables(
             sql_expression=sql_expression,
@@ -75,36 +76,46 @@ class BusinessRuleTransform(BaseTransformer):
             self.composition["Expression"] = sql_expression
         self.composition.pop("ScalarConditions")
 
-    def _extract_scalar_conditions(self) -> list[dict]:
-        """Haalt de lijst van scalar condities uit de compositie.
+    def _extract_business_rules(self) -> list[dict]:
+        """Haalt alle business rules (scalar condities) uit de compositie.
 
-        Args:
-            composition (dict): De compositie waaruit de scalar condities worden gehaald.
+        Deze functie zoekt in de compositie naar de business rules en retourneert deze als een lijst van dictionaries.
 
         Returns:
-            list[dict]: Een lijst met scalar condities uit de compositie.
+            list[dict]: Lijst van business rules (scalar condities) uit de compositie.
         """
-        lst_conditions = self.composition["c:ExtendedCompositions"][
-            "o:ExtendedComposition"
-        ]["c:ExtendedComposition.Content"]["o:ExtendedSubObject"]
-        if isinstance(lst_conditions, dict):
-            lst_conditions = [lst_conditions]
-        return lst_conditions
+        path_keys = [
+            "c:ExtendedCompositions",
+            "o:ExtendedComposition",
+            "c:ExtendedComposition.Content",
+            "o:ExtendedSubObject",
+        ]
+        business_rules = self._get_nested(data=self.composition, keys=path_keys)
+        business_rules = (
+            [business_rules] if isinstance(business_rules, dict) else business_rules
+        )
+        return business_rules
 
-    def _process_scalar_condition(self, condition: dict, dict_attributes: dict) -> None:
-        """Verwerkt een enkele scalar conditie binnen een compositie.
+    def _process_business_rule(
+        self, business_rule: dict, dict_attributes: dict
+    ) -> None:
+        """Verwerkt één business rule en verrijkt deze met component data.
+
+        Deze functie haalt de componenten van de business rule op,
+        verrijkt deze met attributen en voegt het resultaat toe aan de conditie.
 
         Args:
-            condition (dict): De conditie die verwerkt wordt.
-            dict_attributes (dict): Alle attributen (in- en external).
+            condition (dict): De business rule die verwerkt moet worden.
+            dict_attributes (dict): Alle attributen (intern en extern) die gebruikt worden voor verrijking.
         """
-        lst_components = condition["c:ExtendedCollections"]["o:ExtendedCollection"]
-        if isinstance(lst_components, dict):
-            lst_components = [lst_components]
-        condition["ScalarConditionVariable"] = self._scalar_condition_components(
-            lst_components=lst_components, dict_attributes=dict_attributes
+        components = self._get_nested(
+            data=business_rule, keys=["c:ExtendedCollections", "o:ExtendedCollection"]
         )
-        condition.pop("c:ExtendedCollections")
+        components = [components] if isinstance(components, dict) else components
+        business_rule["ScalarConditionVariable"] = self._business_rule_components(
+            components=components, dict_attributes=dict_attributes
+        )
+        business_rule.pop("c:ExtendedCollections")
 
     def _replace_sql_expression_variables(
         self,
@@ -147,66 +158,68 @@ class BusinessRuleTransform(BaseTransformer):
                 )
         return sql_expression
 
-    def _create_scalar_conditions_lookup(
-        self, lst_scalar_conditions: list[dict]
-    ) -> dict:
-        """Maakt een lookup dictionary van scalar condities voor snelle toegang tot target en source variabelen.
+    def _create_business_rules_lookup(self, business_rules: list[dict]) -> dict:
+        """Maakt een lookup dictionary aan voor business rules op basis van scalar condities.
 
-        Deze functie zet een lijst van scalar condities om naar een dictionary met Id, TargetVariable en SourceVariable per conditie.
+        Deze functie genereert een dictionary waarin elke business rule wordt gekoppeld aan zijn Id, target en source variabelen.
 
         Args:
-            lst_scalar_conditions (list[dict]): Lijst van scalar conditie dictionaries.
+            business_rules (list[dict]): Lijst van business rule dictionaries.
 
         Returns:
-            dict: Dictionary met per conditie de Id, TargetVariable en SourceVariable.
+            dict: Een dictionary met business rules lookup per Id.
         """
-        dict_scalar_conditions = {
-            scalar_condition["Id"]: {
-                "Id": scalar_condition["Id"],
-                "TargetVariable": scalar_condition["ScalarConditionVariable"][
+        dict_business_rules = {
+            business_rule["Id"]: {
+                "Id": business_rule["Id"],
+                "TargetVariable": business_rule["ScalarConditionVariable"][
                     "AttributeChild"
                 ],
-                "SourceVariable": scalar_condition["ScalarConditionVariable"][
+                "SourceVariable": business_rule["ScalarConditionVariable"][
                     "SourceAttribute"
                 ],
             }
-            for scalar_condition in lst_scalar_conditions
+            for business_rule in business_rules
         }
-        return dict_scalar_conditions
+        return dict_business_rules
 
-    def _scalar_condition_components(
-        self, lst_components: list[dict], dict_attributes: dict
+    def _business_rule_components(
+        self, components: list[dict], dict_attributes: dict
     ) -> dict:
-        """Vormt om, schoont en verrijkt component data van 1 scalar conditie
+        """Bepaalt de componenten van een business rule en koppelt deze aan de juiste attributen.
+
+        Deze functie haalt het child en parent attribute op uit de componenten en bouwt een dictionary met de relevante attributen.
 
         Args:
-            lst_components (list[dict]): scalar conditie component
-            dict_attributes (dict): Alle attributen (in- en external)
+            lst_components (list[dict]): Lijst van componenten van de business rule.
+            dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:
-            dict: Geschoonde, omgevormde en verrijkte scalar conditie component data
+            dict: Dictionary met de gekoppelde source en child attributen.
         """
-        dict_scalar_condition_attribute = {}
-        dict_child = self._get_scalar_child_attribute(
-            lst_components=lst_components, dict_attributes=dict_attributes
+
+        dict_business_rule_attribute = {}
+        dict_child = self._get_child_attribute(
+            components=components, dict_attributes=dict_attributes
         )
-        dict_parent, alias_parent = self._get_scalar_parent_attribute_and_alias(
-            lst_components=lst_components, dict_attributes=dict_attributes
+        dict_parent, alias_parent = self._get_parent_attribute_and_alias(
+            components=components, dict_attributes=dict_attributes
         )
         if len(dict_parent) > 0:
             if alias_parent is not None:
                 dict_parent.update({"EntityAlias": alias_parent})
-            dict_scalar_condition_attribute["SourceAttribute"] = (
+            dict_business_rule_attribute["SourceAttribute"] = (
                 dict_parent["EntityAlias"] + "." + dict_parent["Code"]
             )
         if len(dict_child) > 0:
-            dict_scalar_condition_attribute["AttributeChild"] = dict_child["Code"]
-        return dict_scalar_condition_attribute
+            dict_business_rule_attribute["AttributeChild"] = dict_child["Code"]
+        return dict_business_rule_attribute
 
     def _extract_child_attribute(self, component: dict, dict_attributes: dict) -> dict:
         """Haalt het child attribute dictionary op uit het opgegeven component.
 
-        Deze functie zoekt het child attribute op dat wordt gerefereerd in het component en retourneert een kopie van het dictionary uit dict_attributes.
+        Deze functie zoekt het child attribute op dat wordt gerefereerd in het component en
+        retourneert een kopie van het dictionary uit dict_attributes.
 
         Args:
             component (dict): Het component dat de child attribute referentie bevat.
@@ -219,34 +232,36 @@ class BusinessRuleTransform(BaseTransformer):
         id_attr = component["c:Content"][type_entity]["@Ref"]
         return dict_attributes[id_attr].copy()
 
-    def _get_scalar_child_attribute(
-        self, lst_components: list[dict], dict_attributes: dict
+    def _get_child_attribute(
+        self, components: list[dict], dict_attributes: dict
     ) -> dict:
-        """Haalt het child attribute dictionary op uit de scalar conditie componenten.
+        """Zoekt en retourneert het child attribute uit de componentenlijst.
+
+        Deze functie doorzoekt de lijst van componenten naar het child attribute en retourneert het bijbehorende dictionary.
 
         Args:
-            lst_components (list[dict]): Lijst van componenten.
+            lst_components (list[dict]): Lijst van componenten waarin gezocht wordt.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:
-            dict: Een kopie van het child attribute dictionary, of leeg dict als niet gevonden.
+            dict: Het gevonden child attribute dictionary, of een lege dictionary als niet gevonden.
         """
-        lst_components = self.clean_keys(content=lst_components)
+        components = self.clean_keys(content=components)
         return next(
             (
                 self._extract_child_attribute(
                     component=component, dict_attributes=dict_attributes
                 )
-                for component in lst_components
+                for component in components
                 if component["Name"] == "mdde_ChildAttribute"
             ),
             {},
         )
 
-    def _get_scalar_parent_attribute_and_alias(
-        self, lst_components: list[dict], dict_attributes: dict
+    def _get_parent_attribute_and_alias(
+        self, components: list[dict], dict_attributes: dict
     ) -> tuple:
-        """Haalt het parent attribute dictionary en alias op uit de scalar conditie componenten.
+        """Haalt het parent attribute dictionary en alias op uit de business rule componenten.
 
         Args:
             lst_components (list[dict]): Lijst van componenten.
@@ -257,8 +272,8 @@ class BusinessRuleTransform(BaseTransformer):
         """
         dict_parent = {}
         alias_parent = None
-        lst_components = self.clean_keys(lst_components)
-        for component in lst_components:
+        components = self.clean_keys(components)
+        for component in components:
             if component["Name"] == "mdde_ParentSourceObject":
                 alias_parent = component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
             elif component["Name"] == "mdde_ParentAttribute":

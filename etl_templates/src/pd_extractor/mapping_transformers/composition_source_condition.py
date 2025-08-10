@@ -122,7 +122,8 @@ class SourceConditionTransform(BaseTransformer):
     ):
         """Stelt de SourceConditionVariable in voor een conditie op basis van de gevonden waarden.
 
-        Deze functie bepaalt of de SourceConditionVariable wordt gezet op basis van de componenten, de parent literal, of een waarschuwing wordt gelogd als er geen waarde gevonden is.
+        Deze functie bepaalt of de SourceConditionVariable wordt gezet op basis van de componenten,
+        de parent literal, of een waarschuwing wordt gelogd als er geen waarde gevonden is.
 
         Args:
             condition (dict): De conditie die wordt verrijkt.
