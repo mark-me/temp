@@ -42,16 +42,16 @@ class PDDocument(BaseExtractor):
         if filters := self._get_filters(pd_content=pd_content, domains=domains):
             dict_document["Filters"] = filters
         else:
-            logger.debug(f"Geen filters geschreven naar  '{file_output}'")
+            logger.debug(f"Geen filters gevonden in '{self.file_pd_ldm}'")
         if scalars := self._get_scalars(pd_content=pd_content, domains=domains):
             dict_document["Scalars"] = scalars
         else:
-            logger.debug(f"No scalars to write to  '{file_output}'")
+            logger.debug(f"Geen scalars gevonden in '{self.file_pd_ldm}'")
         aggregates = self._get_aggregates(pd_content=pd_content, domains=domains)
         if models := self._get_models(pd_content=pd_content, domains=domains):
             dict_document["Models"] = models
         else:
-            logger.error(f"Geen mappings om te schrijven in '{self.file_pd_ldm}'")
+            logger.error(f"Geen modellen gevonden in '{self.file_pd_ldm}'")
         if mappings := self._get_mappings(
             pd_content=pd_content,
             models=models,
@@ -61,7 +61,7 @@ class PDDocument(BaseExtractor):
         ):
             dict_document["Mappings"] = mappings
         else:
-            logger.warning(f"Geen mappings om te schrijven in '{file_output}'")
+            logger.warning(f"Geen mappings gevonden in '{self.file_pd_ldm}'")
         self._write_json(file_output=file_output, dict_document=dict_document)
 
     def _read_file_model(self) -> dict:
