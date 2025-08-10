@@ -46,15 +46,15 @@ class MappingExtractor(BaseExtractor):
         """
         dict_entities = self._create_entities_lookup(models=models)
         dict_filters = self._create_filters_lookup(filters=filters)
-        dict_scalars = self._create_scalars_dict(scalars=scalars)
-        dict_aggregates = self._create_aggregates_dict(aggregates=aggregates)
+        dict_scalars = self._create_scalars_lookup(scalars=scalars)
+        dict_aggregates = self._create_aggregates_lookup(aggregates=aggregates)
         dict_objects = dict_entities | dict_filters | dict_scalars | dict_aggregates
-        dict_variables = self._create_variables_dict(filters=filters, scalars=scalars)
-        dict_attributes = self._create_attributes_dict(models=models)
-        dict_datasources = self._create_datasources_dict(models=models)
+        dict_variables = self._create_variables_lookup(filters=filters, scalars=scalars)
+        dict_attributes = self._create_attributes_lookup(models=models)
+        dict_datasources = self._create_datasources_lookup(models=models)
 
-        lst_mappings = self._get_relevant_mappings()
-        lst_mappings_def = [
+        mappings = self._get_relevant_mappings()
+        mappings_transformed = [
             self._process_single_mapping(
                 mapping=mapping,
                 dict_objects=dict_objects,
@@ -62,9 +62,9 @@ class MappingExtractor(BaseExtractor):
                 dict_variables=dict_variables,
                 dict_datasources=dict_datasources,
             )
-            for mapping in lst_mappings
+            for mapping in mappings
         ]
-        return lst_mappings_def
+        return mappings_transformed
 
     def _process_single_mapping(
         self,
@@ -121,7 +121,7 @@ class MappingExtractor(BaseExtractor):
     def _create_entities_lookup(self, models: list[dict]) -> dict:
         """Maakt een dictionary van entiteiten uit de opgegeven modellen.
 
-        Deze functie doorloopt alle modellen en entiteiten en voegt de entiteiten zonder stereotype toe aan de dictionary.
+        Deze functie doorloopt alle modellen en voegt entiteiten zonder stereotype toe aan de dictionary, waarbij het interne ID als sleutel wordt gebruikt.
 
         Args:
             models (list[dict]): Lijst van model dictionaries.
@@ -174,7 +174,7 @@ class MappingExtractor(BaseExtractor):
         }
         return dict_result
 
-    def _create_scalars_dict(self, scalars: list[dict]) -> dict:
+    def _create_scalars_lookup(self, scalars: list[dict]) -> dict:
         """Maakt een dictionary van scalarobjecten uit de opgegeven lijst van scalars.
 
         Deze functie zet elke scalar om naar een dictionary met relevante eigenschappen, waarbij het interne ID als sleutel wordt gebruikt.
@@ -202,7 +202,7 @@ class MappingExtractor(BaseExtractor):
         }
         return dict_result
 
-    def _create_aggregates_dict(self, aggregates: list[dict]) -> dict:
+    def _create_aggregates_lookup(self, aggregates: list[dict]) -> dict:
         """Maakt een dictionary van aggregaatobjecten uit de opgegeven lijst van aggregaten.
 
         Deze functie zet elke aggregaat om naar een dictionary met relevante eigenschappen, waarbij het interne ID als sleutel wordt gebruikt.
@@ -227,7 +227,7 @@ class MappingExtractor(BaseExtractor):
         }
         return dict_result
 
-    def _create_attributes_dict(self, models: list[dict]) -> dict:
+    def _create_attributes_lookup(self, models: list[dict]) -> dict:
         """Maakt een dictionary van attributen uit de opgegeven modellen.
 
         Deze functie doorloopt alle modellen en entiteiten en voegt de attributen van elke entiteit toe aan de dictionary.
@@ -260,7 +260,9 @@ class MappingExtractor(BaseExtractor):
                         }
         return dict_result
 
-    def _create_variables_dict(self, filters: list[dict], scalars: list[dict]) -> dict:
+    def _create_variables_lookup(
+        self, filters: list[dict], scalars: list[dict]
+    ) -> dict:
         """Maakt een dictionary van variabelen uit de opgegeven filters en scalars.
 
         Deze functie combineert alle variabelen uit filters en scalars tot een enkele dictionary, waarbij het interne ID als sleutel wordt gebruikt.
@@ -288,7 +290,7 @@ class MappingExtractor(BaseExtractor):
                 }
         return dict_result
 
-    def _create_datasources_dict(self, models: list[dict]) -> dict:
+    def _create_datasources_lookup(self, models: list[dict]) -> dict:
         dict_result = {}
         for model in models:
             if "DataSources" in model:
@@ -312,25 +314,20 @@ class MappingExtractor(BaseExtractor):
             ]
         else:
             key_path = ["c:Mappings", "o:DefaultObjectMapping"]
-        lst_mappings = self._get_nested(data=self.content, keys=key_path)
+        mappings = self._get_nested(data=self.content, keys=key_path)
 
-        lst_ignored_mapping = [
+        ignore_mappings = [
             "Mapping Br Custom Business Rule Example",
             "Mapping AggrTotalSalesPerCustomer",
             "Mapping Pivot Orders Per Country Per Date",
         ]
-        if not lst_mappings:
+        if not mappings:
             logger.warning(f"Geen mappings gevonden in '{self.file_pd_ldm}'")
-        elif isinstance(lst_mappings, list):
-            lst_mappings = [
-                m for m in lst_mappings if m["a:Name"] not in lst_ignored_mapping
-            ]
+        elif isinstance(mappings, list):
+            mappings = [m for m in mappings if m["a:Name"] not in ignore_mappings]
         else:
-            if lst_mappings["a:Name"] not in lst_ignored_mapping:
-                lst_mappings = [lst_mappings]
-            else:
-                lst_mappings = []
-        return lst_mappings
+            mappings = [mappings] if mappings["a:Name"] not in ignore_mappings else []
+        return mappings
 
     def _normalize_mapping_name(self, mapping: dict) -> dict:
         """Vervangt spaties in de mappingnaam door underscores en logt een waarschuwing indien nodig."""
