@@ -150,9 +150,9 @@ class PDDocument(BaseExtractor):
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start scalar extraction")
-        lst_scalars = extractor.get_scalars(dict_domains=domains)
+        scalars = extractor.get_scalars(dict_domains=domains)
         logger.debug("Finished scalar extraction")
-        return lst_scalars
+        return scalars
 
     def _get_aggregates(self, pd_content: dict, domains: dict) -> list[dict]:
         """Haalt alle aggregate objecten op uit het logisch data model.
@@ -171,9 +171,9 @@ class PDDocument(BaseExtractor):
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start aggregate extraction")
-        lst_aggregates = extractor.get_aggregates(dict_domains=domains)
+        aggregates = extractor.get_aggregates(dict_domains=domains)
         logger.debug("Finished aggregate extraction")
-        return lst_aggregates
+        return aggregates
 
     def _get_models(self, pd_content: dict, domains: dict) -> list[dict]:
         """Haalt alle model objecten op uit het logisch data model.
@@ -188,9 +188,9 @@ class PDDocument(BaseExtractor):
         """
         extractor = ModelExtractor(pd_content=pd_content, file_pd_ldm=self.file_pd_ldm)
         logger.debug("Start model extraction")
-        lst_models = extractor.get_models(dict_domains=domains)
+        models = extractor.get_models(dict_domains=domains)
         logger.debug("Finished model extraction")
-        return lst_models
+        return models
 
     def _get_mappings(
         self,
@@ -218,10 +218,10 @@ class PDDocument(BaseExtractor):
             pd_content=pd_content, file_pd_ldm=self.file_pd_ldm
         )
         logger.debug("Start mapping extraction")
-        lst_mappings = extractor.get_mappings(
+        mappings = extractor.get_mappings(
             models=models, filters=filters, scalars=scalars, aggregates=aggregates
         )
-        return lst_mappings
+        return mappings
 
     def _write_json(self, file_output: str, dict_document: dict) -> None:
         """Schrijft het opgegeven document als JSON naar het opgegeven bestandspad.
