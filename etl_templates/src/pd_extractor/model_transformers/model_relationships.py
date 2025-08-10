@@ -6,11 +6,11 @@ logger = get_logger(__name__)
 
 
 class RelationshipsTransformer(BaseTransformer):
-    def __init__(self, file_pd_ldm: str, lst_entities: list[dict]):
+    def __init__(self, file_pd_ldm: str, entities: list[dict]):
         super().__init__(file_pd_ldm)
-        self.lst_entities = lst_entities
+        self.lst_entities = entities
 
-    def transform(self, lst_relationships: list[dict]) -> list[dict]:
+    def transform(self, relationships: list[dict]) -> list[dict]:
         """Vormt om en verrijkt relatie data
 
         Deze functie verwerkt een lijst van relaties tussen entiteiten, verrijkt deze met entiteit-, attribuut- en identifier-informatie,
@@ -24,17 +24,15 @@ class RelationshipsTransformer(BaseTransformer):
             list[dict]: Relaties tussen model entiteiten
         """
 
-        lst_relationships = self.clean_keys(lst_relationships)
-        lst_relationships = (
-            [lst_relationships]
-            if isinstance(lst_relationships, dict)
-            else lst_relationships
+        relationships = self.clean_keys(relationships)
+        relationships = (
+            [relationships] if isinstance(relationships, dict) else relationships
         )
-        for i, relationship in enumerate(lst_relationships):
+        for i, relationship in enumerate(relationships):
             relationship = self._process_relationship(relationship=relationship)
-            lst_relationships[i] = relationship
-        lst_relationships = [x for x in lst_relationships if x is not None]
-        return lst_relationships
+            relationships[i] = relationship
+        relationships = [x for x in relationships if x is not None]
+        return relationships
 
     def _build_attributes_dict(self) -> dict:
         """Bouwt een dictionary van attributen op basis van hun Id."""
@@ -225,11 +223,12 @@ class RelationshipsTransformer(BaseTransformer):
             dict: Relatie verrijkt met geschoonde identifier data
         """
         path_keys = ["c:ParentIdentifier", "o:Identifier", "@Ref"]
-        if lst_identifier_id := self._get_nested(data=relationship, keys=path_keys):
-            if isinstance(lst_identifier_id, str):
-                lst_identifier_id = [lst_identifier_id]
+        if identifier_ids := self._get_nested(data=relationship, keys=path_keys):
+            identifier_ids = (
+                [identifier_ids] if isinstance(identifier_ids, str) else identifier_ids
+            )
             relationship["Identifiers"] = [
-                dict_identifiers[id] for id in lst_identifier_id
+                dict_identifiers[id] for id in identifier_ids
             ]
             relationship.pop("c:ParentIdentifier")
         else:

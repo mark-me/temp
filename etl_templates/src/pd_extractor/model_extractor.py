@@ -52,7 +52,7 @@ class ModelExtractor(BaseExtractor):
         # Model add entity data
         lst_entity = self._entities_internal(dict_domains=dict_domains)
         model["Entities"] = lst_entity
-        model["Relationships"] = self._relationships(lst_entity=lst_entity)
+        model["Relationships"] = self._relationships(entities=lst_entity)
         model["DataSources"] = self._datasources()
         return model
 
@@ -96,7 +96,7 @@ class ModelExtractor(BaseExtractor):
         path_keys = ["c:TargetModels", "o:TargetModel"]
         if target_model := self._get_nested(data=self.content, keys=path_keys):
             models = self.transform_models_external.transform(
-                lst_models=target_model, dict_entities=dict_entities
+                models=target_model, dict_entities=dict_entities
             )
             return models
         else:
@@ -116,13 +116,12 @@ class ModelExtractor(BaseExtractor):
             if "c:Packages" in self.content
             else ["c:Entities", "o:Shortcut"]
         )
-        lst_entities = self._get_nested(data=self.content, keys=path_keys)
-        if isinstance(lst_entities, dict):
-            lst_entities = [lst_entities]
-        lst_entities = self.transform_models_external.transform_entities(
-            lst_entities=lst_entities
+        entities = self._get_nested(data=self.content, keys=path_keys)
+        entities = [entities] if isinstance(entities, dict) else entities
+        entities = self.transform_models_external.transform_entities(
+            entities=entities
         )
-        for entity in lst_entities:
+        for entity in entities:
             logger.debug(
                 f"Externe entiteit shortcut gevonden '{entity['Name']} in {self.file_pd_ldm}'"
             )
@@ -141,7 +140,7 @@ class ModelExtractor(BaseExtractor):
         path_keys = ["c:DataSources", "o:DefaultDataSource"]
         if lst_datasources := self._get_nested(data=self.content, keys=path_keys):
             dict_datasources = self.transform_model_internal.transform_datasources(
-                lst_datasources=lst_datasources
+                datasources=lst_datasources
             )
             return dict_datasources
         else:
@@ -150,7 +149,7 @@ class ModelExtractor(BaseExtractor):
             )
             return None
 
-    def _relationships(self, lst_entity: list[dict]) -> list[dict] | None:
+    def _relationships(self, entities: list[dict]) -> list[dict] | None:
         """Haalt alle relaties tussen entiteiten op uit het Power Designer model.
 
         Deze functie zoekt naar relaties tussen entiteiten en retourneert een lijst van deze relaties,
@@ -163,12 +162,12 @@ class ModelExtractor(BaseExtractor):
             list[dict] | None: Lijst van relaties of None als er geen relaties zijn gevonden.
         """
         transform_relationships = RelationshipsTransformer(
-            file_pd_ldm=self.file_pd_ldm, lst_entities=lst_entity
+            file_pd_ldm=self.file_pd_ldm, entities=entities
         )
         path_keys = ["c:Relationships", "o:Relationship"]
         if lst_pd_relationships := self._get_nested(data=self.content, keys=path_keys):
             lst_relationships = transform_relationships.transform(
-                lst_relationships=lst_pd_relationships
+                relationships=lst_pd_relationships
             )
             return lst_relationships
         else:

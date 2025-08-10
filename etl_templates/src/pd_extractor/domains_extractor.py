@@ -23,7 +23,7 @@ class DomainsExtractor(BaseExtractor):
         if domains := self._get_nested(data=self.content, keys=path_keys):
             transform_domains = DomainsTransformer(file_pd_ldm=self.file_pd_ldm)
             dict_domains = transform_domains.transform(
-                lst_domains=domains
+                domains=domains
             )
             return dict_domains
         else:

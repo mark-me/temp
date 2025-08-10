@@ -11,7 +11,7 @@ class ModelsExternalTransformer(BaseTransformer):
     def __init__(self, file_pd_ldm: str):
         super().__init__(file_pd_ldm)
 
-    def transform(self, lst_models: list[dict], dict_entities: dict) -> list[dict]:
+    def transform(self, models: list[dict], dict_entities: dict) -> list[dict]:
         """Doelmodellen bevatten verwijzingen naar entiteiten uit een ander model. Het doelmodel wordt verrijkt met deze entiteiten
 
         Args:
@@ -22,9 +22,9 @@ class ModelsExternalTransformer(BaseTransformer):
             list[dict]: Doelmodellen met entiteit data
         """
         lst_result = []
-        lst_models = self.clean_keys(lst_models)
+        models = self.clean_keys(models)
 
-        for model in lst_models:
+        for model in models:
             path_keys = ["c:SessionShortcuts", "o:Shortcut"]
             if shortcuts := self._get_nested(data=model, keys=path_keys):
                 if isinstance(shortcuts, dict):
@@ -43,7 +43,7 @@ class ModelsExternalTransformer(BaseTransformer):
                     model.pop("c:FullShortcutModel")
         return lst_result
 
-    def transform_entities(self, lst_entities: list[dict] | dict) -> list[dict]:
+    def transform_entities(self, entities: list[dict] | dict) -> list[dict]:
         """
         Transformeert en schoont externe entiteiten uit het Power Designer model.
 
@@ -56,16 +56,16 @@ class ModelsExternalTransformer(BaseTransformer):
         Returns:
             list[dict]: Geschoonde en getransformeerde entiteiten.
         """
-        lst_entities = (
-            [lst_entities] if isinstance(lst_entities, dict) else lst_entities
+        entities = (
+            [entities] if isinstance(entities, dict) else entities
         )
-        lst_entities = self.clean_keys(lst_entities)
-        for entity in lst_entities:
+        entities = self.clean_keys(entities)
+        for entity in entities:
             if "c:FullShortcutReplica" in entity:
                 entity.pop("c:FullShortcutReplica")
             self._entity_attribute(entity)
             entity.pop("c:SubShortcuts")
-        return lst_entities
+        return entities
 
     def _entity_attribute(self, entity: list[dict] | dict) -> dict:
         """Vormt om en schoont attributen van een entiteit
