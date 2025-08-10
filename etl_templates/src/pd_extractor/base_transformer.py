@@ -100,13 +100,12 @@ class BaseTransformer(BaseExtractor):
             idx_end = len(extended_attrs_text) + 1
             value = extended_attrs_text[idx_start:idx_end]
             idx_start = value.find("=") + 1
-            value = value[idx_start:].upper()
+            return value[idx_start:].upper()
         else:
             logger.warning(
                 f"Geen waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
             )
-            value = ""
-        return value
+            return ""
 
     def _extract_value_from_attribute_text(self, text: str, preceded_by: str) -> str:
         """Extraheert de opgegeven tekst uit een tekst string. Deze tekst kan voorafgegaan
