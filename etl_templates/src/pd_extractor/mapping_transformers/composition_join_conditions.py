@@ -120,7 +120,7 @@ class JoinConditionsTransformer(BaseTransformer):
         )
         condition["JoinConditionComponents"] = (
             self._transform_join_condition_components(
-                lst_components=lst_components,
+                components=lst_components,
                 dict_attributes=dict_attributes,
                 alias_child=self.composition["Id"],
             )
@@ -128,7 +128,7 @@ class JoinConditionsTransformer(BaseTransformer):
         condition.pop("c:ExtendedCollections", None)
 
     def _transform_join_condition_components(
-        self, lst_components: list, dict_attributes: dict, alias_child: str
+        self, components: list, dict_attributes: dict, alias_child: str
     ) -> dict:
         """Vormt om, schoont en verrijkt component data van 1 join conditie
 
@@ -142,7 +142,7 @@ class JoinConditionsTransformer(BaseTransformer):
         """
         dict_components = {}
         dict_child, dict_parent, alias_parent = self._extract_join_components(
-            lst_components, dict_attributes
+            components=components, dict_attributes=dict_attributes
         )
         if dict_parent:
             if alias_parent is not None:
@@ -153,7 +153,7 @@ class JoinConditionsTransformer(BaseTransformer):
             dict_components["AttributeChild"] = dict_child
         return dict_components
 
-    def _extract_join_components(self, lst_components: list, dict_attributes: dict):
+    def _extract_join_components(self, components: list, dict_attributes: dict):
         """Extraheert het child attribute, parent attribute en parent alias uit join conditie componenten.
 
         Deze methode verwerkt een lijst van join conditie componenten en retourneert de relevante child en
@@ -169,8 +169,8 @@ class JoinConditionsTransformer(BaseTransformer):
         dict_child = {}
         dict_parent = {}
         alias_parent = None
-        lst_components = self.clean_keys(lst_components)
-        for component in lst_components:
+        components = self.clean_keys(components)
+        for component in components:
             type_component = component.get("Name")
             if type_component == "mdde_ChildAttribute":
                 dict_child = self._extract_join_child_attribute(
