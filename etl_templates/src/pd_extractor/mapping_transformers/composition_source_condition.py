@@ -68,7 +68,7 @@ class SourceConditionTransform(BaseTransformer):
         parent_literal = self._extract_parent_literal(condition)
         components = self._extract_components(condition)
         source_condition_variable = self._transform_components(
-            lst_components=components,
+            components=components,
             dict_attributes=dict_attributes,
             parent_literal=parent_literal,
         )
@@ -140,7 +140,7 @@ class SourceConditionTransform(BaseTransformer):
             )
 
     def _transform_components(
-        self, lst_components: list[dict], dict_attributes: dict, parent_literal: str
+        self, components: list[dict], dict_attributes: dict, parent_literal: str
     ) -> dict:
         """Transformeert componenten van een source conditie naar een dictionary met attributen.
 
@@ -157,10 +157,10 @@ class SourceConditionTransform(BaseTransformer):
         """
         dict_source_condition_attribute = {}
         dict_parent, alias_parent = self._get_source_parent_attribute_and_alias(
-            lst_components=lst_components, dict_attributes=dict_attributes
+            components=components, dict_attributes=dict_attributes
         )
         dict_child = self._get_source_child_attribute(
-            lst_components=lst_components, dict_attributes=dict_attributes
+            components=components, dict_attributes=dict_attributes
         )
         if dict_parent:
             if alias_parent is not None:
@@ -174,7 +174,7 @@ class SourceConditionTransform(BaseTransformer):
         return dict_source_condition_attribute
 
     def _get_source_parent_attribute_and_alias(
-        self, lst_components: list, dict_attributes: dict
+        self, components: list, dict_attributes: dict
     ) -> tuple:
         """Haalt het parent attribute dictionary en alias op uit de source conditie componenten.
 
@@ -187,8 +187,8 @@ class SourceConditionTransform(BaseTransformer):
         """
         dict_parent = {}
         alias_parent = None
-        lst_components = self.clean_keys(lst_components)
-        for component in lst_components:
+        components = self.clean_keys(components)
+        for component in components:
             if component["Name"] == "mdde_ParentSourceObject":
                 alias_parent = self._get_nested(
                     data=component, keys=["c:Content", "o:ExtendedSubObject", "@Ref"]
@@ -200,7 +200,7 @@ class SourceConditionTransform(BaseTransformer):
         return dict_parent, alias_parent
 
     def _get_source_child_attribute(
-        self, lst_components: list[dict], dict_attributes: dict
+        self, components: list[dict], dict_attributes: dict
     ) -> dict:
         """Haalt het child attribute dictionary op uit de source conditie componenten.
 
@@ -211,11 +211,11 @@ class SourceConditionTransform(BaseTransformer):
         Returns:
             dict: Een kopie van het child attribute dictionary, of leeg dict als niet gevonden.
         """
-        lst_components = self.clean_keys(lst_components)
-        lst_components = [
-            x for x in lst_components if x["Name"] == "mdde_ChildAttribute"
+        components = self.clean_keys(components)
+        components = [
+            x for x in components if x["Name"] == "mdde_ChildAttribute"
         ]
-        for component in lst_components:
+        for component in components:
             type_entity = self.determine_reference_type(data=component["c:Content"])
             id_attr = component["c:Content"][type_entity]["@Ref"]
             return dict_attributes[id_attr].copy()
