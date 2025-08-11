@@ -51,14 +51,14 @@ nav:
           - Workflow:
               - Orkestrator: Genesis/Orchestrator/Orchestrator.md
               - Configuratie: Genesis/Orchestrator/Configuration.md
-          - Power Designer extractie: Genesis/Extractor.md
+          - Extraheren Power Designer: Genesis/Extractor.md
           - Integreren ETL DAG: Genesis/Integrator/Integrator.md
           - Genereren DBs & ETL: Genesis/Generator.md
-          - MDDE deployment code  : Genesis/Deploy_MDDE/Deploy_MDDE.md
-          - DevOps repository management: Genesis/Repository_Manager.md
-          - Hulp packages:
-              - Logging: Genesis/Logtools.md
-              - Documentatie genereren: Genesis/Documentation_Creation.md
+          - MDDE deployment: Genesis/Deploy_MDDE/Deploy_MDDE.md
+          - DevOps repo management: Genesis/Repository_Manager.md
   - Morningstar:
       - Home: Morningstar/index.md
+  - Hulp packages:
+      - Logging: Genesis/Logtools.md
+      - Documentatie genereren: Genesis/Documentation_Creation.md
   - Developers: Developers.md
