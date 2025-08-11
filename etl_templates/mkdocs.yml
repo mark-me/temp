@@ -53,7 +53,7 @@ nav:
               - Configuratie: Genesis/Orchestrator/Configuration.md
           - Power Designer extractie: Genesis/Extractor.md
           - Integreren ETL DAG: Genesis/Integrator/Integrator.md
-          - Genereer DBs & ETL: Genesis/Generator.md
+          - Genereren DBs & ETL: Genesis/Generator.md
           - MDDE deployment code  : Genesis/Deploy_MDDE/Deploy_MDDE.md
           - DevOps repository management: Genesis/Repository_Manager.md
           - Hulp packages:
