@@ -364,27 +364,15 @@ Mogelijkheid om veranderingen tussen modelversies te vergelijken.
 
 ---
 
-### ::: src.pd_extractor.model_internal_transform.ModelInternalTransformer
+### ::: src.pd_extractor.model_transformers.model_internal.ModelInternalTransformer
 
 ---
 
-### ::: src.pd_extractor.models_external_transform.ModelsExternalTransformer
+### ::: src.pd_extractor.model_transformers.models_external.ModelsExternalTransformer
 
 ---
 
 ### ::: src.pd_extractor.mapping_extractor.MappingExtractor
-
----
-
-### ::: src.pd_extractor.mapping_attributes_transform.MappingAttributesTransformer
-
----
-
-### ::: src.pd_extractor.mapping_composition_transform.SourceCompositionTransformer
-
----
-
-### ::: src.pd_extractor.mapping_target_transform.TargetEntityTransformer
 
 ---
 

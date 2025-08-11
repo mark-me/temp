@@ -1,16 +1,20 @@
-site_name: Genesis documentatie
+site_name: Genesis & Morningstar documentatie
 
 use_directory_urls: false
 
 theme:
   name: material
-  favicon: images/favicon.png
-  logo: images/logo.png
+  favicon: Genesis/images/favicon.png
+  logo: Genesis/images/combined_logo.png
   features:
     - content.code.copy
     - content.code.select
-    - navigation.expand
-    - navigation.path
+
+extra:
+  generator: false
+
+extra_css:
+- stylesheets/extra.css
 
 plugins:
   - offline
@@ -41,16 +45,20 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Componenten:
-    - Workflow:
-      - Orkestrator: Orchestrator/Orchestrator.md
-      - Configuratie: Orchestrator/Configuration.md
-    - Power Designer extractie: Extractor.md
-    - Integreren ETL DAG: Integrator/Integrator.md
-    - Code DB & ETL objecten: Generator.md
-    - MDDE deployment code  : Deploy_MDDE/Deploy_MDDE.md
-    - DevOps repository management: Repository_Manager.md
-    - Hulp packages:
-      - Logging: Logtools.md
-      - Documentatie genereren: Documentation_Creation.md
+  - Genesis:
+      - Home: Genesis/index.md
+      - Componenten:
+          - Workflow:
+              - Orkestrator: Genesis/Orchestrator/Orchestrator.md
+              - Configuratie: Genesis/Orchestrator/Configuration.md
+          - Power Designer extractie: Genesis/Extractor.md
+          - Integreren ETL DAG: Genesis/Integrator/Integrator.md
+          - Genereer DBs & ETL: Genesis/Generator.md
+          - MDDE deployment code  : Genesis/Deploy_MDDE/Deploy_MDDE.md
+          - DevOps repository management: Genesis/Repository_Manager.md
+          - Hulp packages:
+              - Logging: Genesis/Logtools.md
+              - Documentatie genereren: Genesis/Documentation_Creation.md
+  - Morningstar:
+      - Home: Morningstar/index.md
   - Developers: Developers.md
