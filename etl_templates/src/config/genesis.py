@@ -19,9 +19,10 @@ logger = get_logger(__name__)
 
 @dataclass
 class GenesisConfigData:
-    """Overall configuration settings.
+    """
+    Bevat alle configuratiegegevens voor de applicatie.
+    Biedt velden voor algemene instellingen, Power Designer, extractor, generator, DevOps en MDDE deployment configuraties.
 
-    Combines all configuration settings for different components of the application.
     """
 
     title: str
@@ -39,10 +40,11 @@ class GenesisConfigData:
 
 
 class GenesisConfig:
-    """Leest configuratie uit een YAML bestand.
-
-    Leest configuratie data uit een YAML bestand, en biedt toegang tot opties aan.
     """
+    Beheert de volledige applicatieconfiguratie voor Genesis en laadt deze uit een YAML-bestand.
+    Biedt toegang tot alle deelconfiguraties, paden en hulpfuncties voor het werken met configuratiebestanden.
+    """
+
 
     def __init__(self, file_config: str):
         """
