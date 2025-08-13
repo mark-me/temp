@@ -2,7 +2,7 @@ import functools
 import sys
 from pathlib import Path
 
-from config import ConfigGenesis
+from config import GenesisConfig
 from deploy_mdde import DeploymentMDDE
 from generator import DDLGenerator
 from integrator import DagImplementation, DagReporting, DeadlockPrevention
@@ -39,7 +39,7 @@ class Orchestrator:
             file_config (Path): Locatie configuratiebestand
         """
         self.file_config = Path(file_config)
-        self.config = ConfigGenesis(file_config=self.file_config)
+        self.config = GenesisConfig(file_config=self.file_config)
         logger.info(f"Genesis geïnitialiseerd met configuratie uit '{file_config}'")
         self.process_steps = iter(
             [

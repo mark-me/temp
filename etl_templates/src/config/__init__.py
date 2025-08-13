@@ -1,4 +1,4 @@
-from .genesis import ConfigGenesis
+from .genesis import GenesisConfig
 
 
-__all__ = ["ConfigGenesis"]
+__all__ = ["GenesisConfig"]

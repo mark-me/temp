@@ -18,7 +18,7 @@ from .power_designer import PowerDesignerConfig, PowerDesignerConfigData
 logger = get_logger(__name__)
 
 @dataclass
-class ConfigDataGenesis:
+class GenesisConfigData:
     """Overall configuration settings.
 
     Combines all configuration settings for different components of the application.
@@ -38,7 +38,7 @@ class ConfigDataGenesis:
     )
 
 
-class ConfigGenesis:
+class GenesisConfig:
     """Leest configuratie uit een YAML bestand.
 
     Leest configuratie data uit een YAML bestand, en biedt toegang tot opties aan.
@@ -72,7 +72,7 @@ class ConfigGenesis:
             data.devops, path_output_root=data.folder_intermediate_root
         )
 
-    def _read_file(self) -> ConfigDataGenesis:
+    def _read_file(self) -> GenesisConfigData:
         try:
             with open(self._file, "r") as file:
                 config_dict = yaml.safe_load(file)
@@ -82,7 +82,7 @@ class ConfigGenesis:
 
             # Attempt to map the dictionary to the ConfigData dataclass
             config = from_dict(
-                data_class=ConfigDataGenesis,
+                data_class=GenesisConfigData,
                 data=config_dict,
                 config=Config(strict=True),  # Will raise error if extra/missing fields
             )
@@ -255,7 +255,7 @@ class ConfigGenesis:
             "devops": "DevOps instellingen zoals werkitems en branch",
             "work_item_description": "Omschrijving van het DevOps werkitem",
         }
-        example_config = ConfigDataGenesis()
+        example_config = GenesisConfigData()
         yaml_with_comments = self._config_to_yaml_with_comments(
             config_dataclass=example_config, field_comments=field_comments
         )
