@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -45,13 +44,9 @@ class PowerDesignerConfig(BaseConfigComponent):
             ConfigFileError: Als een of meer PowerDesigner-bestanden ontbreken.
         """
         lst_pd_files = self._data.files
+        folder_path = Path(self._data.folder)
         lst_pd_files = [
-            Path(
-                os.path.join(
-                    self._data.folder,
-                    pd_file,
-                )
-            )
+            folder_path / pd_file
             for pd_file in lst_pd_files
         ]
         if lst_missing := [str(file) for file in lst_pd_files if not file.exists()]:

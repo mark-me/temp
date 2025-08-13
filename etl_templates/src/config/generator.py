@@ -23,8 +23,8 @@ class GeneratorConfigData:
         Returns:
             Path: Het pad naar de map met templates.
         """
-        root = "./etl_templates/src/generator/templates"
-        dir_templates = Path(os.path.join(root, self.templates_platform))
+        root = Path("./etl_templates/src/generator/templates")
+        dir_templates = root / self.templates_platform
         return dir_templates
 
     @property
