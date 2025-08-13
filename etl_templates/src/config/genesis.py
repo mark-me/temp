@@ -1,5 +1,5 @@
 import os
-from dataclasses import field, fields, is_dataclass
+from dataclasses import dataclass, field, fields, is_dataclass
 from io import StringIO
 from pathlib import Path
 from typing import Any
@@ -8,20 +8,37 @@ import yaml
 from dacite import Config, MissingValueError, WrongTypeError, from_dict
 from logtools import get_logger
 
-from .config_definition import (
-    ConfigData,
-    ConfigFileError,
-    DeploymentMDDEConfigData,
-    DevOpsConfigData,
-    ExtractorConfigData,
-    GeneratorConfigData,
-    PowerDesignerConfigData,
-)
+from .base import ConfigFileError
+from .deploy_mdde import DeploymentMDDEConfig, DeploymentMDDEConfigData
+from .devops import DevOpsConfig, DevOpsConfigData
+from .extractor import ExtractorConfig, ExtractorConfigData
+from .generator import GeneratorConfig, GeneratorConfigData
+from .power_designer import PowerDesignerConfig, PowerDesignerConfigData
 
 logger = get_logger(__name__)
 
+@dataclass
+class ConfigDataGenesis:
+    """Overall configuration settings.
 
-class ConfigFile:
+    Combines all configuration settings for different components of the application.
+    """
+
+    title: str
+    folder_intermediate_root: str
+    ignore_warnings: bool = False
+    power_designer: PowerDesignerConfigData = field(
+        default_factory=PowerDesignerConfigData
+    )
+    extractor: ExtractorConfigData = field(default_factory=ExtractorConfigData)
+    generator: GeneratorConfigData = field(default_factory=GeneratorConfigData)
+    devops: DevOpsConfigData = field(default_factory=DevOpsConfigData)
+    deployment_mdde: DeploymentMDDEConfigData = field(
+        default_factory=DeploymentMDDEConfigData
+    )
+
+
+class ConfigGenesis:
     """Leest configuratie uit een YAML bestand.
 
     Leest configuratie data uit een YAML bestand, en biedt toegang tot opties aan.
@@ -55,7 +72,7 @@ class ConfigFile:
             data.devops, path_output_root=data.folder_intermediate_root
         )
 
-    def _read_file(self) -> ConfigData:
+    def _read_file(self) -> ConfigDataGenesis:
         try:
             with open(self._file, "r") as file:
                 config_dict = yaml.safe_load(file)
@@ -65,7 +82,7 @@ class ConfigFile:
 
             # Attempt to map the dictionary to the ConfigData dataclass
             config = from_dict(
-                data_class=ConfigData,
+                data_class=ConfigDataGenesis,
                 data=config_dict,
                 config=Config(strict=True),  # Will raise error if extra/missing fields
             )
@@ -238,7 +255,7 @@ class ConfigFile:
             "devops": "DevOps instellingen zoals werkitems en branch",
             "work_item_description": "Omschrijving van het DevOps werkitem",
         }
-        example_config = ConfigData()
+        example_config = ConfigDataGenesis()
         yaml_with_comments = self._config_to_yaml_with_comments(
             config_dataclass=example_config, field_comments=field_comments
         )
@@ -257,192 +274,3 @@ class ConfigFile:
         folder = Path(self.folder_intermediate_root) / self.title / self._version
         folder.mkdir(parents=True, exist_ok=True)
         return folder
-
-
-class BaseConfigComponent:
-    def __init__(self, config):
-        self._data = config
-
-    def create_dir(self, path: Path) -> None:
-        """
-        Maakt de opgegeven directory aan als deze nog niet bestaat.
-        Controleert of het pad een bestand is en converteert het naar een director-ypad indien nodig.
-
-        Args:
-            dir_path (Path): Het pad naar de directory die aangemaakt moet worden.
-        """
-        if path.is_file():
-            path = os.path.dirname(path)
-        Path(path).mkdir(parents=True, exist_ok=True)
-
-class PowerDesignerConfig(BaseConfigComponent):
-    def __init__(self, config: PowerDesignerConfigData):
-        super().__init__(config)
-
-    @property
-    def files(self) -> list[Path]:
-        """
-        Geeft een lijst van paden naar de PowerDesigner-bestanden die in de configuratie zijn opgegeven.
-        Controleert of alle opgegeven bestanden bestaan en geeft anders een foutmelding.
-
-        Returns:
-            list[Path]: Een lijst van Path-objecten naar de PowerDesigner-bestanden.
-
-        Raises:
-            ConfigFileError: Als een of meer PowerDesigner-bestanden ontbreken.
-        """
-        lst_pd_files = self._data.files
-        lst_pd_files = [
-            Path(
-                os.path.join(
-                    self._data.folder,
-                    pd_file,
-                )
-            )
-            for pd_file in lst_pd_files
-        ]
-        if lst_missing := [str(file) for file in lst_pd_files if not file.exists()]:
-            msg = f"Power Designer bestanden ontbreken: {', '.join(lst_missing)}"
-            raise ConfigFileError(msg, 404)
-        return lst_pd_files
-
-
-class ExtractorConfig(BaseConfigComponent):
-    def __init__(self, config: ExtractorConfigData, path_intermediate: Path):
-        super().__init__(config)
-        self.path_intermediate = path_intermediate
-
-    @property
-    def path_output(self) -> Path:
-        """
-        Geeft het pad naar de extractie-outputfolder voor deze configuratie.
-        Bepaalt en maakt de directory aan op basis van de tussenliggende outputfolder en de extractor folder uit de configuratie.
-
-        Returns:
-            Path: Het pad naar de extractie-outputfolder.
-        """
-        folder = self.path_intermediate / self._data.folder_output
-        self.create_dir(folder)
-        return folder
-
-
-class GeneratorConfig(BaseConfigComponent):
-    def __init__(self, config: GeneratorConfigData, path_intermediate: Path):
-        super().__init__(config)
-        self.path_intermediate = path_intermediate
-
-    @property
-    def path_output(self) -> Path:
-        """
-        Geeft het pad naar de extractie-outputfolder voor deze configuratie.
-        Bepaalt en maakt de directory aan op basis van de tussenliggende outputfolder en de extractor folder uit de configuratie.
-
-        Returns:
-            Path: Het pad naar de extractie-outputfolder.
-        """
-        folder = self.path_intermediate / self._data.folder_output
-        self.create_dir(folder)
-        return folder
-
-    @property
-    def template_platform(self) -> str:
-        return self._data.templates_platform
-
-
-class DeploymentMDDEConfig(BaseConfigComponent):
-    def __init__(self, config: DeploymentMDDEConfigData, path_intermediate: Path):
-        super().__init__(config)
-        self.path_intermediate = path_intermediate
-
-    @property
-    def path_output(self) -> Path:
-        """
-        Geeft het pad naar de extractie-outputfolder voor deze configuratie.
-        Bepaalt en maakt de directory aan op basis van de tussenliggende outputfolder en de extractor folder uit de configuratie.
-
-        Returns:
-            Path: Het pad naar de extractie-outputfolder.
-        """
-        folder = self.path_intermediate / self._data.folder_output
-        self.create_dir(folder)
-        return folder
-
-    @property
-    def schema(self) -> str:
-        return self._data.schema
-
-    @property
-    def path_data_input(self) -> Path:
-        return Path(self._data.folder_data)
-
-    @property
-    def schemas_datamart(self) -> list[str]:
-        return self._data.schemas_datamart
-
-
-class DevOpsConfig(BaseConfigComponent):
-    def __init__(self, config: DevOpsConfigData, path_output_root: Path):
-        super().__init__(config)
-        self._path_output_root = path_output_root
-
-    @property
-    def path_local(self) -> Path:
-        """
-        Geeft het pad naar de DevOps repository-folder voor deze configuratie.
-        Bepaalt en maakt de directory aan op basis van de root en de devops folder uit de configuratie.
-
-        Returns:
-            Path: Het pad naar de repository-folder.
-        """
-        folder = Path(self._path_output_root) / self._data.folder
-        self.create_dir(folder)
-        return folder
-
-    @property
-    def branch(self) -> str:
-        return self._data.branch
-
-    @property
-    def feature_branch(self) -> str:
-        user_login = os.getlogin().replace(' ', '_')
-        descr_work_item = self._data.work_item_description.replace(' ', '_')
-        return f"feature/{self._data.work_item}_{descr_work_item}_{user_login}"
-
-    @property
-    def url(self) -> str:
-        return f"https://{self._data.organisation}@dev.azure.com/{self._data.organisation}/{self._data.project}/_git/{self._data.repo}"
-
-    @property
-    def url_check(self) -> str:
-        return f"https://dev.azure.com/{self._data.organisation}/{self._data.project}/_git/{self._data.repo}"
-
-    @property
-    def url_branch(self) -> str:
-        """De URL van de repository branch waar de wijzigingen in worden doorgevoerd"""
-        user_login = os.getlogin().replace(' ', '_')
-        descr_work_item = self._data.work_item_description.replace(' ', '_')
-        return f"{self.url_check}?version=GBfeature%2F{self._data.work_item}_{descr_work_item}_{user_login}"
-
-    @property
-    def path_file_sql_project(self) -> Path:
-        return Path(self._data.file_sql_project)
-
-    @property
-    def work_item_description(self):
-        return self._data.work_item_description.replace(' ', '_')
-
-    @property
-    def work_item(self):
-        return self._data.work_item
-
-"""
-devops:
-  folder: "GIT_repo"
-  organisation: "migratie-dataketen-douane"
-  project: "Douane%20Datawerkorganisatie"
-  repo: "DWO%20DataCenter"
-  branch: "collaboration"
-  work_item: "23936"
-  work_item_description: "Testen automatische uitrol DDL en ETL"
-  vs_project_file: "./CentralLayer/3. Central Layer.sqlproj
-  """
