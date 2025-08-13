@@ -14,7 +14,20 @@ class ExtractorConfigData:
 
 
 class ExtractorConfig(BaseConfigComponent):
+    """
+    Beheert de extractor configuratie en outputpad voor extractieresultaten.
+    Biedt toegang tot de relevante paden en instellingen voor extractie op basis van de configuratie.
+    """
+
     def __init__(self, config: ExtractorConfigData, path_intermediate: Path):
+        """
+        Initialiseert een ExtractorConfig met de opgegeven configuratie en tussenliggende pad.
+        Slaat de configuratie en het pad op voor gebruik bij het bepalen van outputlocaties voor extractie.
+
+        Args:
+            config (ExtractorConfigData): De extractor configuratiegegevens.
+            path_intermediate (Path): Het pad naar de tussenliggende outputfolder.
+        """
         super().__init__(config)
         self.path_intermediate = path_intermediate
 

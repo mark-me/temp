@@ -23,6 +23,11 @@ class DevOpsConfigData:
 
 
 class DevOpsConfig(BaseConfigComponent):
+    """
+    Beheert de DevOps configuratie en paden voor repository en branches.
+    Biedt toegang tot DevOps instellingen zoals repository-URL's, branchnamen, werkitems en lokale paden op basis van de configuratie.
+    """
+
     def __init__(self, config: DevOpsConfigData, path_output_root: Path):
         super().__init__(config)
         self._path_output_root = path_output_root
@@ -42,6 +47,13 @@ class DevOpsConfig(BaseConfigComponent):
 
     @property
     def branch(self) -> str:
+        """
+        Geeft de naam van de branch voor deze DevOps configuratie.
+        Haalt de branchnaam op uit de configuratie.
+
+        Returns:
+            str: De naam van de branch.
+        """
         return self._data.branch
 
     @property

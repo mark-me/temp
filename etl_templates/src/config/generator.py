@@ -16,17 +16,36 @@ class GeneratorConfigData:
 
     @property
     def dir_templates(self) -> Path:
+        """
+        Geeft het pad naar de map met templates voor de generator.
+        Bepaalt het pad op basis van de standaardlocatie en het gekozen platform.
+
+        Returns:
+            Path: Het pad naar de map met templates.
+        """
         root = "./etl_templates/src/generator/templates"
         dir_templates = Path(os.path.join(root, self.templates_platform))
         return dir_templates
 
     @property
     def dir_scripts_mdde(self) -> Path:
+        """
+        Geeft het pad naar de map met MDDE scripts voor de generator.
+        Bepaalt het pad op basis van de standaardlocatie voor MDDE scripts.
+
+        Returns:
+            Path: Het pad naar de map met MDDE scripts.
+        """
         root = "./etl_templates/src/generator/mdde_scripts"
         dir_scripts_mdde = Path(root)
         return dir_scripts_mdde
 
 class GeneratorConfig(BaseConfigComponent):
+    """
+    Beheert de generator configuratie en outputpad voor gegenereerde scripts.
+    Biedt toegang tot de relevante paden en instellingen voor scriptgeneratie op basis van de configuratie.
+    """
+
     def __init__(self, config: GeneratorConfigData, path_intermediate: Path):
         super().__init__(config)
         self.path_intermediate = path_intermediate
@@ -46,4 +65,11 @@ class GeneratorConfig(BaseConfigComponent):
 
     @property
     def template_platform(self) -> str:
+        """
+        Geeft het platform voor de generator templates.
+        Haalt de platformnaam op uit de configuratie.
+
+        Returns:
+            str: De naam van het platform voor de templates.
+        """
         return self._data.templates_platform

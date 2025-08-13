@@ -73,6 +73,17 @@ class GenesisConfig:
         )
 
     def _read_file(self) -> GenesisConfigData:
+        """
+        Leest de configuratie uit het YAML-bestand en converteert deze naar een GenesisConfigData object.
+        Transformeert sleutels met koppeltekens naar underscores en valideert de structuur van de configuratie.
+
+        Returns:
+            GenesisConfigData: De ingelezen en gevalideerde configuratie.
+
+        Raises:
+            ConfigFileError: Als het bestand niet gevonden wordt, de YAML onjuist is, verplichte waarden ontbreken,
+                types onjuist zijn, of een onverwachte fout optreedt.
+        """
         try:
             with open(self._file, "r") as file:
                 config_dict = yaml.safe_load(file)

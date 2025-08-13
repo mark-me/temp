@@ -6,9 +6,10 @@ from .base import BaseConfigComponent, ConfigFileError
 
 @dataclass
 class PowerDesignerConfigData:
-    """Configuration settings for PowerDesigner.
+    """
+    Bevat configuratiegegevens voor PowerDesigner-bestanden.
+    Geeft de map en de lijst met PowerDesigner-bestanden die gebruikt worden in de applicatie.
 
-    Holds the folder path and a list of PowerDesigner file names.
     """
 
     folder: str
@@ -16,7 +17,19 @@ class PowerDesignerConfigData:
 
 
 class PowerDesignerConfig(BaseConfigComponent):
+    """
+    Beheert de Power Designer configuratie en controleert de aanwezigheid van opgegeven bestanden.
+    Biedt toegang tot de relevante paden en instellingen voor PowerDesigner-bestanden op basis van de configuratie.
+    """
+
     def __init__(self, config: PowerDesignerConfigData):
+        """
+        Initialiseert een PowerDesignerConfig met de opgegeven configuratie.
+        Slaat de configuratie op voor gebruik bij het controleren en ophalen van PowerDesigner-bestanden.
+
+        Args:
+            config (PowerDesignerConfigData): De PowerDesigner configuratiegegevens.
+        """
         super().__init__(config)
 
     @property

@@ -30,7 +30,19 @@ class ConfigFileError(Exception):
 
 
 class BaseConfigComponent:
+    """
+    Basisklasse voor configuratiecomponenten.
+    Biedt functionaliteit voor het beheren van configuratiegegevens en hulpfuncties zoals het aanmaken van directories.
+    """
+
     def __init__(self, config):
+        """
+        Initialiseert een BaseConfigComponent met de opgegeven configuratiegegevens.
+        Slaat de configuratie op voor gebruik door afgeleide componenten.
+
+        Args:
+            config: De configuratiegegevens die door het component beheerd worden.
+        """
         self._data = config
 
     def create_dir(self, path: Path) -> None:
