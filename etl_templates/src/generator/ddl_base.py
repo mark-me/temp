@@ -38,7 +38,7 @@ class DDLGeneratorBase:
         self.platform = platform
         self.dir_templates = Path(__file__).parent / "templates" / platform
         self.ddl_type = ddl_type
-        self.dir_output = path_output
+        self.path_output = path_output
         self.template = self._get_template()
         self.files_generated = []
 

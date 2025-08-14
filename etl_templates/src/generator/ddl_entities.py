@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 from logtools import get_logger
 from tqdm import tqdm
@@ -64,7 +65,7 @@ class DDLEntities(DDLGeneratorBase):
         Args:
             entity (dict): De entiteit die wordt gecontroleerd en aangevuld.
         """
-        #entity["Name"] = f"{entity['Name'].replace(' ', '_')}"
+        # entity["Name"] = f"{entity['Name'].replace(' ', '_')}"
         if "Number" not in entity:
             logger.warning(
                 f"Entiteit '{entity['Name']}' heeft geen property number, standaard distributie wordt gebruikt."
@@ -111,81 +112,81 @@ class DDLEntities(DDLGeneratorBase):
             prefix_4 = get_prefix(data_type, 4)
 
             is_numeric = prefix_1 == "N"
+            is_no = prefix_2 == "NO"
             is_decimal = prefix_2 == "DC"
             is_float = prefix_1 == "F"
             is_sf = prefix_2 == "SF"
+            is_smallint = prefix_2 == "SI"
             is_lf = prefix_2 == "LF"
+            is_li = prefix_2 == "LI"
             is_mn = prefix_2 == "MN"
-            is_no = prefix_2 == "NO"
             is_nchar = prefix_1 == "A"
             is_nvarchar = prefix_2 == "VA"
+            is_bit = prefix_2 == "BL"
             is_bt = prefix_2 == "BT"
+            is_bin = prefix_3 == "BIN"
             is_mbt = prefix_3 == "MBT"
             is_vmbt = prefix_4 == "VMBT"
             is_la = prefix_2 == "LA"
             is_lva = prefix_3 == "LVA"
             is_txt = prefix_3 == "TXT"
-            is_bin = prefix_3 == "BIN"
             is_vbin = prefix_4 == "VBIN"
             is_lbin = prefix_4 == "LBIN"
-            is_dt = prefix_2 == "DT"
             is_date = prefix_1 == "D"
-            is_bit = prefix_2 == "BL"
+            is_dt = prefix_2 == "DT"
             is_int = prefix_1 == "I"
-            is_smallint = prefix_2 == "SI"
-            is_li = prefix_2 == "LI"
 
             if is_numeric:
-                dataype = f"NUMERIC({length}, {precision})"
+                datatype = f"NUMERIC({length}, {precision})"
             elif is_decimal:
-                dataype = f"DECIMAL({length}, {precision})"
+                datatype = f"DECIMAL({length}, {precision})"
             elif is_float:
-                dataype = f"FLOAT({getattr(attribute, 'Length', length)})"
+                datatype = f"FLOAT({getattr(attribute, 'Length', length)})"
             elif is_sf:
-                dataype = "FLOAT(24)"
+                datatype = "FLOAT(24)"
             elif is_lf:
-                dataype = "FLOAT(53)"
+                datatype = "FLOAT(53)"
             elif is_mn:
-                dataype = "DECIMAL(28,4)"
+                datatype = "DECIMAL(28,4)"
             elif is_no:
-                dataype = "BIGINT"
+                datatype = "BIGINT"
             elif is_nchar:
-                dataype = f"NCHAR({length})"
+                datatype = f"NCHAR({length})"
             elif is_nvarchar:
-                dataype = f"NVARCHAR({length})"
+                datatype = f"NVARCHAR({length})"
             elif is_bt:
-                dataype = f"NCHAR({length})"
+                datatype = f"NCHAR({length})"
             elif is_mbt:
-                dataype = f"NCHAR({length})"
+                datatype = f"NCHAR({length})"
             elif is_vmbt:
-                dataype = f"NVARCHAR({length})"
+                datatype = f"NVARCHAR({length})"
             elif is_la:
-                dataype = f"NCHAR({length})"
+                datatype = f"NCHAR({length})"
             elif is_lva:
-                dataype = f"NVARCHAR({length})"
+                datatype = f"NVARCHAR({length})"
             elif is_txt:
-                dataype = f"NVARCHAR({length})"
+                datatype = f"NVARCHAR({length})"
             elif is_bin:
-                dataype = f"BINARY({length})"
+                datatype = f"BINARY({length})"
             elif is_vbin:
-                dataype = f"VARBINARY({length})"
+                datatype = f"VARBINARY({length})"
             elif is_lbin:
-                dataype = "VARBINARY(MAX)"
+                datatype = "VARBINARY(MAX)"
             elif is_dt:
-                dataype = "DATETIME2"
+                datatype = "DATETIME2"
             elif is_date:
-                dataype = "DATE"
+                datatype = "DATE"
             elif is_bit:
-                dataype = "BIT"
+                datatype = "BIT"
             elif is_int:
-                dataype = "INT"
+                datatype = "INT"
             elif is_smallint:
-                dataype = "SMALLINT"
+                datatype = "SMALLINT"
             elif is_li:
-                dataype = "INT"
+                datatype = "INT"
             else:
-                dataype = data_type
-            entity["Attributes"][index]["DataTypeSQL"] = dataype
+                datatype = data_type
+            entity["Attributes"][index]["DataTypeSQL"] = datatype
         return entity
 
     def _get_entity_ddl_paths(self, entity: dict) -> Path:
@@ -199,8 +200,11 @@ class DDLEntities(DDLGeneratorBase):
         Returns:
             tuple: (path_output_file, file_output)
         """
-        dir_output = Path(f"{self.dir_output}/{entity['CodeModel']}/Tables/")
-        dir_output.mkdir(parents=True, exist_ok=True)
+        # Sanitize CodeModel to remove path separators and other unwanted characters
+        code_model_safe = re.sub(r'[\\/:"*?<>|]+', '_', entity['CodeModel'])
+
+        path_output = self.path_output / code_model_safe / "Tables"
+        path_output.mkdir(parents=True, exist_ok=True)
         file_output = f"{entity['Code']}.sql"
-        path_output_file = Path(f"{dir_output}/{file_output}")
+        path_output_file = path_output / file_output
         return path_output_file

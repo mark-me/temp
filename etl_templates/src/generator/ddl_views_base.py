@@ -35,3 +35,21 @@ class DDLViewBase(DDLGeneratorBase):
         else:
             logger.error(f"Geen datasource opgegeven voor mapping {mapping['Name']}")
         return mapping
+
+    def get_output_file_path(self, mapping: dict)-> Path:
+        """
+        Bepaalt het pad voor het opslaan van een source view DDL-bestand.
+
+        Deze methode maakt de benodigde directorystructuur aan en retourneert het volledige pad naar het DDL-bestand.
+
+        Args:
+            mapping (dict): Mappinginformatie van de entiteit.
+
+        Returns:
+            Path: Het volledige pad naar het DDL-bestand.
+        """
+        path_output = self.path_output / mapping["EntityTarget"]["CodeModel"] / "Views"
+        path_output.mkdir(parents=True, exist_ok=True)
+        file_output = f"vw_src_{mapping['Name']}.sql"
+        path_file_output = path_output / file_output
+        return path_file_output

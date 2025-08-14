@@ -28,7 +28,7 @@ class DDLSourceViews(DDLViewBase):
             mapping["Name"] = f"{mapping['Name']}"
             self._set_datasource_code(mapping)
             content = self._render_source_view(mapping)
-            path_file_output = self._get_source_view_paths(mapping)
+            path_file_output = self.get_output_file_path(mapping)
             self.save_generated_object(
                 content=content, path_file_output=path_file_output
             )
@@ -48,25 +48,5 @@ class DDLSourceViews(DDLViewBase):
         """
         mapping["Name"] = f"{mapping['Name']}"
         content = self.template.render(mapping=mapping)
-        # content = sqlparse.format(content, reindent=True, keyword_case="upper")
         return content
 
-    def _get_source_view_paths(self, mapping: dict) -> tuple:
-        """
-        Bepaalt de outputpaden voor het opslaan van een gegenereerde source view DDL.
-
-        Deze methode genereert het output directory-pad, de bestandsnaam en het volledige pad voor de source view op basis van de mapping.
-
-        Args:
-            mapping (dict): De mapping die gebruikt wordt om de paden te bepalen.
-
-        Returns:
-            tuple: (dir_output, file_output, path_file_output)
-        """
-        dir_output = Path(
-            f"{self.dir_output}/{mapping['EntityTarget']['CodeModel']}/Views/"
-        )
-        dir_output.mkdir(parents=True, exist_ok=True)
-        file_output = f"vw_src_{mapping['Name']}.sql"
-        path_file_output = f"{dir_output}/{file_output}"
-        return path_file_output
