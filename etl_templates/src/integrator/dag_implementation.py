@@ -55,13 +55,100 @@ class DagImplementation(DagBuilder):
         for vx in self.dag.vs:
             # Add data to entities
             if vx["type"] == VertexType.ENTITY.name:
-                self._set_entity_type(vx_entity=vx)
+                self._entity_add_type(vx_entity=vx)
+                self._entity_set_rowcount_estimate(vx_entity=vx)
+                self._entity_translate_datatypes(vx_entity=vx)
             # Add data to mappings
             if vx["type"] == VertexType.MAPPING.name:
-                self._mappings_add_model(vx_mapping=vx)
-                self._mappings_add_hashkey(vx_mapping=vx)
+                self._mapping_add_model(vx_mapping=vx)
+                self._mapping_add_hashkey(vx_mapping=vx)
 
-    def _mappings_add_model(self, vx_mapping: ig.Vertex) -> None:
+    def _entity_add_type(self, vx_entity: ig.Vertex) -> None:
+        """
+        Bepaalt en stelt het entiteit-type in op basis van het 'Stereotype' attribuut.
+
+        Deze functie wijst het type 'Regular' toe als er geen stereotype is, anders 'Aggregate'.
+
+        Args:
+            vx_entity (ig.Vertex): De entiteit waarvoor het type wordt bepaald.
+        """
+        if (
+            "Stereotype" not in vx_entity.attributes()
+            or vx_entity["Stereotype"] is None
+        ):
+            vx_entity["type_entity"] = "Regular"
+        else:
+            vx_entity["type_entity"] = "Aggregate"
+
+    def _entity_set_rowcount_estimate(self, vx_entity):
+        if "Number" not in vx_entity.attributes():
+            logger.warning(
+                        f"Entiteit '{vx_entity['Name']}' heeft geen property number, standaard distributie wordt gebruikt."
+                    )
+            vx_entity["Number"] = 0
+
+    def _entity_translate_datatypes(self, vx_entity: ig.Vertex) -> None:
+        """
+        Zet de datatypes van attributen van een entiteit om naar SQL-datatypes op basis van prefix-mapping.
+
+        Deze methode doorloopt alle attributen van de entiteit en vult het corresponderende SQL-datatype in het attribuut 'DataTypeSQL' aan de hand van de prefix.
+
+        Args:
+            vx_entity (ig.Vertex): De entiteit waarvan de attributen vertaald moeten worden.
+
+        Returns:
+            None
+        """
+        # mapping: prefix -> SQL-type template
+        type_mapping = {
+            "N":     "NUMERIC({length}, {precision})",
+            "NO":    "BIGINT",
+            "DC":    "DECIMAL({length}, {precision})",
+            "F":     "FLOAT({length})",
+            "SF":    "FLOAT(24)",
+            "LF":    "FLOAT(53)",
+            "MN":    "DECIMAL(28,4)",
+            "A":     "NCHAR({length})",
+            "VA":    "NVARCHAR({length})",
+            "BL":    "BIT",
+            "BT":    "NCHAR({length})",
+            "BIN":   "BINARY({length})",
+            "MBT":   "NCHAR({length})",
+            "VMBT":  "NVARCHAR({length})",
+            "LA":    "NCHAR({length})",
+            "LVA":   "NVARCHAR({length})",
+            "TXT":   "NVARCHAR({length})",
+            "VBIN":  "VARBINARY({length})",
+            "LBIN":  "VARBINARY(MAX)",
+            "D":     "DATE",
+            "DT":    "DATETIME2",
+            "I":     "INT",
+            "SI":    "SMALLINT",
+            "LI":    "INT",
+        }
+
+        # Sorteer prefixes op lengte, zodat langere matches eerst komen
+        prefixes = sorted(type_mapping.keys(), key=len, reverse=True)
+        if "Attributes" not in vx_entity.attributes() or vx_entity["Attributes"] is None: #if "Attributes" not in vx_entity.attributes():
+            logger.warning(f"Geen attributen gevonden in de entiteit vertex {vx_entity["Name"]}")
+            return
+        for attribute in vx_entity["Attributes"]:
+            data_type = attribute["DataType"]
+            length = attribute.get("Length")
+            precision = attribute.get("Precision", 0)
+
+            # Vind eerste prefix die overeenkomt
+            datatype = next(
+                (
+                    type_mapping[prefix].format(length=length, precision=precision)
+                    for prefix in prefixes
+                    if data_type.startswith(prefix)
+                ),
+                data_type,
+            )
+            attribute["DataTypeSQL"] = datatype
+
+    def _mapping_add_model(self, vx_mapping: ig.Vertex) -> None:
         """Voegt modelinformatie toe aan een mapping op basis van de doelentiteit.
 
         Deze functie zoekt de doelentiteit van een mapping en vult de mapping aan met de bijbehorende CodeModel en NameModel attributen.
@@ -77,7 +164,7 @@ class DagImplementation(DagBuilder):
             vx_mapping["CodeModel"] = vs_target_entity[0]["CodeModel"]
             vx_mapping["NameModel"] = vs_target_entity[0]["NameModel"]
 
-    def _mappings_add_hashkey(self, vx_mapping: ig.Vertex) -> None:
+    def _mapping_add_hashkey(self, vx_mapping: ig.Vertex) -> None:
         """Voegt een hashkey toe aan een mapping op basis van de attributen-mapping ten behoeve van delta bepaling
 
         Deze functie genereert een hashkey-expressie voor de mapping, gebaseerd op de opgegeven attributen en datasources.
@@ -113,23 +200,6 @@ class DagImplementation(DagBuilder):
             )
             x_hashkey = x_hashkey + hash_attrib
         vx_mapping["X_Hashkey"] = f"{x_hashkey},'{vx_mapping['DataSource']}'))"
-
-    def _set_entity_type(self, vx_entity: ig.Vertex) -> None:
-        """
-        Bepaalt en stelt het entiteit-type in op basis van het 'Stereotype' attribuut.
-
-        Deze functie wijst het type 'Regular' toe als er geen stereotype is, anders 'Aggregate'.
-
-        Args:
-            vx_entity (ig.Vertex): De entiteit waarvoor het type wordt bepaald.
-        """
-        if (
-            "Stereotype" not in vx_entity.attributes()
-            or vx_entity["Stereotype"] is None
-        ):
-            vx_entity["type_entity"] = "Regular"
-        else:
-            vx_entity["type_entity"] = "Aggregate"
 
     def get_run_config(self, deadlock_prevention: DeadlockPrevention) -> list[dict]:
         """Bepaalt de uitvoeringsvolgorde en run-levels van mappings in de ETL-DAG.
