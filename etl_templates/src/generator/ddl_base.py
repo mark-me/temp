@@ -134,9 +134,8 @@ class DDLGeneratorBase:
             re.IGNORECASE | re.DOTALL,
         ):
             return match.groups()
-        else:
-            logger.error(f"Kon CREATE TABLE structuur niet parsen {sql_content}")
-            return None
+        logger.error(f"Kon CREATE TABLE structuur niet parsen {sql_content}")
+        return None
 
     def _split_columns_and_constraints(
         self, cols_block: str
