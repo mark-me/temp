@@ -81,7 +81,6 @@ dependencies = [
     "setuptools==80.9.0",
     "six==1.17.0",
     "soupsieve==2.7",
-    "sqlfluff==3.4.1",
     "sqlparse==0.5.3",
     "stack-data==0.6.3",
     "super_collections==0.5.3",

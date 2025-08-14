@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import sqlparse
 from logtools import get_logger
 
 from .ddl_base import DDLGeneratorBase, DDLType
@@ -36,19 +35,3 @@ class DDLViewBase(DDLGeneratorBase):
         else:
             logger.error(f"Geen datasource opgegeven voor mapping {mapping['Name']}")
         return mapping
-
-    def format_sql(self, sql_content: str) -> str:
-        """Formatteert SQL statement(s)
-
-        Args:
-            sql_content (str): SQL statement(s) die geformatteerd dienen te worden
-
-        Returns:
-            str: Geformatteerd(e) SQL statement(s)
-        """
-        return sqlparse.format(
-            sql_content,
-            reindent=True,
-            comma_first=True,
-            keyword_case="upper"
-        )
