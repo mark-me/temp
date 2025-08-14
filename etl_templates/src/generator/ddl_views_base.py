@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 class DDLViewBase(DDLGeneratorBase):
     def __init__(self, path_output: Path, platform: str, ddl_type: DDLType):
         super().__init__(path_output=path_output, platform=platform, ddl_type=ddl_type)
-        self.source_layer_prefix = "SL_"
+        # FIXME: remove self.source_layer_prefix = "SL_"
 
     # FIXME: Remove def _set_datasource_code(self, mapping: dict) -> dict:
     #     """
