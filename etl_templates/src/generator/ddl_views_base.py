@@ -51,5 +51,4 @@ class DDLViewBase(DDLGeneratorBase):
         path_output = self.path_output / mapping["EntityTarget"]["CodeModel"] / "Views"
         path_output.mkdir(parents=True, exist_ok=True)
         file_output = f"vw_src_{mapping['Name']}.sql"
-        path_file_output = path_output / file_output
-        return path_file_output
+        return path_output / file_output

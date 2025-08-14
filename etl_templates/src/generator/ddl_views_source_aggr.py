@@ -17,7 +17,7 @@ class DDLSourceViewsAggr(DDLViewBase):
             ddl_type=DDLType.SOURCE_VIEW_AGGR,
         )
 
-    def generate_ddls(self, mappings: dict):
+    def generate_ddls(self, mappings: dict) -> None:
         """
         Creëert alle source views van de verschillende aggregatie entiteiten die in models zijn opgenomen en schrijft deze weg naar een folder in de repository.
         De source views bevatten de ETL om de doeltabel te vullen met data.

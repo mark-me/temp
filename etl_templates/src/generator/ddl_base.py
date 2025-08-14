@@ -50,7 +50,7 @@ class DDLGeneratorBase:
         )
         return environment.get_template(self.ddl_type.value)
 
-    def save_generated_object(self, content: str, path_file_output: str):
+    def save_generated_object(self, content: str, path_file_output: str) -> None:
         """
         Slaat de gegenereerde source view DDL op in het opgegeven pad en registreert het bestand in de DDL-lijst.
 
