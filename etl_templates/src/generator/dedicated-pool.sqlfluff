@@ -1,0 +1,31 @@
+[sqlfluff]
+# L014 do not strip optional quotes arround column names
+# L034 do not reorder columns
+# L030 keep casing of e.g. TVF
+# L031 we want to use alias in Joins for sure
+# L042 keep subqueries hopefully the writer had a good reason
+exclude_rules = L014,L034,L030,L031,L042
+dialect = tsql
+templater = raw
+
+[SQLFluff:rules]
+tab_space_size = 2
+max_line_length = 0
+comma_style = leading
+
+[SQLFluff:rules:L059]
+prefer_quoted_identifiers = True
+
+[SQLFluff:rules:L010]
+capitalisation_policy = upper
+
+[SQLFluff:rules:L011]
+aliasing = implicit
+
+[sqlfluff:layout:type:column_constraint_segment]
+spacing_before = align
+align_within = create_table_statement
+
+[sqlfluff:layout:type:data_type]
+spacing_before = align
+align_within = create_table_statement

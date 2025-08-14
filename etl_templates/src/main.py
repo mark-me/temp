@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from orchestrator import ExtractionIssuesFound, Orchestrator
+from orchestrator_genesis import ExtractionIssuesFound, Orchestrator
 
 BOLD_GREEN = "\x1b[1;32m"
 BOLD_RED = "\x1b[1;31m"

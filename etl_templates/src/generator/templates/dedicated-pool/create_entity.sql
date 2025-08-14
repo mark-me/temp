@@ -6,7 +6,7 @@ CREATE TABLE [{{entity.CodeModel}}].[{{entity.Code}}] (
 {%- endfor -%}
 
 {%- if entity.type_entity == "Regular" -%},
-[X_Startdate] DATE, [X_EndDate] DATE, [X_HashKey] INT, [X_IsCurrent] bit, [X_IsReplaced] bit, [X_RunId] NVARCHAR(100), [X_LoadDateTime] datetime, [X_Bron] nvarchar(10)
+[X_Startdate] date, [X_EndDate] date, [X_HashKey] INT, [X_IsCurrent] bit, [X_IsReplaced] bit, [X_RunId] NVARCHAR(100), [X_LoadDateTime] datetime, [X_Bron] nvarchar(10)
 {% endif %}
 ,CONSTRAINT [{{entity.Code}}_PK] PRIMARY KEY NONCLUSTERED (
     [{{entity.Code}}Key]

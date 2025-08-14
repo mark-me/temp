@@ -9,7 +9,7 @@ SELECT
         {% endif %}
     {% endfor %}
     [X_StartDate] = CAST(GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time' AS DATE),
-    [X_EndDate] = '2099-12-31',
+    [X_EndDate] = CAST('2099-12-31' AS DATE),
     {{ mapping.X_Hashkey }},
     [X_IsCurrent] = 1,
     [X_IsReplaced] = 0,

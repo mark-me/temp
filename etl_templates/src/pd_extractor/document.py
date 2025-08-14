@@ -42,16 +42,16 @@ class PDDocument(BaseExtractor):
         if filters := self._get_filters(pd_content=pd_content, domains=domains):
             dict_document["Filters"] = filters
         else:
-            logger.debug(f"Geen filters gevonden in '{self.file_pd_ldm}'")
+            logger.debug(f"Geen filters geschreven naar  '{file_output}'")
         if scalars := self._get_scalars(pd_content=pd_content, domains=domains):
             dict_document["Scalars"] = scalars
         else:
-            logger.debug(f"Geen scalars gevonden in '{self.file_pd_ldm}'")
+            logger.debug(f"No scalars to write to  '{file_output}'")
         aggregates = self._get_aggregates(pd_content=pd_content, domains=domains)
         if models := self._get_models(pd_content=pd_content, domains=domains):
             dict_document["Models"] = models
         else:
-            logger.error(f"Geen modellen gevonden in '{self.file_pd_ldm}'")
+            logger.error(f"Geen mappings om te schrijven in '{self.file_pd_ldm}'")
         if mappings := self._get_mappings(
             pd_content=pd_content,
             models=models,
@@ -61,7 +61,7 @@ class PDDocument(BaseExtractor):
         ):
             dict_document["Mappings"] = mappings
         else:
-            logger.warning(f"Geen mappings gevonden in '{self.file_pd_ldm}'")
+            logger.warning(f"Geen mappings om te schrijven in '{file_output}'")
         self._write_json(file_output=file_output, dict_document=dict_document)
 
     def _read_file_model(self) -> dict:
@@ -126,10 +126,11 @@ class PDDocument(BaseExtractor):
         """
         extractor = StereotypeExtractor(
             pd_content=pd_content,
+            stereotype_input="mdde_FilterBusinessRule",
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start filter extraction")
-        filters = extractor.get_filters(dict_domains=domains)
+        filters = extractor.get_objects(dict_domains=domains)
         logger.debug("Finished filter extraction")
         return filters
 
@@ -147,12 +148,13 @@ class PDDocument(BaseExtractor):
         """
         extractor = StereotypeExtractor(
             pd_content=pd_content,
+            stereotype_input="mdde_ScalarBusinessRule",
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start scalar extraction")
-        scalars = extractor.get_scalars(dict_domains=domains)
+        lst_scalars = extractor.get_objects(dict_domains=domains)
         logger.debug("Finished scalar extraction")
-        return scalars
+        return lst_scalars
 
     def _get_aggregates(self, pd_content: dict, domains: dict) -> list[dict]:
         """Haalt alle aggregate objecten op uit het logisch data model.
@@ -168,12 +170,13 @@ class PDDocument(BaseExtractor):
         """
         extractor = StereotypeExtractor(
             pd_content=pd_content,
+            stereotype_input="mdde_AggregateBusinessRule",
             file_pd_ldm=self.file_pd_ldm,
         )
         logger.debug("Start aggregate extraction")
-        aggregates = extractor.get_aggregates(dict_domains=domains)
+        lst_aggregates = extractor.get_objects(dict_domains=domains)
         logger.debug("Finished aggregate extraction")
-        return aggregates
+        return lst_aggregates
 
     def _get_models(self, pd_content: dict, domains: dict) -> list[dict]:
         """Haalt alle model objecten op uit het logisch data model.
@@ -188,9 +191,9 @@ class PDDocument(BaseExtractor):
         """
         extractor = ModelExtractor(pd_content=pd_content, file_pd_ldm=self.file_pd_ldm)
         logger.debug("Start model extraction")
-        models = extractor.get_models(dict_domains=domains)
+        lst_models = extractor.get_models(dict_domains=domains)
         logger.debug("Finished model extraction")
-        return models
+        return lst_models
 
     def _get_mappings(
         self,
@@ -218,10 +221,10 @@ class PDDocument(BaseExtractor):
             pd_content=pd_content, file_pd_ldm=self.file_pd_ldm
         )
         logger.debug("Start mapping extraction")
-        mappings = extractor.get_mappings(
+        lst_mappings = extractor.get_mappings(
             models=models, filters=filters, scalars=scalars, aggregates=aggregates
         )
-        return mappings
+        return lst_mappings
 
     def _write_json(self, file_output: str, dict_document: dict) -> None:
         """Schrijft het opgegeven document als JSON naar het opgegeven bestandspad.

@@ -43,7 +43,3 @@ class BaseExtractor:
             bool: True als alle sleutels aanwezig zijn, anders False.
         """
         return self._get_nested(data, keys, default=object()) is not object()
-
-    def determine_reference_type(self, data: dict):
-        possible_values = ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
-        return next((v for v in possible_values if v in data), None)

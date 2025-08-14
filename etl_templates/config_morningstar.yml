@@ -1,0 +1,19 @@
+title: "usecase-poc"
+
+folder-intermediate-root: "./etl_templates/intermediate"
+
+ignore-warnings: False
+
+folder: "GIT_repo/CentralLayer/Extracted Models"
+
+folder-output: "CentralLayer/Failure Reports"
+
+devops:
+  folder: "GIT_repo"
+  organisation: "migratie-dataketen-douane"
+  project: "Douane%20Datawerkorganisatie"
+  repo: "DWO%20DataCenter"
+  branch: "collaboration"
+  work-item: "23936"
+  work-item-description: "Testen automatische uitrol DDL en ETL"
+  file-sql-project: "./CentralLayer/3. Central Layer.sqlproj"

@@ -7,13 +7,12 @@ ignore-warnings: False
 power-designer:
   folder: "./Data model/Central/UsecasePoC"
   files:
-    - "Staging/UsecasePoC.ldm"
-    - "Staging/DA_Staging_Central.ldm"
+    - "UsecaseV2.25b.ldm"
     - "DM_FactPoC.ldm"
     - "DM_DimPoC.ldm"
 
 extractor:
-  folder-output: "RETW"
+  folder-output: "CentralLayer/Extracted Models"
 
 generator:
   folder-output: "CentralLayer"

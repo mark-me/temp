@@ -1,17 +1,18 @@
 from pathlib import Path
 
-from jinja2 import Template
 from logtools import get_logger
 from tqdm import tqdm
 
-from .ddl_views_base import DDLViewBase
+from .ddl_views_base import DDLViewBase, DDLType
 
 logger = get_logger(__name__)
 
 
 class DDLSourceViews(DDLViewBase):
-    def __init__(self, dir_output: str, ddl_template: Template):
-        super().__init__(dir_output=dir_output, ddl_template=ddl_template)
+    def __init__(self, path_output: Path, platform: str):
+        super().__init__(
+            path_output=path_output, platform=platform, ddl_type=DDLType.SOURCE_VIEW
+        )
 
     def generate_ddls(self, mappings: list):
         """
@@ -24,12 +25,10 @@ class DDLSourceViews(DDLViewBase):
         for mapping in tqdm(mappings, desc="Genereren Source Views", colour="#93c47d"):
             if mapping["EntityTarget"]["Stereotype"] == "mdde_AggregateBusinessRule":
                 continue
-            mapping["Name"] =f"{mapping["Name"]}"
+            mapping["Name"] = f"{mapping['Name']}"
             self._set_datasource_code(mapping)
             content = self._render_source_view(mapping)
-            path_file_output = self._get_source_view_paths(
-                mapping
-            )
+            path_file_output = self._get_source_view_paths(mapping)
             self.save_generated_object(
                 content=content, path_file_output=path_file_output
             )
@@ -47,9 +46,9 @@ class DDLSourceViews(DDLViewBase):
         Returns:
             str: De geformatteerde SQL-string voor de source view.
         """
-        mapping["Name"] =f"{mapping["Name"]}"
+        mapping["Name"] = f"{mapping['Name']}"
         content = self.template.render(mapping=mapping)
-        #content = sqlparse.format(content, reindent=True, keyword_case="upper")
+        # content = sqlparse.format(content, reindent=True, keyword_case="upper")
         return content
 
     def _get_source_view_paths(self, mapping: dict) -> tuple:

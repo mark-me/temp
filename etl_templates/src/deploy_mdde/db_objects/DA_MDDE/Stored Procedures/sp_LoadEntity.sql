@@ -187,10 +187,7 @@ BEGIN CATCH
 	/* Update config table with NOK, timestamp and run sp_UpdateConfig_ErrorPredecessor to update predecessors */
 	SET @LogMessage = CONCAT ('Update Config Table with outcome NOK: ', CONCAT (QUOTENAME(@par_Schema), '.', QUOTENAME(@par_Source)))
 	EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage
-
-	/* Avi, deze moeten wij nog maken.....*/
-	--EXEC [DA_MDDE].[sp_UpdateConfig_Error] @par_runid, @par_Schema, @par_Mapping, 0
-
+	EXEC [DA_MDDE].[sp_ErrorEntity_Execution] @par_runid, @par_schema ,@par_mapping , 0, 0 ,0
 	SET @LogMessage = CONCAT ('Error Message: ', @ErrorMessage)
 	EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage
 

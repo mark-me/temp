@@ -1,12 +1,28 @@
+from enum import Enum
+from pathlib import Path
+
 import sqlfluff
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader, Template
 from logtools import get_logger
 
 logger = get_logger(__name__)
 
+class DDLType(Enum):
+    """Enumerates the types of vertices in the graph.
+
+    Provides distinct identifiers for each type of node in the graph, including entities, mappings, and files.
+    """
+
+    SCHEMA = "create_schema.sql"
+    TABLE = "create_table.sql"
+    ENTITY = "create_entity.sql"
+    VIEW = "create_view.sql"
+    PROCEDURE = "create_procedure.sql"
+    SOURCE_VIEW = "create_source_view.sql"
+    SOURCE_VIEW_AGGR = "create_source_view_agg.sql"
 
 class DDLGeneratorBase:
-    def __init__(self, dir_output: str, ddl_template: Template):
+    def __init__(self, path_output: Path, platform: str, ddl_type: DDLType):
         """
         Initialiseert een DDLViews instantie voor het genereren van DDL-bestanden voor views.
 
@@ -16,9 +32,22 @@ class DDLGeneratorBase:
             dir_output (str): De directory waarin de DDL-bestanden worden opgeslagen.
             ddl_template (Template): De Jinja2-template die gebruikt wordt voor het renderen van de DDL.
         """
-        self.dir_output = dir_output
-        self.template = ddl_template
+        self.platform = platform
+        self.dir_templates = (
+            Path(__file__).parent / "templates" / platform
+        )
+        self.ddl_type = ddl_type
+        self.dir_output = path_output
+        self.template = self._get_template()
         self.files_generated = []
+
+    def _get_template(self):
+        environment = Environment(
+            loader=FileSystemLoader(self.dir_templates),
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
+        return environment.get_template(self.ddl_type.value)
 
     def save_generated_object(self, content: str, path_file_output: str):
         """
@@ -45,8 +74,9 @@ class DDLGeneratorBase:
         Returns:
             str: Geformatteerd(e) SQL statement(s)
         """
-        return sqlfluff.fix(
+        formatted = sqlfluff.fix(
             sql_content,
-            dialect="tsql",
-            rules=["LT01", "LT02", "LT04", "LT05", "LT13", "CP05"],
+            config_path= Path(__file__).parent / f"{self.platform}.sqlfluff",
+            fix_even_unparsable=True
         )
+        return formatted

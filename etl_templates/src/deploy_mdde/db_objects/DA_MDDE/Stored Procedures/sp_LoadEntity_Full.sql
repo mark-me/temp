@@ -39,8 +39,9 @@ BEGIN TRY
 	DECLARE @ExecutionId UNIQUEIDENTIFIER = newid()
 	DECLARE @sqlNewRow NVARCHAR(50) = CHAR(13) + CHAR(10)
 	DECLARE @sqlRowcount NVARCHAR(MAX) = ''
-	DECLARE @rowcount_New BIGINT
-	DECLARE @rowcount_Update BIGINT
+	DECLARE @RowCountInsert BIGINT
+	DECLARE @RowCountUpdate BIGINT
+	DECLARE @RowCountDelete BIGINT = 0
 	DECLARE @sel NVARCHAR(max)
 	DECLARE @ErrorMessage NVARCHAR(4000);
 	DECLARE @ErrorSeverity INT;
@@ -206,7 +207,7 @@ BEGIN TRY
 			SET @LogMessage = N'Run Query to get rowcount for new insert.'
 			EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage
 
-			EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @rowcount_New OUT
+			EXEC sp_executesql @sqlRowcount, N'@outputFromExec bigint out', @RowCountInsert OUT
 		END
 
 	
@@ -214,7 +215,7 @@ BEGIN TRY
 	SET @LogMessage = N'Update Config table with Rowcounts.'
 	EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage
 
-	SET @LogMessage = CONCAT (N'Rowcount to be inserted into ', '[', @par_Schema, '].[', @par_Destination, ']', ' is: ', @rowcount_New)
+	SET @LogMessage = CONCAT (N'Rowcount to be inserted into ', '[', @par_Schema, '].[', @par_Destination, ']', ' is: ', @RowCountInsert)
 	EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage
 
 	IF (@par_Debug = 1)
@@ -234,7 +235,7 @@ BEGIN TRY
 	SET @LogMessage = N'Update Config table with sp_UpdateConfig_End.'
 	EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage
 		
-	EXEC [DA_MDDE].[sp_EndEntity_Execution] @par_runid,@par_schema ,@par_mapping , @rowcount_New , 0,0
+	EXEC [DA_MDDE].[sp_EndEntity_Execution] @par_runid,@par_schema ,@par_mapping , @RowCountInsert , 0,0
 END TRY
 
 BEGIN CATCH
@@ -246,7 +247,7 @@ BEGIN CATCH
 	/* Update config table with NOK, timestamp and run sp_UpdateConfig_ErrorPredecessor to update predecessors */
 	SET @LogMessage = CONCAT ('',N'Update Config Table with uitcome NOK')
 	EXEC [DA_MDDE].[sp_InsertLogRecord] @LogID,@ObjectID,@PipelineRunID,@ActivityID,@TriggerID,@SourceCode,@Object,@State,@User,@PipelineName,@TriggerName,@TriggerType,@StoredProcName,@StoredProcParameter,@LogMessage
-	EXEC [DA_MDDE].[sp_UpdateEntity_Execution] @par_runid ,@par_schema ,@par_mapping  ,'NOK'
+	EXEC [DA_MDDE].[sp_ErrorEntity_Execution] @par_runid, @par_schema ,@par_mapping , @RowCountInsert , @RowCountUpdate, @RowCountDelete
 
     RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
 END CATCH

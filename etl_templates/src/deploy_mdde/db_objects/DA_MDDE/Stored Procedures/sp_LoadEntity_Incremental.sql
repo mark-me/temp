@@ -222,7 +222,6 @@ BEGIN TRY
 	/* Update rowcount in Config table */
 	SET @LogMessage = CONCAT(@par_runid,'¡',N'Update Config table with Rowcounts.')
 	EXEC [DA_MDDE].[sp_Logger] 'INFO', @LogMessage
-	EXEC [DA_MDDE].[sp_UpdateConfig_RowCount]  @par_runid , @par_Schema , @par_Mapping , @RowCountInsert, @RowCountUpdate, 0	, @par_Debug 
 	EXEC [DA_MDDE].[sp_EndEntity_Execution] @par_runid,@par_schema ,@par_mapping , @RowCountInsert , @RowCountUpdate, @RowCountDelete
 	/*Run Queries to load data*/
 	BEGIN
@@ -261,7 +260,7 @@ BEGIN CATCH
 	SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
 	SET @LogMessage = CONCAT ('Error Message: ', @ErrorMessage)
 	EXEC [DA_MDDE].[sp_Logger] 'ERROR', @LogMessage
-	EXEC  [DA_MDDE].[sp_UpdateConfigExecution] @ExecutionId, 'LoadOutcome', 'Error'
+	EXEC [DA_MDDE].[sp_ErrorEntity_Execution] @par_runid, @par_schema ,@par_mapping , @RowCountInsert , @RowCountUpdate, @RowCountDelete
     RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
 END CATCH
 GO

@@ -1,17 +1,18 @@
 from pathlib import Path
 
-from jinja2 import Template
 from logtools import get_logger
 from tqdm import tqdm
 
-from .ddl_base import DDLGeneratorBase
+from .ddl_base import DDLGeneratorBase, DDLType
 
 logger = get_logger(__name__)
 
 
 class DDLEntities(DDLGeneratorBase):
-    def __init__(self, dir_output: str, ddl_template: Template):
-        super().__init__(dir_output=dir_output, ddl_template=ddl_template)
+    def __init__(self, path_output: Path, platform: str):
+        super().__init__(
+            path_output=path_output, platform=platform, ddl_type=DDLType.ENTITY
+        )
 
     def generate_ddls(self, entities: list) -> None:
         """
@@ -28,7 +29,9 @@ class DDLEntities(DDLGeneratorBase):
         """
         # Select entities that are defined within a document (not just derived from mappings (sources))
         entities_create = [entity for entity in entities if entity["IsCreated"]]
-        for entity in tqdm(entities_create, desc="Genereren tabellen", colour="#38761d"):
+        for entity in tqdm(
+            entities_create, desc="Genereren tabellen", colour="#38761d"
+        ):
             self._process_entity(entity=entity)
 
     def _process_entity(self, entity: dict):
@@ -61,7 +64,7 @@ class DDLEntities(DDLGeneratorBase):
         Args:
             entity (dict): De entiteit die wordt gecontroleerd en aangevuld.
         """
-        entity["Name"] =f"{entity["Name"].replace(' ','_')}"
+        #entity["Name"] = f"{entity['Name'].replace(' ', '_')}"
         if "Number" not in entity:
             logger.warning(
                 f"Entiteit '{entity['Name']}' heeft geen property number, standaard distributie wordt gebruikt."
@@ -201,4 +204,3 @@ class DDLEntities(DDLGeneratorBase):
         file_output = f"{entity['Code']}.sql"
         path_output_file = Path(f"{dir_output}/{file_output}")
         return path_output_file
-

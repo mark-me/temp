@@ -1,15 +1,16 @@
+from pathlib import Path
+
 import sqlparse
-from jinja2 import Template
 from logtools import get_logger
 
-from .ddl_base import DDLGeneratorBase
+from .ddl_base import DDLGeneratorBase, DDLType
 
 logger = get_logger(__name__)
 
 
 class DDLViewBase(DDLGeneratorBase):
-    def __init__(self, dir_output: str, ddl_template: Template):
-        super().__init__(dir_output=dir_output, ddl_template=ddl_template)
+    def __init__(self, path_output: Path, platform: str, ddl_type: DDLType):
+        super().__init__(path_output=path_output, platform=platform, ddl_type=ddl_type)
         self.source_layer_prefix = "SL_"
 
     def _set_datasource_code(self, mapping: dict) -> dict:
