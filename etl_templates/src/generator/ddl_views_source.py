@@ -26,7 +26,7 @@ class DDLSourceViews(DDLViewBase):
             if mapping["EntityTarget"]["Stereotype"] == "mdde_AggregateBusinessRule":
                 continue
             mapping["Name"] = f"{mapping['Name']}"
-            #self._set_datasource_code(mapping)
+            #FIXME: remove self._set_datasource_code(mapping)
             content = self._render_source_view(mapping)
             path_file_output = self.get_output_file_path(mapping)
             self.save_generated_object(
