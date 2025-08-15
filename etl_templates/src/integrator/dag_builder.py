@@ -289,6 +289,7 @@ class DagBuilder:
                     "NameModel": model["Name"],
                     "CodeModel": model["Code"],
                     "IsCreated": True,
+                    "FileRETW": str(file_RETW),
                 }
             )
             dict_entity = {id_entity: entity}
@@ -336,6 +337,7 @@ class DagBuilder:
                 "Creator": mapping_RETW["Creator"],
                 "ModificationDate": mapping_RETW["ModificationDate"],
                 "Modifier": mapping_RETW["Modifier"],
+                "FileRETW": str(file_RETW),
             }
             self.edges.append(edge_mapping_file)
             self._add_mapping_sources(id_mapping=id_mapping, mapping=mapping_RETW)

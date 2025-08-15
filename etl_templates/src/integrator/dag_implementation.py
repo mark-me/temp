@@ -99,6 +99,9 @@ class DagImplementation(DagBuilder):
         Returns:
             None
         """
+        if not vx_entity["Attributes"]:
+            # External model entities have no attributes
+            return
         # mapping: prefix -> SQL-type template
         type_mapping = {
             "N":     "NUMERIC({length}, {precision})",
@@ -129,9 +132,6 @@ class DagImplementation(DagBuilder):
 
         # Sorteer prefixes op lengte, zodat langere matches eerst komen
         prefixes = sorted(type_mapping.keys(), key=len, reverse=True)
-        if "Attributes" not in vx_entity.attributes() or vx_entity["Attributes"] is None: #if "Attributes" not in vx_entity.attributes():
-            logger.warning(f"Geen attributen gevonden in de entiteit vertex {vx_entity["Name"]}")
-            return
         for attribute in vx_entity["Attributes"]:
             data_type = attribute["DataType"]
             length = attribute.get("Length")

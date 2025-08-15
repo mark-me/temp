@@ -6,12 +6,20 @@
     "configurations": [
 
         {
-            "name": "Python Debugger: Current File with Arguments",
+            "name": "Python Debugger Genesis",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "etl_templates/src/main.py",
             "console": "integratedTerminal",
             "args": ["etl_templates/config.yml"]
+        },
+        {
+            "name": "Python Debugger Morningstar",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "etl_templates\\src\\morningstar.py",
+            "console": "integratedTerminal",
+            "args": ["etl_templates/config_morningstar.yml"]
         }
     ]
 }

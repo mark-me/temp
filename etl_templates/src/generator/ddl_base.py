@@ -106,7 +106,7 @@ class DDLGeneratorBase:
         formatted_with = self._format_with_block(with_block)
         formatted_sql = (
             f"CREATE TABLE {table_name.strip()} (\n"
-            + ",\n".join(formatted_cols + formatted_constraints)
+            + "\n,".join(formatted_cols + formatted_constraints)
             + "\n)\nWITH (\n"
             + ",\n".join(formatted_with)
             + "\n);"
@@ -239,13 +239,19 @@ class DDLGeneratorBase:
         max_type_len = 0
         for col in columns:
             name, col_type, rest = self._split_column_parts(col)
+            col_type = col_type.upper()
+            if col_type == "DATETIME" and rest == "2":
+                col_type = "DATETIME2"
+                rest = ""
             max_name_len = max(max_name_len, len(name))
             max_type_len = max(max_type_len, len(col_type))
             parsed_cols.append((name, col_type, rest))
-        return [
+
+        column_lines = [
             f"    {name.ljust(max_name_len)}  {col_type.ljust(max_type_len)}  {rest}".rstrip()
             for name, col_type, rest in parsed_cols
         ]
+        return column_lines
 
     def _split_column_parts(self, col: str) -> tuple[str, str, str]:
         """
@@ -261,10 +267,7 @@ class DDLGeneratorBase:
         """
         # Regex: first word = name, type = everything up to first constraint keyword or end, rest = remainder
         # This regex assumes constraints start with NOT|NULL|DEFAULT|PRIMARY|UNIQUE|CHECK|REFERENCES|CONSTRAINT
-        match = re.match(
-            r"^(\S+)\s+((?:[A-Za-z]+\s*)+)(.*)$",
-            col
-        )
+        match = re.match(r"^(\S+)\s+((?:[A-Za-z]+\s*)+)(.*)$", col)
         if not match:
             # fallback: only name present
             return col.strip(), "", ""

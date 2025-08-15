@@ -11,6 +11,7 @@ from .base import BaseConfigApplication
 from .deploy_mdde import DeploymentMDDEConfig, DeploymentMDDEConfigData
 from .devops import DevOpsConfig, DevOpsConfigData
 from .extractor import ExtractorConfig, ExtractorConfigData
+from .integrator import IntegratorConfig, IntegratorConfigData
 from .generator import GeneratorConfig, GeneratorConfigData
 from .power_designer import PowerDesignerConfig, PowerDesignerConfigData
 
@@ -32,6 +33,7 @@ class GenesisConfigData:
         default_factory=PowerDesignerConfigData
     )
     extractor: ExtractorConfigData = field(default_factory=ExtractorConfigData)
+    integrator: IntegratorConfigData = field(default_factory=IntegratorConfigData)
     generator: GeneratorConfigData = field(default_factory=GeneratorConfigData)
     devops: DevOpsConfigData = field(default_factory=DevOpsConfigData)
     deployment_mdde: DeploymentMDDEConfigData = field(
@@ -63,6 +65,9 @@ class GenesisConfig(BaseConfigApplication[GenesisConfigData]):
         self.power_designer = PowerDesignerConfig(data.power_designer)
         self.extractor = ExtractorConfig(
             data.extractor, path_intermediate=self.path_intermediate
+        )
+        self.integrator = IntegratorConfig(
+            data.integrator, path_intermediate=self.path_intermediate
         )
         self.generator = GeneratorConfig(
             data.generator, path_intermediate=self.path_intermediate
@@ -162,6 +167,7 @@ class GenesisConfig(BaseConfigApplication[GenesisConfigData]):
             "folder": "Submap binnen de root waar PowerDesigner bestanden staan",
             "files": "Lijst van PowerDesigner .ldm-bestanden",
             "extractor": "Instellingen voor extractie uit RETW",
+            "integrator": "Instellingen voor integratie uit RETW",
             "generator": "Instellingen voor genereren van DDL/ETL",
             "publisher": "Instellingen voor publicatie van scripts",
             "devops": "DevOps instellingen zoals werkitems en branch",

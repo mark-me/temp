@@ -224,13 +224,13 @@ class Orchestrator:
     def _visualize_etl_flow(self, dag: DagReporting) -> None:
         """Genereert de ETL-flow visualisatie."""
         print(f"{BOLD_BLUE}\tReview rapporten over:{RESET}")
-        path_output = self.config.extractor.path_output / "ETL_flow.html"
+        path_output = self.config.integrator.path_output / "ETL_flow.html"
         dag.plot_etl_dag(file_html=path_output)
         print(f"{BOLD_BLUE}\t* ETL-flow: {UNDERLINE}{path_output}{RESET}")
 
     def _visualize_file_dependencies(self, dag: DagReporting) -> None:
         """Genereert de Power Designer bestandsafhankelijkheden visualisatie."""
-        path_output = self.config.extractor.path_output / "RETW_dependencies.html"
+        path_output = self.config.integrator.path_output / "RETW_dependencies.html"
         dag.plot_file_dependencies(file_html=path_output)
         print(
             f"{BOLD_BLUE}\t* Power Designer bestandsafhankelijkheden: {UNDERLINE}{path_output}{RESET}"
@@ -238,7 +238,7 @@ class Orchestrator:
 
     def _visualize_mappings(self, dag: DagReporting) -> None:
         """Genereert de mappings visualisatie."""
-        path_output = self.config.extractor.path_output / "mappings.html"
+        path_output = self.config.integrator.path_output / "mappings.html"
         dag.plot_mappings(file_html=path_output)
         print(f"{BOLD_BLUE}\t* Mappings: {UNDERLINE}{path_output}{RESET}")
 

@@ -14,6 +14,9 @@ power-designer:
 extractor:
   folder-output: "CentralLayer/Extracted Models"
 
+integrator:
+  folder-output: "Integrator"
+
 generator:
   folder-output: "CentralLayer"
   templates-platform: "dedicated-pool"
