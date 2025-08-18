@@ -18,13 +18,18 @@ Deze documentatie licht de componenten van de extractor toe, hoe het geëxtrahee
 
 De volgende klassen spelen een belangrijke rol in het extractieproces:
 
-* **`PDDocument`**, fungeert als de hoofdinterface voor het omzetten van Power Designer LDM-bestanden in een gestructureerd, machine-leesbaar formaat dat geschikt is voor verdere verwerking in datamodellering, DDL- en ETL-generatie workflows. Het abstraheert de complexiteit van het parsen en interpreteren van de LDM XML en biedt een overzichtelijke API voor downstream-tools en -processen.
-* **`StereotypeExtractor`** is verantwoordelijk voor het extraheren en verwerken van specifieke typen objecten (filters, aggregaten en scalars) uit een Power Designer-document dat als een dictionary is gerepresenteerd. De extractie is gebaseerd op een opgegeven stereotype. De klasse `StereotypeTransformer` verzorgt tevens het opschonen en transformeren van deze objecten en verzamelt gerelateerde domeingegevens.
-* **`ModelExtractor`** is verantwoordelijk voor het extraheren en transformeren van relevante objecten uit een Power Designer Logical Data Model (LDM)-document. Het hoofddoel is om de inhoud van het LDM te parsen, interne en externe modellen, entiteiten, relaties, domeinen en datasources te identificeren en deze informatie voor te bereiden voor verdere verwerking, zoals ETL of lineage-analyse. De klasse maakt gebruik van twee transformatie-helpers `ModelInternalTransformer` en `ModelsExternalTransformer` om de specifieke structuren van interne en externe modellen te verwerken.
-* **`MappingExtractor`** is verantwoordelijk voor het extraheren van ETL (Extract, Transform, Load) mapping-specificaties uit een Power Designer Logical Data Model (LDM) dat gebruikmaakt van de CrossBreeze MDDE-extensie. De klasse verwerkt de ruwe modelgegevens, filtert irrelevante mappings eruit en transformeert de geëxtraheerde informatie naar een leesbaarder en gestructureerd formaat.
-    * `MappingAttributesTransformer` is verantwoordelijk voor het transformeren en verrijken van attributen-mappings, specifiek voor ETL (Extract, Transform, Load).
-    * `SourceCompositionTransformer` is verantwoordelijk voor het transformeren, opschonen en verrijken van "source composition"-datastructuren die zijn geëxtraheerd uit Power Designer Logical Data Model (LDM)-documenten. Het hoofddoel is om complexe mapping- en compositiedata te verwerken en te normaliseren. Hierbij worden voorbeelddata verwijderd, relevante entiteiten, join-condities en scalar-condities geëxtraheerd en klaargemaakt voor verdere verwerking in ETL- of DDL-generatie.
-    * `TargetEntityTransformer` is verantwoordelijk voor het verwerken en verrijken van mapping-data die zijn geëxtraheerd uit Power Designer-documenten. Het hoofddoel is om mapping entries te transformeren door deze te associëren met hun doeltabellen en attributen.
+* **[`PDDocument`](#src.pd_extractor.document.PDDocument)**, fungeert als de hoofdinterface voor het omzetten van Power Designer LDM-bestanden in een gestructureerd, machine-leesbaar formaat dat geschikt is voor verdere verwerking in datamodellering, DDL- en ETL-generatie workflows. Het abstraheert de complexiteit van het parsen en interpreteren van de LDM XML en biedt een overzichtelijke API voor downstream-tools en -processen.
+* **[`StereotypeExtractor`](#src.pd_extractor.stereotype_extractor.StereotypeExtractor)** is verantwoordelijk voor het extraheren en verwerken van specifieke typen objecten (filters, aggregaten en scalars) uit een Power Designer-document dat als een dictionary is gerepresenteerd. De extractie is gebaseerd op een opgegeven stereotype. De klasse [`StereotypeTransformer`](#src.pd_extractor.stereotype_transform.StereotypeTransformer) verzorgt tevens het opschonen en transformeren van deze objecten en verzamelt gerelateerde domeingegevens.
+* **[`ModelExtractor`](#src.pd_extractor.model_extractor.ModelExtractor)** is verantwoordelijk voor het extraheren en transformeren van relevante objecten uit een Power Designer Logical Data Model (LDM)-document. Het hoofddoel is om de inhoud van het LDM te parsen, interne en externe modellen, entiteiten, relaties, domeinen en datasources te identificeren en deze informatie voor te bereiden voor verdere verwerking, zoals ETL of lineage-analyse. De klasse maakt gebruik van de transformatie-helpers
+    * [`ModelInternalTransformer`](#src.pd_extractor.model_transformers.model_internal.ModelInternalTransformer) en [`ModelsExternalTransformer`](#src.pd_extractor.model_transformers.models_external.ModelsExternalTransformer) om de specifieke structuren van interne en externe modellen te verwerken en
+    * [`RelationshipsTransformer`](#src.pd_extractor.model_transformers.model_relationships.RelationshipsTransformer) om de relaties tussen de entiteiten te verwerken.
+* **[`MappingExtractor`](#src.pd_extractor.mapping_extractor.MappingExtractor)** is verantwoordelijk voor het extraheren van ETL (Extract, Transform, Load) mapping-specificaties uit een Power Designer Logical Data Model (LDM) dat gebruikmaakt van de CrossBreeze MDDE-extensie. De klasse verwerkt de ruwe modelgegevens, filtert irrelevante mappings eruit en transformeert de geëxtraheerde informatie naar een leesbaarder en gestructureerd formaat.
+    * [`TargetEntityTransformer`](#src.pd_extractor.mapping_transformers.target.TargetEntityTransformer) is verantwoordelijk voor het verwerken en verrijken de doeltabelinformatie.
+    * [`MappingAttributesTransformer`](#src.pd_extractor.mapping_transformers.attributes.MappingAttributesTransformer) is verantwoordelijk voor het transformeren en verrijken van attributen-mappings, specifiek voor ETL (Extract, Transform, Load).
+    * [`SourceCompositionTransformer`](#src.pd_extractor.mapping_transformers.composition.SourceCompositionTransformer) is verantwoordelijk voor het transformeren, opschonen en verrijken van "source composition"-datastructuren die de objecten en entiteiten samenbrengen die de bron vormen van een mapping. Helper-klassen hierbij zijn:
+        * [`JoinConditionsTransformer`](#src.pd_extractor.mapping_transformers.composition_join_conditions.JoinConditionsTransformer) is verantwoordelijk voor het transformeren van de join condities in de compositie en verrijkt deze met entiteit en attribuut data.
+        * [`SourceConditionTransform`](#src.pd_extractor.mapping_transformers.composition_source_condition.SourceConditionTransform) is verantwoordelijk voor het transformeren van source condities (filters voor bron objecten) voor de huidige mapping en werkt de compositie bij met de getransformeerde condities.
+        * [`BusinessRuleTransform`](#src.pd_extractor.mapping_transformers.composition_business_rule.BusinessRuleTransform) is verantwoordelijk voor het transformeren van de business rule, vervangt variabelen in de SQL-expressie en werkt de compositie bij met de getransformeerde expressie.
 
 ### Sequentie van componenten
 
@@ -76,9 +81,6 @@ De extractor is ontworpen voor logische modellen (LDM). Ondersteuning voor PDM�
 
 Er is nog geen JSON-schema-validatie inbegrepen. Het is aanbevolen om het bestand visueel of met scripts te controleren.
 
-❓ Kan ik ook alleen de transformaties extraheren?
-
-Ja, mits de mapping-informatie aanwezig is in het LDM. Er is (nog) geen ondersteuning voor losse mapping-bestanden.
 
 ## Gegevensstructuur van de JSON-output
 
@@ -206,25 +208,115 @@ erDiagram
 
 ```mermaid
 classDiagram
-    PDDocument *-- DomainsExtractor
-    PDDocument *-- StereotypeExtractor
+    class PDDocument {
+        +__init__(file_pd_ldm)
+        +extract_to_json(file_output)
+    }
+
+    class ModelExtractor {
+        +__init__(pd_content, file_pd_ldm)
+        +get_models(dict_domains)
+    }
+
+    class MappingExtractor {
+        +__init__(pd_content, file_pd_ldm)
+        +get_mappings(models, filters, scalars, aggregates)
+    }
+
+    class DomainsExtractor {
+        +__init__(pd_content, file_pd_ldm)
+        +get_domains()
+    }
+
+    class StereotypeExtractor {
+        +__init__(pd_content, file_pd_ldm)
+        +get_scalars(dict_domains)
+        +get_aggregates(dict_domains)
+        +get_filters(dict_domains)
+    }
+
+    class MappingAttributesTransformer {
+        +__init__(file_pd_ldm, mapping)
+        +transform(dict_attributes)
+    }
+
+    class SourceCompositionTransformer {
+        +__init__(file_pd_ldm, mapping)
+        +transform(dict_objects, dict_attributes, dict_datasources)
+    }
+
+    class TargetEntityTransformer {
+        +__init__(file_pd_ldm, mapping)
+        +transform(dict_objects)
+    }
+
+    class ModelInternalTransformer {
+        +__init__(file_pd_ldm)
+        +transform(content)
+        +transform_entities(entities, dict_domains)
+        +transform_datasources(datasources)
+    }
+
+    class RelationshipsTransformer {
+        +__init__(file_pd_ldm, entities)
+        +transform(relationships)
+    }
+
+    class ModelsExternalTransformer {
+        +__init__(file_pd_ldm)
+        +transform(models, dict_entities)
+        +transform_entities(entities)
+    }
+
+    class DomainsTransformer {
+        +__init__(file_pd_ldm)
+        +transform(domains)
+    }
+
+    class StereotypeTransformer {
+        +__init__(file_pd_ldm)
+        +transform(stereotypes, dict_domains)
+        +domains(lst_domains)
+    }
+
+    class JoinConditionsTransformer {
+        +__init__(file_pd_ldm, mapping, composition)
+        +transform(dict_attributes)
+    }
+
+    class SourceConditionTransform {
+        +__init__(file_pd_ldm, mapping, composition)
+        +transform(dict_attributes)
+    }
+
+    class BusinessRuleTransform {
+        +__init__(file_pd_ldm, mapping, composition)
+        +transform(dict_attributes)
+    }
+
     PDDocument *-- ModelExtractor
     PDDocument *-- MappingExtractor
+    PDDocument *-- DomainsExtractor
+    PDDocument *-- StereotypeExtractor
+
+    ModelExtractor *-- ModelInternalTransformer
+    ModelExtractor *-- ModelsExternalTransformer
+    ModelExtractor *-- RelationshipsTransformer
+
+    MappingExtractor *-- SourceCompositionTransformer
+    MappingExtractor *-- TargetEntityTransformer
+    MappingExtractor *-- MappingAttributesTransformer
 
     DomainsExtractor *-- DomainsTransformer
 
     StereotypeExtractor *-- StereotypeTransformer
 
-    MappingExtractor *-- TargetEntityTransformer
-    MappingExtractor *-- MappingAttributesTransformer
-    MappingExtractor *-- SourceCompositionTransformer
-
-    ModelExtractor *-- ModelInternalTransformer
-    ModelExtractor *-- ModelsExternalTransformer
-    ModelExtractor *-- RelationshipsTransformer
+    SourceCompositionTransformer *-- JoinConditionsTransformer
+    SourceCompositionTransformer *-- SourceConditionTransform
+    SourceCompositionTransformer *-- BusinessRuleTransform
 ```
 
-De bovenstaande klassediagram laat de onderliggende overerving van de basisklassen `BaseExtractor` en `BaseTransformer` niet zien.
+De bovenstaande klassediagram laat de onderliggende overerving van de basisklassen [`BaseExtractor`](#src.pd_extractor.base_extractor.BaseExtractor) en [`BaseTransformer`](#src.pd_extractor.base_transformer.BaseTransformer) niet zien.
 
 ```mermaid
 classDiagram
@@ -274,11 +366,15 @@ Mogelijkheid om veranderingen tussen modelversies te vergelijken.
 
 ---
 
-### ::: src.pd_extractor.model_internal_transform.ModelInternalTransformer
+### ::: src.pd_extractor.model_transformers.model_internal.ModelInternalTransformer
 
 ---
 
-### ::: src.pd_extractor.models_external_transform.ModelsExternalTransformer
+### ::: src.pd_extractor.model_transformers.models_external.ModelsExternalTransformer
+
+---
+
+### ::: src.pd_extractor.model_transformers.model_relationships.RelationshipsTransformer
 
 ---
 
@@ -286,15 +382,27 @@ Mogelijkheid om veranderingen tussen modelversies te vergelijken.
 
 ---
 
-### ::: src.pd_extractor.mapping_attributes_transform.MappingAttributesTransformer
+### ::: src.pd_extractor.mapping_transformers.target.TargetEntityTransformer
 
 ---
 
-### ::: src.pd_extractor.mapping_composition_transform.SourceCompositionTransformer
+### ::: src.pd_extractor.mapping_transformers.attributes.MappingAttributesTransformer
 
 ---
 
-### ::: src.pd_extractor.mapping_target_transform.TargetEntityTransformer
+### ::: src.pd_extractor.mapping_transformers.composition.SourceCompositionTransformer
+
+---
+
+### ::: src.pd_extractor.mapping_transformers.composition_join_conditions.JoinConditionsTransformer
+
+---
+
+### ::: src.pd_extractor.mapping_transformers.composition_source_condition.SourceConditionTransform
+
+---
+
+### ::: src.pd_extractor.mapping_transformers.composition_business_rule.BusinessRuleTransform
 
 ---
 

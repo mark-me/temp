@@ -236,13 +236,6 @@ Er kunnen nu twee typen dead-locks voorkomen worden met een `DeadlockPrevention`
 
 ### ETL Simulatie
 
-`etl_templates/src/failure_reporting.py` biedt een opdrachtregeltool voor het simuleren en rapporteren van fouten in ETL-processen (Extract, Transform, Load), specifiek binnen de context van het "Genesis" ETL-systeem. Het orkestreert de extractie van datamodellen uit Power Designer-bestanden, bouwt een ETL-simulatie-DAG (Directed Acyclic Graph), en genereert visuele rapporten van faalscenario’s. De tool is bedoeld voor gebruik door data engineers of ontwikkelaars om de impact van specifieke mapping-fouten in ETL-pijplijnen te analyseren.
-
-#### ::: src.failure_reporting.main
-
-#### ::: src.failure_reporting.build_dag
-
----
 
 `EtlSimulator` definieert een ETL (Extract, Transform, Load) DAG (Directed Acyclic Graph) simulatieframework, gericht op het modelleren, simuleren en visualiseren van de impact van fouten binnen ETL-pijplijnen.
 

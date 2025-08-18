@@ -12,56 +12,56 @@ Ons Genesis development team bestaat uit gedreven specialisten met een focus op 
 
 ## Anil Dipai
 
-![Anil Dipai](images/developers/anil_dipai.jpeg){ align=left width="110" }
+![Anil Dipai](images/anil_dipai.jpeg){ align=left width="110" }
 
-* **Rol**: Lead Developer
+* **Rol**: Developer
 * **Expertise**: ...
 * **[LinkedIn](https://www.linkedin.com/in/anil-dipai-3a4a096/)**
 
 ## Mathijs Frencken
 
-![Mathijs Frencken](images/developers/mathijs_frencken.jpg){ align=left width="110" }
+![Mathijs Frencken](images/mathijs_frencken.jpg){ align=left width="110" }
 
 * **Rol**:
-* **Expertise**: ...
+* **Expertise**: Modelleur
 * **[LinkedIn](https://www.linkedin.com/in/mathijsfrencken/)**
 
 ## Youri-Tristan Jongejan
 
-![Youri-Tristan Jongejan](images/developers/youri_tristan_jongejan.jpeg){ align=left width="110" }
+![Youri-Tristan Jongejan](images/youri_tristan_jongejan.jpeg){ align=left width="110" }
 
-* **Rol**: ...
+* **Rol**: Developer
 * **Expertise**: ...
 * **[LinkedIn](https://www.linkedin.com/in/youritristanjongejan/)**
 
 ## Avinash Kalicharan
 
-![Avinash Kalicharan](images/developers/avinash_kalicharan.jpeg){ align=left width="110" }
+![Avinash Kalicharan](images/avinash_kalicharan.jpeg){ align=left width="110" }
 
-* **Rol**: ...
+* **Rol**: Developer
 * **Expertise**: ...
 * **[LinkedIn](https://www.linkedin.com/in/avinashkalicharan/)**
 
 ## Mijcke Peek
 
-![Mijcke Peek](images/developers/mijcke_peek.jpeg){ align=left width="110" }
+![Mijcke Peek](images/mijcke_peek.jpeg){ align=left width="110" }
 
-* **Rol**: Lead Developer
+* **Rol**: Developer
 * **Expertise**: ...
 * **[LinkedIn](https://www.linkedin.com/in/mijckepeek/)**
 
 ## Jeroen Poll
 
-![Jeroen Poll](images/developers/jeroen_poll.jpeg){ align=left width="110" }
+![Jeroen Poll](images/jeroen_poll.jpeg){ align=left width="110" }
 
-* **Rol**: Lead Developer
+* **Rol**: Developer
 * **Expertise**: ...
 * **[LinkedIn](https://www.linkedin.com/in/jeroenpoll/)**
 
 ## Mark Zwart
 
-![Mark Zwart](images/developers/mark_zwart.jpeg){ align=left width="110" }
+![Mark Zwart](images/mark_zwart.jpeg){ align=left width="110" }
 
-* **Rol**: Genesis Developer, Product Owner
+* **Rol**: Developer, Product Owner
 * **Expertise**: Python, SQL, R, Machine Learning, Docker
 * **[LinkedIn](https://www.linkedin.com/in/markzwart76/)**, **[GitHub](https://github.com/mark-me)**

@@ -1,6 +1,6 @@
 from logtools import get_logger
 
-from .base_transformer import BaseTransformer
+from ..base_transformer import BaseTransformer
 
 logger = get_logger(__name__)
 
@@ -45,41 +45,39 @@ class ModelInternalTransformer(BaseTransformer):
         model["IsDocumentModel"] = True
         return model
 
-    def transform_datasources(self, lst_datasources: list[dict]) -> dict:
+    def transform_datasources(self, datasources: list[dict]) -> dict:
         """Datasource gerelateerde data
 
         Args:
-            lst_datasources (list): Datasource data
+            datasources (list): Datasource data
 
         Returns:
             dict: Geschoonde datasource data (Id, naam en code) te gebruiken in model en mapping
         """
-        lst_datasources = (
-            [lst_datasources] if isinstance(lst_datasources, dict) else lst_datasources
-        )
-        lst_datasources = self.clean_keys(lst_datasources)
+        datasources = [datasources] if isinstance(datasources, dict) else datasources
+        datasources = self.clean_keys(datasources)
         dict_datasources = {
             datasource["Id"]: {
                 "Id": datasource.get("Id"),
                 "Name": datasource.get("Name"),
                 "Code": datasource.get("Code"),
             }
-            for datasource in lst_datasources
+            for datasource in datasources
         }
         return dict_datasources
 
-    def transform_entities(self, lst_entities: list[dict], dict_domains: dict) -> list:
+    def transform_entities(self, entities: list[dict], dict_domains: dict) -> list:
         """Omvormen van data van interne entiteiten en verrijkt de attributen met domain data
 
         Args:
-            lst_entities (list): Het deel van het PowerDesigner document dat entiteiten beschrijft
-            dict_domains (dict): Alle domains (oftewel datatypes gebruikt voor attributen)
+            entities (list): Het deel van het PowerDesigner document dat entiteiten beschrijft
+            dict_domains (dict): Lookup voor alle domains (oftewel datatypes gebruikt voor attributen)
 
         Returns:
             list: Alle entities
         """
-        lst_entities = self.clean_keys(lst_entities)
-        for entity in lst_entities:
+        entities = self.clean_keys(entities)
+        for entity in entities:
             # Reroute attributes
             entity = self._entity_attributes(entity=entity, dict_domains=dict_domains)
             # Create subset of attributes to enrich identifier attributes
@@ -96,14 +94,14 @@ class ModelInternalTransformer(BaseTransformer):
                 entity.pop("c:DefaultMapping")
             if "c:AttachedKeywords" in entity:
                 entity.pop("c:AttachedKeywords")
-        return lst_entities
+        return entities
 
     def _entity_attributes(self, entity: dict, dict_domains: dict) -> dict:
         """Omvormen van attribuut data voor de interne entiteiten en verrijkt deze met domain data
 
         Args:
             entity (dict): Interne entiteiten inclusief aggregaten
-            dict_domains (list): Alle domains
+            dict_domains (list): Lookup voor alle domains
 
         Returns:
             dict: Entiteit met geschoonde attribuut data
@@ -144,7 +142,7 @@ class ModelInternalTransformer(BaseTransformer):
 
         Args:
             attr (dict): Het attribuut dat verrijkt moet worden.
-            dict_domains (dict): Dictionary met alle domeinen.
+            dict_domains (dict): Lookup voor alle domains.
 
         Returns:
             dict: Het verrijkte attribuut.
@@ -175,7 +173,7 @@ class ModelInternalTransformer(BaseTransformer):
 
         Args:
             entity (dict): Entiteit die verwerkt moet worden.
-            dict_attrs (dict): Alle entiteit attributen.
+            dict_attrs (dict): Lookup voor alle entiteit attributen.
 
         Returns:
             dict: Entiteit met geschoonde en gestructureerde identifier (sleutel) informatie.
@@ -196,10 +194,14 @@ class ModelInternalTransformer(BaseTransformer):
         identifiers = self._prepare_identifiers(entity)
 
         for identifier in identifiers:
-            if not self._has_identifier_attributes(identifier, entity):
+            if not self._has_identifier_attributes(
+                identifier=identifier, entity=entity
+            ):
                 continue
 
-            self._enrich_identifier_with_attributes(identifier, dict_attrs)
+            self._enrich_identifier_with_attributes(
+                identifier=identifier, dict_attrs=dict_attrs
+            )
 
             if has_primary and primary_id == identifier["Id"]:
                 primary_key = identifier

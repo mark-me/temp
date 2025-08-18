@@ -9,21 +9,38 @@ logger = get_logger(__name__)
 class StereotypeExtractor(BaseExtractor):
     """Extraheert Power Designer document objecten die filters, aggregaten en scalars representeren"""
 
-    def __init__(self, pd_content: dict, stereotype_input: str, file_pd_ldm: str):
+    def __init__(self, pd_content: dict, file_pd_ldm: str):
         """Initialiseert StereotypeExtractor
 
         Args:
             pd_content (dict): Power Designer document data
-            stereotype_input (str): StereoType die aangeeft of het een filter(mdde_FilterBusinessRule), scalar(mdde_ScalarBusinessRule) of aggregate (mdde_AggregateBusinessRule) betreft
             file_pd_ldm (str): Bestand van waar de stereotypes uit geëxtraheerd worden.
         """
         super().__init__(file_pd_ldm=file_pd_ldm)
         self.content = pd_content
         self.transform_stereotype = StereotypeTransformer(file_pd_ldm)
-        self.stereotype = stereotype_input
 
-    def get_objects(self, dict_domains: dict) -> list[dict]:
+    def get_scalars(self, dict_domains: dict) -> list[dict]:
+        return self._get_objects(
+            stereotype="mdde_ScalarBusinessRule", dict_domains=dict_domains
+        )
+
+    def get_aggregates(self, dict_domains: dict) -> list[dict]:
+        return self._get_objects(
+            stereotype="mdde_AggregateBusinessRule", dict_domains=dict_domains
+        )
+
+    def get_filters(self, dict_domains: dict) -> list[dict]:
+        return self._get_objects(
+            stereotype="mdde_FilterBusinessRule", dict_domains=dict_domains
+        )
+
+    def _get_objects(self, stereotype: str, dict_domains: dict) -> list[dict]:
         """Haalt alle objecten van het opgegeven stereotype op gespecificeerd in de initialisatie
+
+        Args:
+            stereotype (str): Type stereotype object dat geretourneerd moet worden.
+            dict_domains (dict): Domeinen die gebruikt worden voor transformaties
 
         Returns:
             list[dict]: Lijst van geschoonde objecten van het opgegeven stereotype
@@ -35,7 +52,9 @@ class StereotypeExtractor(BaseExtractor):
 
         lst_objects = []
         for stereotype_object in lst_objects_input:
-            if self._is_matching_stereotype(stereotype_object=stereotype_object):
+            if self._is_matching_stereotype(
+                stereotype_expected=stereotype, stereotype_object=stereotype_object
+            ):
                 self._clean_stereotype_object(
                     stereotype_object=stereotype_object, model=model
                 )
@@ -44,7 +63,9 @@ class StereotypeExtractor(BaseExtractor):
         self.transform_stereotype.transform(lst_objects, dict_domains=dict_domains)
         return lst_objects
 
-    def _is_matching_stereotype(self, stereotype_object: dict) -> bool:
+    def _is_matching_stereotype(
+        self, stereotype_expected: str, stereotype_object: dict
+    ) -> bool:
         """Controleert of het object het opgegeven stereotype heeft.
 
         Deze functie vergelijkt het stereotype van het object met het opgegeven stereotype en retourneert True als deze overeenkomen.
@@ -57,7 +78,7 @@ class StereotypeExtractor(BaseExtractor):
         """
         return (
             "a:Stereotype" in stereotype_object
-            and stereotype_object["a:Stereotype"] == self.stereotype
+            and stereotype_object["a:Stereotype"] == stereotype_expected
         )
 
     def _clean_stereotype_object(self, stereotype_object: dict, model: str):
@@ -73,7 +94,7 @@ class StereotypeExtractor(BaseExtractor):
         keys_to_remove = [
             "c:ExtendedCollections",
             "c:ExtendedCompositions",
-            "c:DefaultMapping"
+            "c:DefaultMapping",
         ]
         for key in keys_to_remove:
             if key in stereotype_object:
@@ -91,9 +112,7 @@ class StereotypeExtractor(BaseExtractor):
         """
         path_keys = ["c:Domains", "o:Domain"]
         if lst_domains := self._get_nested(data=self.content, keys=path_keys):
-            dict_domains = self.transform_stereotype.domains(
-                lst_domains=lst_domains
-            )
+            dict_domains = self.transform_stereotype.domains(lst_domains=lst_domains)
             return dict_domains
         else:
             logger.error(

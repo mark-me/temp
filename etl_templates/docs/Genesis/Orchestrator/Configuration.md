@@ -216,52 +216,48 @@ classDiagram
 
 ## API referentie
 
-### Configuratie lezen
+### Configuratie Genesis
 
-#### ::: src.orchestrator.config_file.ConfigFile
+#### ::: src.config.genesis.GenesisConfig
 
----
-
-#### ::: src.orchestrator.config_file.PowerDesignerConfig
+#### ::: src.config.genesis.GenesisConfigData
 
 ---
 
-#### ::: src.orchestrator.config_file.ExtractorConfig
+### Configuratie componenten
+
+#### ::: src.config.power_designer.PowerDesignerConfig
+
+#### ::: src.config.power_designer.PowerDesignerConfigData
 
 ---
 
-#### ::: src.orchestrator.config_file.GeneratorConfig
+#### ::: src.config.extractor.ExtractorConfig
+
+#### ::: src.config.extractor.ExtractorConfigData
 
 ---
 
-#### ::: src.orchestrator.config_file.DeploymentMDDEConfig
+#### ::: src.config.generator.GeneratorConfig
+
+#### ::: src.config.generator.GeneratorConfigData
 
 ---
 
-#### ::: src.orchestrator.config_file.DevOpsConfig
+#### ::: src.config.deploy_mdde.DeploymentMDDEConfig
+
+#### ::: src.config.deploy_mdde.DeploymentMDDEConfigData
 
 ---
 
-### Configuratie validatie API
+#### ::: src.config.devops.DevOpsConfig
 
-#### ::: src.orchestrator.config_definition.ConfigFileError
-
----
-
-#### ::: src.orchestrator.config_definition.ConfigData
+#### ::: src.config.devops.DevOpsConfigData
 
 ---
 
-#### ::: src.orchestrator.config_definition.DevOpsConfigData
+### Basis klassen API
 
----
+#### ::: src.config.base.ConfigFileError
 
-#### ::: src.orchestrator.config_definition.ExtractorConfigData
-
----
-
-#### ::: src.orchestrator.config_definition.GeneratorConfigData
-
----
-
-#### ::: src.orchestrator.config_definition.PowerDesignerConfigData
+#### ::: src.config.base.BaseConfigComponent

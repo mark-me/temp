@@ -16,7 +16,7 @@ class BaseTransformer(BaseExtractor):
         super().__init__(file_pd_ldm=file_pd_ldm)
         self._timestamp_fields = ["a:CreationDate", "a:ModificationDate"]
 
-    def clean_keys(self, content: dict| list) -> dict | list:
+    def clean_keys(self, content: dict | list) -> dict | list:
         """Removes special prefixes from dictionary keys for easier access and manipulation.
 
         This function processes a dictionary or list of dictionaries, removing leading '@' and 'a:' from keys to standardize them.
@@ -100,10 +100,43 @@ class BaseTransformer(BaseExtractor):
             idx_end = len(extended_attrs_text) + 1
             value = extended_attrs_text[idx_start:idx_end]
             idx_start = value.find("=") + 1
-            value = value[idx_start:].upper()
+            return value[idx_start:].upper()
         else:
             logger.warning(
                 f"Geen waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
             )
-            value = ""
-        return value
+            return ""
+
+    def _extract_value_from_attribute_text(self, text: str, preceded_by: str) -> str:
+        """Extraheert de opgegeven tekst uit een tekst string. Deze tekst kan voorafgegaan
+        worden door een specifieke tekst en wordt afgesloten door een \n of het zit aan het einde van de string
+
+        Args:
+            extended_attrs_text (str): De tekst dat de waarde bevat waarop gezocht wordt
+            preceded_by (str): De tekst die de te vinden tekst voorafgaat
+
+        Returns:
+            str: De waarde die geassocieerd wordt met de voorafgaande tekst
+        """
+        idx_check = text.find(preceded_by)
+        if idx_check > 0:
+            logger.info(
+                f"'{idx_check}' waardes gevonden in extended_attrs_text bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
+            )
+            return self._extract_value_with_indices(text, preceded_by)
+        else:
+            logger.info(
+                f"Geen waardes gevonden in extended_attrs_text voor {self.file_pd_ldm} bij het gebruik van: '{preceded_by}' in {self.file_pd_ldm}"
+            )
+            return ""
+
+    def _extract_value_with_indices(
+        self, extended_attrs_text: str, preceded_by: str
+    ) -> str:
+        """Hulpmethode om de waarde te extraheren uit de tekst op basis van indices."""
+        idx_start = extended_attrs_text.find(preceded_by) + len(preceded_by)
+        idx_end = extended_attrs_text.find("\n", idx_start)
+        idx_end = idx_end if idx_end > -1 else len(extended_attrs_text) + 1
+        value = extended_attrs_text[idx_start:idx_end]
+        idx_start = value.find("=") + 1
+        return value[idx_start:].upper()

@@ -1,2 +1,0 @@
-Hier staan alle modellen die nodig zijn voor de Usecase in- en uitvoer
-met gebruikmaking van de DA_Staging_Central.

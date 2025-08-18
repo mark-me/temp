@@ -149,6 +149,7 @@ class RepositoryManager:
         """
         dir_to_clean = self._path_local / "CentralLayer"
         rmtree(dir_to_clean, ignore_errors=True)
+        pass
 
     def add_directory_to_repo(self, path_source: Path) -> None:
         """

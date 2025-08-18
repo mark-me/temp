@@ -41,7 +41,7 @@ SELECT
     {% endfor %}
 WHERE
     1 = 1 {% for sourceObject in mapping.SourceComposition %}
-        {% if sourceObject.JoinType == 'APPLY' %}
+        {% if sourceObject.JoinType == 'APPLY' and 'SourceConditions' in sourceObject %}
             AND {% for sourceCondition in sourceObject.SourceConditions %}
                 {{ sourceCondition.SourceConditionVariable.SourceAttribute.EntityAlias }}.[{{ sourceCondition.SourceConditionVariable.SourceAttribute.Code }}]
             {% endfor %}

@@ -172,32 +172,15 @@ class DagImplementation(DagBuilder):
         Args:
             vx_mapping (ig.Vertex): De mapping waarvoor de hashkey wordt toegevoegd.
         """
-
-        def build_hash_attrib(attr_mapping: list[dict], separator: str) -> str:
-            """Bouwt een hash-attribuutstring op basis van de attributen-mapping en een scheidingsteken.
-
-            Deze functie genereert een stringrepresentatie van een attribuut voor opname in een hashkey-expressie.
-
-            Args:
-                attr_mapping (list[dict]): De mapping van het attribuut.
-                separator (str): Het scheidingsteken voor concatenatie.
-
-            Returns:
-                str: De stringrepresentatie van het attribuut voor de hashkey.
-            """
+        x_hashkey = "[X_HashKey] = CHECKSUM(CONCAT(N'',"
+        for i, attr_mapping in enumerate(vx_mapping["AttributeMapping"]):
+            separator = "" if i == 0 else ","
             hash_attrib = f"{separator}"
             if "Expression" in attr_mapping:
                 return f"{hash_attrib}{attr_mapping['Expression']}"
             entity_alias = attr_mapping["AttributesSource"]["EntityAlias"]
             attr_source = attr_mapping["AttributesSource"]["Code"]
-            return f"{hash_attrib}{entity_alias}.[{attr_source}]"
-
-        x_hashkey = "[X_HashKey] = CHECKSUM(CONCAT(N'',"
-        for i, attr_mapping in enumerate(vx_mapping["AttributeMapping"]):
-            separator = "" if i == 0 else ","
-            hash_attrib = build_hash_attrib(
-                attr_mapping=attr_mapping, separator=separator
-            )
+            hash_attrib = f"{hash_attrib}{entity_alias}.[{attr_source}]"
             x_hashkey = x_hashkey + hash_attrib
         vx_mapping["X_Hashkey"] = f"{x_hashkey},'{vx_mapping['DataSource']}'))"
 

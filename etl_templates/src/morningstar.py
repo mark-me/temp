@@ -15,12 +15,12 @@ def main():
     parser = argparse.ArgumentParser(description="De Genesis failure report simulatie")
     print(
     """\n
-    __  __                   _                 _
-    |  \\/  | ___  _ __ _ __ (_)_ __   __ _ ___| |_ __ _ _ __
+    __  __                   _                 _             
+    |  \\/  | ___  _ __ _ __ (_)_ __   __ _ ___| |_ __ _ _ __ 
     | |\\/| |/ _ \\| '__| '_ \\| | '_ \\ / _` / __| __/ _` | '__|
-    | |  | | (_) | |  | | | | | | | | (_| \\__ \\ || (_| | |
-    |_|  |_|\\___/|_|  |_| |_|_|_| |_|\\__, |___/\\__\\__,_|_|
-                                    |___/
+    | |  | | (_) | |  | | | | | | | | (_| \\__ \\ || (_| | |   
+    |_|  |_|\\___/|_|  |_| |_|_|_| |_|\\__, |___/\\__\\__,_|_|   
+                                    |___/               
                                             MDDE Douane
                                             Failure report
     """,
@@ -31,8 +31,7 @@ def main():
 
     path_output = Path("etl_templates/intermediate")
     path_output.mkdir(parents=True, exist_ok=True)
-    etl_simulator = Orchestrator(path_config=Path(args.config_file))
-    etl_simulator.build_dag()
+    etl_simulator = Orchestrator.build_dag(file_config=Path(args.config_file))
 
     failed_mappings = [
         MappingRef("DA_Central", "SL_KIS_AggrMaxOfMutDatEad"),
