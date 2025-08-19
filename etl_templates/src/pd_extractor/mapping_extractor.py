@@ -55,19 +55,6 @@ class MappingExtractor(BaseExtractor):
         dict_datasources = self._create_datasources_lookup(models=models)
 
         mappings = self._get_relevant_mappings()
-        mappings_transformed = []
-        for mapping in mappings:
-            mappings_transformed.append(
-                self._process_single_mapping(
-                    mapping=mapping,
-                    dict_objects=dict_objects,
-                    dict_attributes=dict_attributes,
-                    dict_variables=dict_variables,
-                    dict_datasources=dict_datasources,
-                )
-            )
-            pass
-
         mappings_transformed = [
             self._process_single_mapping(
                 mapping=mapping,
