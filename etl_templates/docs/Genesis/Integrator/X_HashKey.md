@@ -56,4 +56,4 @@ flowchart LR
 
 ## API referentie
 
-### ::: src.integrator.dag_implementation.DagImplementation._mappings_add_hashkey
+### ::: src.integrator.dag_implementation.DagImplementation._mapping_add_hashkey

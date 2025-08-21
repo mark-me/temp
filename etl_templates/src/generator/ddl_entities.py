@@ -4,7 +4,7 @@ import re
 from logtools import get_logger
 from tqdm import tqdm
 
-from .ddl_base import DDLGeneratorBase, DDLType
+from .ddl_base import DDLGeneratorBase, DdlType
 
 logger = get_logger(__name__)
 
@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 class DDLEntities(DDLGeneratorBase):
     def __init__(self, path_output: Path, platform: str):
         super().__init__(
-            path_output=path_output, platform=platform, ddl_type=DDLType.ENTITY
+            path_output=path_output, platform=platform, ddl_type=DdlType.ENTITY
         )
 
     def generate_ddls(self, entities: list) -> None:

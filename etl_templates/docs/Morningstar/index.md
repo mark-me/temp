@@ -42,4 +42,4 @@ Het script is ontworpen om rechtstreeks te worden uitgevoerd en biedt een gebrui
 
 ## API
 
-### ::: src.morningstar.orchestrator.Orchestrator
+### ::: src.orchestrator_morningstar.orchestrator.Orchestrator

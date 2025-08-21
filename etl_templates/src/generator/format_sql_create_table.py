@@ -1,22 +1,12 @@
 import re
 
-class SqlCreateTableFormatter:
-    def __init__(self):
-        pass
+from logtools import get_logger
 
-    def format_sql(self, sql_content: str) -> str:
-        """Formatteert SQL statement(s)
+logger = get_logger(__name__)
 
-        Args:
-            sql_content (str): SQL statement(s) die geformatteerd dienen te worden
+class FormatSQLCreateTable:
 
-        Returns:
-            str: Geformatteerd(e) SQL statement(s)
-        """
-        formatted = self._format_create_table(sql_content=sql_content)
-        return formatted
-
-    def _format_create_table(self, sql_content: str) -> str:
+    def format_create_table(self, sql_content: str) -> str:
         """
         Formatteert een CREATE TABLE SQL-statement voor leesbaarheid en uitlijning.
 
@@ -68,18 +58,19 @@ class SqlCreateTableFormatter:
             re.IGNORECASE | re.DOTALL,
         ):
             return match.groups()
+        logger.error(f"Kon CREATE TABLE structuur niet parsen {sql_content}")
         return None
 
     def _split_columns_and_constraints(
         self, cols_block: str
     ) -> tuple[list[str], list[str]]:
         """
-        Splitst kolom- en constraintdefinities uit een CREATE TABLE statement.
+        Splitst kolom- en constraint-definities uit een CREATE TABLE statement.
 
         Deze methode scheidt kolomdefinities van constraints, inclusief inline en tabelniveau constraints.
 
         Args:
-            cols_block (str): De string met kolom- en constraintdefinities.
+            cols_block (str): De string met kolom- en constraint-definities.
 
         Returns:
             tuple[list[str], list[str]]: Een tuple met een lijst van kolomdefinities en een lijst van constraints.
@@ -116,7 +107,7 @@ class SqlCreateTableFormatter:
             constraint_keywords (list[str]): Lijst met constraint-keywords.
 
         Returns:
-            bool: True als het een tabelconstraint is, anders False.
+            bool: True als het een tabel-constraint is, anders False.
         """
         part_upper = part.upper()
         return any(part_upper.startswith(kw) for kw in constraint_keywords)
@@ -131,7 +122,7 @@ class SqlCreateTableFormatter:
         """
         Controleert of een kolomdefinitie een inline constraint bevat en splitst deze indien nodig.
 
-        Deze methode voegt het kolomdeel en het constraintdeel toe aan de respectievelijke lijsten als een inline constraint wordt gevonden.
+        Deze methode voegt het kolomdeel en het constraint-deel toe aan de respectievelijke lijsten als een inline constraint wordt gevonden.
 
         Args:
             part (str): De kolomdefinitie die gecontroleerd moet worden.
@@ -223,7 +214,7 @@ class SqlCreateTableFormatter:
             text (str): De tekst die gesplitst moet worden.
 
         Returns:
-            list[str]: Een lijst van gesplitste stringdelen.
+            list[str]: Een lijst van gesplitste string-delen.
         """
         parts = []
         current = []

@@ -229,8 +229,7 @@ class SourceCompositionTransformer(BaseTransformer):
             mapping=self.mapping,
             composition=composition,
         )
-        composition = trf_join_conditions.transform(dict_attributes=dict_attributes)
-        return composition
+        return trf_join_conditions.transform(dict_attributes=dict_attributes)
 
     def _set_join_alias_and_type(self, composition: dict):
         """Stelt de JoinAlias, JoinAliasName en JoinType in voor de compositie.

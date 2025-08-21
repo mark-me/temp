@@ -61,6 +61,7 @@ class DagImplementation(DagBuilder):
             # Add data to mappings
             if vx["type"] == VertexType.MAPPING.name:
                 self._mapping_add_model(vx_mapping=vx)
+                self._translate_aggregate_functions(vx_mapping=vx)
                 self._mapping_add_hashkey(vx_mapping=vx)
 
     def _entity_add_type(self, vx_entity: ig.Vertex) -> None:
@@ -164,6 +165,28 @@ class DagImplementation(DagBuilder):
             vx_mapping["CodeModel"] = vs_target_entity[0]["CodeModel"]
             vx_mapping["NameModel"] = vs_target_entity[0]["NameModel"]
 
+    def _translate_aggregate_functions(self, vx_mapping: ig.Vertex):
+        """Stelt afgeleiden in voor de entiteit die gebruikt worden bij de implementatie
+
+        Args:
+            mapping (ig.Vertex): De mapping waarvan de
+
+        Returns:
+            None
+        """
+        dict_aggr_functions = {
+            "AVERAGE": "AVG",
+            "COUNT": "COUNT",
+            "MAXIMUM": "MAX",
+            "MINIMUM": "MIN",
+            "SUM": "SUM",
+        }
+        for attr_mapping in vx_mapping["AttributeMapping"]:
+            if "Expression" in attr_mapping and attr_mapping["Expression"] in dict_aggr_functions:
+                attr_mapping["Expression"] = dict_aggr_functions[
+                    attr_mapping["Expression"]
+                ]
+
     def _mapping_add_hashkey(self, vx_mapping: ig.Vertex) -> None:
         """Voegt een hashkey toe aan een mapping op basis van de attributen-mapping ten behoeve van delta bepaling
 
@@ -177,10 +200,12 @@ class DagImplementation(DagBuilder):
             separator = "" if i == 0 else ","
             hash_attrib = f"{separator}"
             if "Expression" in attr_mapping:
-                return f"{hash_attrib}{attr_mapping['Expression']}"
-            entity_alias = attr_mapping["AttributesSource"]["EntityAlias"]
-            attr_source = attr_mapping["AttributesSource"]["Code"]
-            hash_attrib = f"{hash_attrib}{entity_alias}.[{attr_source}]"
+                # FIXME: Creates incorrect hashkey for aggregate views, but they are not used in the generator for source view aggregates
+                hash_attrib = f"{hash_attrib}{attr_mapping['Expression']}"
+            else:
+                entity_alias = attr_mapping["AttributesSource"]["EntityAlias"]
+                attr_source = attr_mapping["AttributesSource"]["Code"]
+                hash_attrib = f"{hash_attrib}{entity_alias}.[{attr_source}]"
             x_hashkey = x_hashkey + hash_attrib
         vx_mapping["X_Hashkey"] = f"{x_hashkey},'{vx_mapping['DataSource']}'))"
 

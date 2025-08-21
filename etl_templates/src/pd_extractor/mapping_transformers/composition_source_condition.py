@@ -46,11 +46,8 @@ class SourceConditionTransform(BaseTransformer):
             "o:ExtendedSubObject",
         ]
         conditions = self._get_nested(data=self.composition, keys=path_keys)
-
-        if conditions := [conditions] if isinstance(conditions, dict) else conditions:
-            conditions = self.clean_keys(conditions)
-        else:
-            logger.error(f"Geen source conditions voor {self.mapping["Name"]} in {self.file_pd_ldm}")
+        conditions = [conditions] if isinstance(conditions, dict) else conditions
+        conditions = self.clean_keys(conditions)
         return conditions
 
     def _process_source_condition(

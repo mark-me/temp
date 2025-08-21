@@ -1,3 +1,5 @@
+import copy
+
 from logtools import get_logger
 
 from ..base_transformer import BaseTransformer
@@ -145,10 +147,11 @@ class JoinConditionsTransformer(BaseTransformer):
         if dict_parent:
             if alias_parent is not None:
                 dict_parent.update({"EntityAlias": alias_parent})
-            dict_components["AttributeParent"] = dict_parent
+            dict_components["AttributeParent"] = copy.deepcopy(dict_parent)
+            #Deepcopy makes sure entityalias for child and parent are not the same            
         if dict_child:
             dict_child.update({"EntityAlias": alias_child})
-            dict_components["AttributeChild"] = dict_child
+            dict_components["AttributeChild"] = copy.deepcopy(dict_child)
         return dict_components
 
     def _extract_join_components(self, components: list, dict_attributes: dict):

@@ -111,6 +111,6 @@ classDiagram
 
 ## API referentie
 
-### ::: src.orchestrator.orchestrator.Orchestrator
+### ::: src.orchestrator_genesis.orchestrator.Orchestrator
 
-### ::: src.orchestrator.orchestrator.ExtractionIssuesFound
+### ::: src.orchestrator_genesis.orchestrator.ExtractionIssuesFound

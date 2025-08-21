@@ -77,8 +77,6 @@ In de generator wordt ook bepaald hoe Business keys worden opgebouwd, meer docum
 
 ### ::: src.generator.generator.DDLGenerator
 
-### ::: src.generator.generator.TemplateType
-
 ---
 
 ### ::: src.generator.ddl_entities.DDLEntities
@@ -98,3 +96,5 @@ In de generator wordt ook bepaald hoe Business keys worden opgebouwd, meer docum
 ---
 
 ### ::: src.generator.ddl_base.DDLGeneratorBase
+
+### ::: src.generator.ddl_base.DdlType

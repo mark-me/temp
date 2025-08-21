@@ -55,7 +55,7 @@ class BaseConfigComponent:
         Controleert of het pad een bestand is en converteert het naar een director-ypad indien nodig.
 
         Args:
-            dir_path (Path): Het pad naar de directory die aangemaakt moet worden.
+            path (Path): Het pad naar de directory die aangemaakt moet worden.
         """
         if path.is_file():
             path = Path(os.path.dirname(path))

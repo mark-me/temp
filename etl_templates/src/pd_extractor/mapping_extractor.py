@@ -55,6 +55,8 @@ class MappingExtractor(BaseExtractor):
         dict_datasources = self._create_datasources_lookup(models=models)
 
         mappings = self._get_relevant_mappings()
+        # mappings_transformed = []
+        # FIXME: mappings now have an issue that joining on the same object gives wrong reference alias
         mappings_transformed = [
             self._process_single_mapping(
                 mapping=mapping,
@@ -65,6 +67,15 @@ class MappingExtractor(BaseExtractor):
             )
             for mapping in mappings
         ]
+        # for mapping in mappings:
+        #     intermediate_mapping = self._process_single_mapping(
+        #         mapping=mapping,
+        #         dict_objects=dict_objects,
+        #         dict_attributes=dict_attributes,
+        #         dict_variables=dict_variables,
+        #         dict_datasources=dict_datasources
+        #     )
+        #     mappings_transformed.append(copy.deepcopy(intermediate_mapping))
         return mappings_transformed
 
     def _process_single_mapping(
