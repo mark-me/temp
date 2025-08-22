@@ -2,7 +2,7 @@ from logtools import get_logger
 
 from ..base_transformer import BaseTransformer
 from .composition_join_conditions import JoinConditionsTransformer
-from .composition_source_condition import SourceConditionsTransform
+from .composition_source_conditions import SourceConditionsTransform
 from .composition_scalars import ScalarsTransform
 
 logger = get_logger(__name__)
