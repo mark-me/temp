@@ -17,6 +17,11 @@ class MappingAttributesTransformer(BaseTransformer):
         """
         super().__init__(file_pd_ldm=file_pd_ldm)
         self.mapping = mapping
+        self.scalar_lookup = {
+            scalar["Id"]: scalar
+            for scalar in self.mapping.get("SourceComposition")
+            if "Expression" in scalar
+        }
 
     def transform(self, dict_attributes: dict) -> dict:
         """Verrijkt, schoont en hangt attribuut mappings om ten behoeven van een mapping
@@ -88,39 +93,59 @@ class MappingAttributesTransformer(BaseTransformer):
         has_entity_alias, id_entity_alias = self._extract_entity_alias(
             attr_map=attr_map
         )
-        if "c:SourceFeatures" in attr_map:
-            type_entity = self.determine_reference_type(
-                data=attr_map["c:SourceFeatures"]
-            )
-            id_attr = attr_map["c:SourceFeatures"][type_entity]["@Ref"]
-            if id_attr in dict_attributes:
-                attribute = dict_attributes[id_attr]
-                if (
-                    "StereotypeEntity" not in attribute
-                    or attribute["StereotypeEntity"] is None
-                ):
-                    attr_map["AttributesSource"] = attribute.copy()
-                    if has_entity_alias:
-                        attr_map["AttributesSource"]["EntityAlias"] = id_entity_alias
-                if "ExtendedAttributesText" in attr_map:
-                    attr_map["Expression"] = self.extract_value_from_attribute_text(
-                        attr_map["ExtendedAttributesText"],
-                        preceded_by="mdde_Aggregate,",
-                    )
-                if (
-                    attribute["StereotypeEntity"] == "mdde_ScalarBusinessRule"
-                    and has_entity_alias
-                ):
-                    attr_map["EntityAlias"] = id_entity_alias
-            else:
-                logger.warning(
-                    f"Bronattribuut '{id_attr}' niet gevonden in mapping '{self.mapping['Name']}' uit '{self.file_pd_ldm}'"
-                )
-            attr_map.pop("c:SourceFeatures", None)
-        else:
+        if "c:SourceFeatures" not in attr_map:
             logger.warning(
                 f"Geen source attributen gevonden in mapping '{self.mapping['Name']}' uit '{self.file_pd_ldm}'"
             )
+            return
+        type_entity = self.determine_reference_type(data=attr_map["c:SourceFeatures"])
+        id_attr = attr_map["c:SourceFeatures"][type_entity]["@Ref"]
+        if id_attr not in dict_attributes:
+            logger.warning(
+                f"Bronattribuut '{id_attr}' niet gevonden in mapping '{self.mapping['Name']}' uit '{self.file_pd_ldm}'"
+            )
+        else:
+            attribute = dict_attributes[id_attr]
+            self._handle_regular_mapping(
+                attr_map, attribute, has_entity_alias, id_entity_alias
+            )
+            self._handle_aggregate_expression(attr_map)
+            self._handle_scalar_mapping(
+                attr_map, attribute, has_entity_alias, id_entity_alias
+            )
+        attr_map.pop("c:SourceFeatures", None)
+
+    def _handle_regular_mapping(
+        self, attr_map, attribute, has_entity_alias, id_entity_alias
+    ):
+        is_regular_mapping = (
+            "StereotypeEntity" not in attribute or attribute["StereotypeEntity"] is None
+        )
+        if is_regular_mapping:
+            attr_map["AttributesSource"] = attribute.copy()
+            if has_entity_alias:
+                attr_map["AttributesSource"]["EntityAlias"] = id_entity_alias
+
+    def _handle_aggregate_expression(self, attr_map):
+        if "ExtendedAttributesText" in attr_map:
+            attr_map["Expression"] = self.extract_value_from_attribute_text(
+                attr_map["ExtendedAttributesText"],
+                preceded_by="mdde_Aggregate,",
+            )
+
+    def _handle_scalar_mapping(
+        self, attr_map, attribute, has_entity_alias, id_entity_alias
+    ):
+        if (
+            attribute.get("StereotypeEntity") == "mdde_ScalarBusinessRule"
+            and has_entity_alias
+        ):
+            if scalar := self.scalar_lookup.get(id_entity_alias):
+                attr_map["Expression"] = scalar.get("Expression")
+            else:
+                logger.error(
+                    f"Kan geen scalar vinden voor attibute mapping '{attr_map['AttributeTarget']['Code']}' in mapping '{self.mapping['Name']}'"
+                )
 
     def _extract_entity_alias(self, attr_map: dict) -> tuple[bool, str | None]:
         """Extraheert de entity alias uit de attribuut mapping indien aanwezig.
@@ -156,16 +181,13 @@ class MappingAttributesTransformer(BaseTransformer):
         Returns:
             dict: mapping met de zojuist toegevoegde expressie
         """
-        scalar_expressions = self.mapping.get("SourceComposition")
-        if attr_mappings := self._get_nested(data=self.mapping, keys=["AttributeMapping"]):
+        if attr_mappings := self.mapping.get("AttributeMapping"):
             for attr_mapping in attr_mappings:
-                if alias_id := self._get_nested(data=attr_mapping, keys=["EntityAlias"]):
+                if alias_id := attr_mapping.get("EntityAlias"):
                     # Lookup the alias_id in composition. For the attributemapping we'll replace the entityalias with the expression we've created in the sourcecomposition
-                    for expression in scalar_expressions:
-                        if expression["Id"] == alias_id:
-                            mapping_expression = expression.get("Expression")
-                            attr_mapping["Expression"] = mapping_expression
-                            attr_mapping.pop("EntityAlias", None)
+                    if scalar := self.scalar_lookup.get(alias_id):
+                        attr_mapping["Expression"] = scalar.get("Expression")
+                        attr_mapping.pop("EntityAlias", None)
         else:
             logger.warning(
                 f"Attributemapping van {self.mapping['Name']} in '{self.file_pd_ldm}' ontbreekt voor update"
