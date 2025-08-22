@@ -9,6 +9,12 @@ logger = get_logger(__name__)
 
 
 class SourceCompositionTransformer(BaseTransformer):
+    """Transformeert en verrijkt source composition data in een mapping.
+
+    Deze klasse verwerkt en verrijkt de mapping met source composition data,
+    inclusief compositie-items, join condities en datasources.
+    """
+
     def __init__(self, file_pd_ldm: str, mapping: dict):
         """Transformator voor source composition data.
 

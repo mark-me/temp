@@ -6,7 +6,10 @@ logger = get_logger(__name__)
 
 
 class TargetEntityTransformer(BaseTransformer):
-    """Vormt mapping data om en verrijkt dit met entiteit en attribuut data"""
+    """Transformeert en verrijkt mapping data met doelentiteit en attribuut data.
+
+    Deze klasse zoekt de doelentiteit op in de mapping en verrijkt de mapping met de bijbehorende entiteit data.
+    """
 
     def __init__(self, file_pd_ldm: str, mapping: dict):
         super().__init__(file_pd_ldm)

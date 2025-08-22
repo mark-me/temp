@@ -8,7 +8,11 @@ logger = get_logger(__name__)
 
 
 class JoinConditionsTransformer(BaseTransformer):
-    """Vormt mapping data om en verrijkt dit met entiteit en attribuut data"""
+    """Transformeert en verrijkt join condities in een compositie.
+
+    Deze klasse verwerkt join condities, koppelt attributen en verrijkt de compositie met
+    getransformeerde join condities.
+    """
 
     def __init__(self, file_pd_ldm: str, mapping: dict, composition: dict):
         super().__init__(file_pd_ldm)
@@ -148,7 +152,7 @@ class JoinConditionsTransformer(BaseTransformer):
             if alias_parent is not None:
                 dict_parent.update({"EntityAlias": alias_parent})
             dict_components["AttributeParent"] = copy.deepcopy(dict_parent)
-            #Deepcopy makes sure entityalias for child and parent are not the same            
+            #Deepcopy makes sure entityalias for child and parent are not the same
         if dict_child:
             dict_child.update({"EntityAlias": alias_child})
             dict_components["AttributeChild"] = copy.deepcopy(dict_child)

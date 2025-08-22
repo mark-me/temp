@@ -6,6 +6,10 @@ logger = get_logger(__name__)
 
 
 class MappingTransformer(BaseTransformer):
+    """Transformeert en normaliseert mapping data.
+
+    Deze klasse zorgt voor het opschonen en normaliseren van mappings, waaronder het vervangen van spaties in namen.
+    """
     def __init__(self, file_pd_ldm):
         super().__init__(file_pd_ldm)
 
