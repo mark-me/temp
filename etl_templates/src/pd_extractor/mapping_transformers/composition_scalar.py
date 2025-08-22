@@ -8,7 +8,11 @@ logger = get_logger(__name__)
 
 
 class ScalarTransform(BaseTransformer):
-    """Vormt mapping data om en verrijkt dit met entiteit en attribuut data"""
+    """Transformeert en verrijkt scalar business rules en SQL-expressies in een compositie.
+
+    Deze klasse verwerkt business rules, koppelt attributen en vervangt variabelen in SQL-expressies
+    binnen een gegeven compositie.
+    """
 
     def __init__(self, file_pd_ldm: str, mapping: dict, composition: dict):
         """Initialiseert de BusinessRuleTransform met het opgegeven LDM-bestand, mapping en compositie.

@@ -6,7 +6,10 @@ logger = get_logger(__name__)
 
 
 class SourceConditionTransform(BaseTransformer):
-    """Vormt mapping data om en verrijkt dit met entiteit en attribuut data"""
+    """Transformeert en verrijkt source condities in een compositie.
+
+    Deze klasse verwerkt source condities, koppelt attributen en verrijkt de compositie met getransformeerde condities.
+    """
 
     def __init__(self, file_pd_ldm: str, mapping: dict, composition: dict):
         super().__init__(file_pd_ldm)
