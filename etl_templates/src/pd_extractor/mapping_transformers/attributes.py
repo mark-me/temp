@@ -95,8 +95,7 @@ class MappingAttributesTransformer(BaseTransformer):
                 f"Geen source attributen gevonden in mapping '{self.mapping['Name']}' uit '{self.file_pd_ldm}'"
             )
             return
-        type_entity = self.determine_reference_type(data=attr_map["c:SourceFeatures"])
-        id_attr = attr_map["c:SourceFeatures"][type_entity]["@Ref"]
+        id_attr = self._get_source_feature_reference(attr_map)
         if id_attr not in dict_attributes:
             logger.warning(
                 f"Bronattribuut '{id_attr}' niet gevonden in mapping '{self.mapping['Name']}' uit '{self.file_pd_ldm}'"
@@ -107,6 +106,21 @@ class MappingAttributesTransformer(BaseTransformer):
             self._handle_aggregate_expression(attr_map)
             self._handle_scalar_mapping(attr_map, attribute, id_entity_alias)
         attr_map.pop("c:SourceFeatures", None)
+
+    def _get_source_feature_reference(self, attr_map: dict) -> str:
+        """Bepaalt het type entity en retourneert de referentie naar het bronattribuut.
+
+        Deze functie zoekt het juiste type entity in de source features en geeft de bijbehorende referentie terug.
+
+        Args:
+            attr_map (dict): De attribuut mapping waarin de source features staan.
+
+        Returns:
+            str: De referentie naar het bronattribuut.
+        """
+        type_entity = self.determine_reference_type(data=attr_map["c:SourceFeatures"])
+        id_attr = attr_map["c:SourceFeatures"][type_entity]["@Ref"]
+        return id_attr
 
     def _handle_regular_mapping(self, attr_map: dict, attribute: dict, id_entity_alias: str) -> None:
         """Voegt het bronattribuut toe aan de mapping als het een reguliere mapping betreft.
