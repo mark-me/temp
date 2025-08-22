@@ -104,7 +104,7 @@ class MappingAttributesTransformer(BaseTransformer):
             attr_map (dict): De attribuut mapping.
             dict_attributes (dict): Alle attributen van het Power Designer LDM.
         """
-        id_entity_alias = self._get_composition_alias(attr_map=attr_map)
+        id_composition = self._get_composition_alias(attr_map=attr_map)
         if "c:SourceFeatures" not in attr_map:
             logger.warning(
                 f"Geen source attributen gevonden in mapping '{self.mapping['Name']}' uit '{self.file_pd_ldm}'"
@@ -117,9 +117,9 @@ class MappingAttributesTransformer(BaseTransformer):
             )
         else:
             attribute = dict_attributes[id_attr]
-            self._handle_regular_mapping(attr_map, attribute, id_entity_alias)
+            self._handle_regular_mapping(attr_map=attr_map, attribute=attribute, id_composition=id_composition)
             self._handle_aggregate_expression(attr_map)
-            self._handle_scalar_mapping(attr_map, attribute, id_entity_alias)
+            self._handle_scalar_mapping(attr_map, attribute, id_composition)
         attr_map.pop("c:SourceFeatures", None)
 
     def _get_composition_alias(self, attr_map: dict) -> str | None:
@@ -166,7 +166,7 @@ class MappingAttributesTransformer(BaseTransformer):
         return id_attr
 
     def _handle_regular_mapping(
-        self, attr_map: dict, attribute: dict, id_entity_alias: str
+        self, attr_map: dict, attribute: dict, id_composition: str
     ) -> None:
         """Voegt het bronattribuut toe aan de mapping als het een reguliere mapping betreft.
 
@@ -182,8 +182,8 @@ class MappingAttributesTransformer(BaseTransformer):
         )
         if is_regular_mapping:
             attr_map["AttributesSource"] = attribute.copy()
-            if id_entity_alias:
-                attr_map["AttributesSource"]["EntityAlias"] = id_entity_alias
+            if id_composition:
+                attr_map["AttributesSource"]["EntityAlias"] = id_composition
 
     def _handle_aggregate_expression(self, attr_map: dict) -> None:
         """Voegt een expressie toe aan de mapping als er een aggregate expressie aanwezig is.
@@ -200,11 +200,20 @@ class MappingAttributesTransformer(BaseTransformer):
             )
 
     def _handle_scalar_mapping(
-        self, attr_map: dict, attribute: dict, id_entity_alias: str
+        self, attr_map: dict, attribute: dict, id_composition: str
     ) -> None:
+        """Voegt een scalar expressie toe aan de mapping als het attribuut een scalar business rule is.
+
+        Deze functie controleert of het attribuut een scalar business rule is en voegt de bijbehorende scalar expressie toe aan de mapping, of logt een foutmelding als deze niet gevonden kan worden.
+
+        Args:
+            attr_map (dict): De attribuut mapping die verrijkt wordt.
+            attribute (dict): Het attribuut uit het Power Designer LDM.
+            id_composition (str): De waarde van de composition alias, indien aanwezig.
+        """
         is_scalar = attribute.get("StereotypeEntity") == "mdde_ScalarBusinessRule"
-        if is_scalar and id_entity_alias:
-            if scalar := self.scalar_lookup.get(id_entity_alias):
+        if is_scalar and id_composition:
+            if scalar := self.scalar_lookup.get(id_composition):
                 attr_map["Expression"] = scalar.get("Expression")
             else:
                 logger.error(
