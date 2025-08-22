@@ -78,11 +78,12 @@ class DDLGeneratorBase:
             str: Geformatteerd(e) SQL statement(s)
         """
         formatter = SqlFormatter()
-        if self.ddl_type == DdlType.ENTITY:
-            formatted = formatter.format(sql=sql_content)
-        elif self.ddl_type in [DdlType.SOURCE_VIEW, DdlType.SOURCE_VIEW_AGGR]:
-            # formatted = sqlparse.format(
-            #     sql_content, reindent=True, comma_first=True, keyword_case="upper"
-            # )
-            formatted = formatter.format(sql=formatted)
+        formatted = sql_content
+        # if self.ddl_type == DdlType.ENTITY:
+        #     formatted = formatter.format(sql=sql_content)
+        # elif self.ddl_type in [DdlType.SOURCE_VIEW, DdlType.SOURCE_VIEW_AGGR]:
+        #     # formatted = sqlparse.format(
+        #     #     sql_content, reindent=True, comma_first=True, keyword_case="upper"
+        #     # )
+        #     formatted = formatter.format(sql=sql_content)
         return formatted

@@ -4,6 +4,7 @@ from logtools import get_logger
 
 logger = get_logger(__name__)
 
+
 class SqlFormatter:
     """
     Formatteert SQL statements voor betere leesbaarheid en structuur.
@@ -252,31 +253,80 @@ class SqlFormatter:
         Returns:
             str: Het geformatteerde CREATE VIEW-statement.
         """
-        select_lines, from_clause, join_clauses, where_lines = self._parse_create_view(sql)
-        sql = self._insert_newlines(sql)
-        sql = self._split_top_level_commas(sql)
-        sql = self._apply_indentation(sql)
-        return sql
+        sql = self._normalize_whitespace(sql)
+        select_lines, from_clause, join_clauses, where_lines = self._parse_create_view(
+            sql
+        )
+        pass
+        # formatted_sql = (
+        #     f"CREATE VIEW {table_name.strip()} AS\n"
+        #     + "\n,".join(select_lines)
+        #     + "\n)\nWITH (\n"
+        #     + ",\n".join(formatted_with)
+        #     + "\n);"
+        # )
+        # return formatted_sql
+
+        # sql = self._insert_newlines(sql)
+        # sql = self._split_top_level_commas(sql)
+        # sql = self._apply_indentation(sql)
+        # return sql
 
     def _parse_create_view(self, sql: str):
-        select_match = re.search(r'SELECT\s+(.*?)\s+FROM', sql, re.IGNORECASE | re.DOTALL)
-        select_block = select_match.group(1).strip() if select_match else None
-        select_lines = [line.strip().rstrip(',') for line in select_block.splitlines() if line.strip()]
+        parsed_view = {
+            "name_view": self._extract_view_name(sql),
+            "select_lines": self._extract_select_lines(sql),
+            "from_clause": self._extract_from_clause(sql),
+            "join_clauses": self._extract_join_clauses(sql),
+            "where_lines": self._extract_where_lines(sql),
+        }
+        return parsed_view
 
-        from_match = re.search(r'FROM\s+(.*?)\s+(?:LEFT|RIGHT|FULL\s+OUTER|OUTER|INNER)\s+JOIN', sql, re.IGNORECASE | re.DOTALL)
-        from_clause = from_match.group(1).strip() if from_match else None
-
-        join_matches = re.findall(
-        r'((?:LEFT|RIGHT|FULL\s+OUTER|OUTER|INNER)\s+JOIN\s+.*?(?=(?:LEFT|RIGHT|FULL\s+OUTER|OUTER|INNER)\s+JOIN|WHERE|$))',
-        sql,
-        re.IGNORECASE | re.DOTALL
+    def _extract_view_name(self, sql) -> str:
+        create_match = re.search(
+            r"CREATE VIEW\s+(.*?)\s+AS", sql, re.IGNORECASE | re.DOTALL
         )
-        join_clauses = [j.strip() for j in join_matches]
+        return create_match[1].strip() if create_match else None
 
-        where_match = re.search(r'WHERE\s+(.*)', sql, re.IGNORECASE | re.DOTALL)
-        where_block = where_match.group(1).strip() if where_match else None
-        where_lines = [line.strip() for line in where_block.splitlines() if line.strip()] if where_block else []
-        return select_lines, from_clause, join_clauses, where_lines
+    def _extract_select_lines(self, sql: str):
+        select_match = re.search(
+            r"SELECT\s+(.*?)\s+FROM", sql, re.IGNORECASE | re.DOTALL
+        )
+        select_block = select_match[1].strip() if select_match else None
+        return (
+            [
+                line.strip().rstrip(",")
+                for line in select_block.splitlines()
+                if line.strip()
+            ]
+            if select_block
+            else []
+        )
+
+    def _extract_from_clause(self, sql: str):
+        from_match = re.search(
+            r"FROM\s+(.*?)\s+(?:LEFT|RIGHT|FULL\s+OUTER|OUTER|INNER)\s+JOIN",
+            sql,
+            re.IGNORECASE | re.DOTALL,
+        )
+        return from_match[1].strip() if from_match else None
+
+    def _extract_join_clauses(self, sql: str):
+        join_matches = re.findall(
+            r"((?:LEFT|RIGHT|FULL\s+OUTER|OUTER|INNER)\s+JOIN\s+.*?(?=(?:LEFT|RIGHT|FULL\s+OUTER|OUTER|INNER)\s+JOIN|WHERE|$))",
+            sql,
+            re.IGNORECASE | re.DOTALL,
+        )
+        return [j.strip() for j in join_matches]
+
+    def _extract_where_lines(self, sql: str):
+        where_match = re.search(r"WHERE\s+(.*)", sql, re.IGNORECASE | re.DOTALL)
+        where_block = where_match[1].strip() if where_match else None
+        return (
+            [line.strip() for line in where_block.splitlines() if line.strip()]
+            if where_block
+            else []
+        )
 
     def _format_create_table(self, sql_content: str) -> str:
         """
@@ -475,45 +525,44 @@ class SqlFormatter:
 
 
 if __name__ == "__main__":
-#     raw_sql_view = """
-# CREATE VIEW [DA_Central].[vw_src_SL_DMS_Declaration] AS
-# SELECT
-#     [DeclarationVersion] = o1255.[VERSIONNUMBER],
-#     [Declaration] = o1255.[REFERENCE],
-#     [DeclarationProcedureCategory] = o1255.[PROCEDURECATEGORY],
-#     [AcceptanceDate] = o1292.[FirstAcceptanceDate],
-#     [DeclarationTID] = o1255.[TID],
-#     [IsDeclarationCurrentVersion] = CASE WHEN o1255.VERSIONNUMBER = o1300.DeclarationVersion THEN 1 ELSE 0 END,
-#     [DeclarationCurrentStatus] = o1268.[TYPE],
-#     [ProcessingStatusCode] = o1268.[TYPE],
-#     [X_StartDate] = CAST(GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time' AS DATE),
-#     [X_EndDate] = CAST('2099-12-31' AS DATE),
-#     None,
-#     [X_IsCurrent] = 1,
-#     [X_IsReplaced] = 0,
-#     [X_RunId] = '',
-#     [X_LoadDateTime] = GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time',
-#     [X_Bron] = 'DMS'
-#     FROM [SL_DMS].[DECLARTN] AS o1255
-#     LEFT JOIN [DA_Central].[AggrLastStatusVersion] AS o1259
-#         ON                 o1259.[Declaration] = o1381.[reference]
-#     LEFT JOIN [SL_DMS].[PRCSSTUS] AS o1268
-#         ON                 o1268.[declaration_reference] = o1381.[REFERENCE]
-# AND
-#                 o1268.[versionNumber] = o1259.[StatusVersionNumber]
-#     LEFT JOIN [DA_Central].[AggrFirstTimeStatus] AS o1292
-#         ON                 o1292.[Declaration] = o1381.[reference]
-#     LEFT JOIN [DA_Central].[AggrDeclarationMaxVersion] AS o1300
-#         ON                 o1300.[Declaration] = o1381.[reference]
-# AND
-#                 o1300.[DeclarationVersion] = o1381.[versionNumber]
-# WHERE
-#     1 = 1             AND                 o1268.[TYPE]
+    #     raw_sql_view = """
+    # CREATE VIEW [DA_Central].[vw_src_SL_DMS_Declaration] AS
+    # SELECT
+    #     [DeclarationVersion] = o1255.[VERSIONNUMBER],
+    #     [Declaration] = o1255.[REFERENCE],
+    #     [DeclarationProcedureCategory] = o1255.[PROCEDURECATEGORY],
+    #     [AcceptanceDate] = o1292.[FirstAcceptanceDate],
+    #     [DeclarationTID] = o1255.[TID],
+    #     [IsDeclarationCurrentVersion] = CASE WHEN o1255.VERSIONNUMBER = o1300.DeclarationVersion THEN 1 ELSE 0 END,
+    #     [DeclarationCurrentStatus] = o1268.[TYPE],
+    #     [ProcessingStatusCode] = o1268.[TYPE],
+    #     [X_StartDate] = CAST(GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time' AS DATE),
+    #     [X_EndDate] = CAST('2099-12-31' AS DATE),
+    #     None,
+    #     [X_IsCurrent] = 1,
+    #     [X_IsReplaced] = 0,
+    #     [X_RunId] = '',
+    #     [X_LoadDateTime] = GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time',
+    #     [X_Bron] = 'DMS'
+    #     FROM [SL_DMS].[DECLARTN] AS o1255
+    #     LEFT JOIN [DA_Central].[AggrLastStatusVersion] AS o1259
+    #         ON                 o1259.[Declaration] = o1381.[reference]
+    #     LEFT JOIN [SL_DMS].[PRCSSTUS] AS o1268
+    #         ON                 o1268.[declaration_reference] = o1381.[REFERENCE]
+    # AND
+    #                 o1268.[versionNumber] = o1259.[StatusVersionNumber]
+    #     LEFT JOIN [DA_Central].[AggrFirstTimeStatus] AS o1292
+    #         ON                 o1292.[Declaration] = o1381.[reference]
+    #     LEFT JOIN [DA_Central].[AggrDeclarationMaxVersion] AS o1300
+    #         ON                 o1300.[Declaration] = o1381.[reference]
+    # AND
+    #                 o1300.[DeclarationVersion] = o1381.[versionNumber]
+    # WHERE
+    #     1 = 1             AND                 o1268.[TYPE]
 
-#             NOT IN ('1','2')
-#     """
-#     print(SqlFormatter().format(raw_sql_view))
-
+    #             NOT IN ('1','2')
+    #     """
+    #     print(SqlFormatter().format(raw_sql_view))
 
     raw_sql_view2 = """
     CREATE VIEW [DA_Central].[vw_src_SL_DTO_ActivityCode] AS

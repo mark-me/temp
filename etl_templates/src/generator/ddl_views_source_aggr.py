@@ -30,7 +30,6 @@ class DDLSourceViewsAggr(DDLViewBase):
         ):
             if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
                 continue
-            mapping = self._set_source_view_aggr_derived(mapping)
             content = self._render_source_view_aggr(mapping)
             path_file_output = self.get_output_file_path(mapping)
             self.save_generated_object(
