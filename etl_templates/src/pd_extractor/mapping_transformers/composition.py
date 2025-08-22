@@ -190,22 +190,22 @@ class SourceCompositionTransformer(BaseTransformer):
         """
         apply_type = composition["Entity"]["Stereotype"]
         if apply_type == "mdde_FilterBusinessRule":
-            trf_source_condition = SourceConditionsTransform(
+            trf_source_conditions = SourceConditionsTransform(
                 file_pd_ldm=self.file_pd_ldm,
                 mapping=self.mapping,
                 composition=composition,
             )
-            self.composition = trf_source_condition.transform(
+            self.composition = trf_source_conditions.transform(
                 dict_attributes=dict_attributes
             )
             return composition
         elif apply_type == "mdde_ScalarBusinessRule":
-            trf_business_rule = ScalarsTransform(
+            trf_scalars = ScalarsTransform(
                 file_pd_ldm=self.file_pd_ldm,
                 mapping=self.mapping,
                 composition=composition,
             )
-            composition_result = trf_business_rule.transform(
+            composition_result = trf_scalars.transform(
                 dict_attributes=dict_attributes
             )
             composition |= composition_result
