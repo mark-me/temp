@@ -39,7 +39,7 @@ class MappingAttributesTransformer(BaseTransformer):
             for j in range(len(attr_maps)):
                 attr_map = attr_maps[j].copy()
                 attr_map["Order"] = j
-                self._process_attribute_map(
+                self._attribute_mapping(
                     attr_map=attr_map, dict_attributes=dict_attributes
                 )
                 attr_maps[j] = attr_map.copy()
@@ -49,10 +49,9 @@ class MappingAttributesTransformer(BaseTransformer):
             logger.error(
                 f"Geen Attribute-mapping voor {self.mapping['Name']} van {self.file_pd_ldm} gevonden"
             )
-        self._attribute_scalars()
         return self.mapping
 
-    def _process_attribute_map(self, attr_map: dict, dict_attributes: dict) -> None:
+    def _attribute_mapping(self, attr_map: dict, dict_attributes: dict) -> None:
         """Verwerkt een enkele attribuut mapping en verrijkt deze met target en source attributen.
 
         Deze functie zoekt het target attribuut op, koppelt het aan de mapping en verwerkt de bronattributen.
@@ -90,9 +89,7 @@ class MappingAttributesTransformer(BaseTransformer):
             attr_map (dict): De attribuut mapping.
             dict_attributes (dict): Alle attributen van het Power Designer LDM.
         """
-        has_entity_alias, id_entity_alias = self._extract_entity_alias(
-            attr_map=attr_map
-        )
+        id_entity_alias = self._extract_entity_alias(attr_map=attr_map)
         if "c:SourceFeatures" not in attr_map:
             logger.warning(
                 f"Geen source attributen gevonden in mapping '{self.mapping['Name']}' uit '{self.file_pd_ldm}'"
@@ -106,39 +103,47 @@ class MappingAttributesTransformer(BaseTransformer):
             )
         else:
             attribute = dict_attributes[id_attr]
-            self._handle_regular_mapping(
-                attr_map, attribute, has_entity_alias, id_entity_alias
-            )
+            self._handle_regular_mapping(attr_map, attribute, id_entity_alias)
             self._handle_aggregate_expression(attr_map)
-            self._handle_scalar_mapping(
-                attr_map, attribute, has_entity_alias, id_entity_alias
-            )
+            self._handle_scalar_mapping(attr_map, attribute, id_entity_alias)
         attr_map.pop("c:SourceFeatures", None)
 
-    def _handle_regular_mapping(
-        self, attr_map, attribute, has_entity_alias, id_entity_alias
-    ):
+    def _handle_regular_mapping(self, attr_map: dict, attribute: dict, id_entity_alias: str) -> None:
+        """Voegt het bronattribuut toe aan de mapping als het een reguliere mapping betreft.
+
+        Deze functie controleert of het attribuut een reguliere mapping is en voegt in dat geval het bronattribuut en eventueel de entity alias toe aan de mapping.
+
+        Args:
+            attr_map (dict): De attribuut mapping die verrijkt wordt.
+            attribute (dict): Het attribuut uit het Power Designer LDM.
+            id_entity_alias (str): De waarde van de entity alias, indien aanwezig.
+        """
         is_regular_mapping = (
             "StereotypeEntity" not in attribute or attribute["StereotypeEntity"] is None
         )
         if is_regular_mapping:
             attr_map["AttributesSource"] = attribute.copy()
-            if has_entity_alias:
+            if id_entity_alias:
                 attr_map["AttributesSource"]["EntityAlias"] = id_entity_alias
 
-    def _handle_aggregate_expression(self, attr_map):
+    def _handle_aggregate_expression(self, attr_map: dict) -> None:
+        """Voegt een expressie toe aan de mapping als er een aggregate expressie aanwezig is.
+
+        Deze functie controleert of er een aggregate expressie in de mapping staat en voegt deze toe als expressie.
+
+        Args:
+            attr_map (dict): De attribuut mapping die verrijkt wordt.
+        """
         if "ExtendedAttributesText" in attr_map:
             attr_map["Expression"] = self.extract_value_from_attribute_text(
                 attr_map["ExtendedAttributesText"],
                 preceded_by="mdde_Aggregate,",
             )
 
-    def _handle_scalar_mapping(
-        self, attr_map, attribute, has_entity_alias, id_entity_alias
-    ):
+    def _handle_scalar_mapping(self, attr_map: dict, attribute: dict, id_entity_alias: str) -> None:
         if (
             attribute.get("StereotypeEntity") == "mdde_ScalarBusinessRule"
-            and has_entity_alias
+            and id_entity_alias
         ):
             if scalar := self.scalar_lookup.get(id_entity_alias):
                 attr_map["Expression"] = scalar.get("Expression")
@@ -156,7 +161,6 @@ class MappingAttributesTransformer(BaseTransformer):
         Returns:
             tuple: (has_entity_alias (bool), id_entity_alias (str of None))
         """
-        has_entity_alias = False
         path_keys = [
             "c:ExtendedCollections",
             "o:ExtendedCollection",
@@ -166,13 +170,12 @@ class MappingAttributesTransformer(BaseTransformer):
         ]
         id_entity_alias = self._get_nested(data=attr_map, keys=path_keys)
         if id_entity_alias:
-            has_entity_alias = True
             logger.info(
                 "Ongebruikt object; file:pd_transform_attribute_mapping; object:id_entity_alias"
             )
             logger.info(f"Object bevat volgende data: '{id_entity_alias}'")
             attr_map.pop("c:ExtendedCollections")
-        return has_entity_alias, id_entity_alias
+        return id_entity_alias
 
     def _attribute_scalars(self) -> None:
         """Creëert een expressie string die gebruikt wordt in de attribute mapping
