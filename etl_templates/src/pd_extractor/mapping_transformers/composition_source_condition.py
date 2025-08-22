@@ -5,7 +5,7 @@ from ..base_transformer import BaseTransformer
 logger = get_logger(__name__)
 
 
-class SourceConditionsTransform(BaseTransformer):
+class SourceConditionTransform(BaseTransformer):
     """Vormt mapping data om en verrijkt dit met entiteit en attribuut data"""
 
     def __init__(self, file_pd_ldm: str, mapping: dict, composition: dict):
