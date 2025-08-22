@@ -33,18 +33,18 @@ class SourceCompositionTransformer(BaseTransformer):
         Returns:
             dict: De getransformeerde mapping met verrijkte source composition data.
         """
-        composition = self._extract_composition(self.mapping)
-        composition_items = self._extract_composition_items(composition)
-        composition_items = self._transform_composition_items(
+        composition = self._get_composition(self.mapping)
+        composition_items = self._get_composition_items(composition)
+        composition_items = self._handle_composition_items(
             composition_items=composition_items,
             dict_objects=dict_objects,
             dict_attributes=dict_attributes,
         )
 
-        self._mapping_enrich_datasource(dict_datasources=dict_datasources)
+        self._handle_datasource(dict_datasources=dict_datasources)
         return self.mapping
 
-    def _extract_composition(self, mapping: dict) -> list[dict]:
+    def _get_composition(self, mapping: dict) -> list[dict]:
         """Haalt de compositie uit de mapping en verwijdert MDDE voorbeeld composities.
 
         Deze functie zoekt de compositie op in de mapping, schoont deze en filtert voorbeeld composities eruit.
@@ -59,10 +59,10 @@ class SourceCompositionTransformer(BaseTransformer):
         composition = self._get_nested(data=mapping, keys=path_keys)
         composition = self.clean_keys(composition)
         composition = [composition] if isinstance(composition, dict) else composition
-        composition = self._compositions_remove_mdde_examples(composition)
+        composition = self._remove_mdde_examples(composition)
         return composition
 
-    def _extract_composition_items(self, composition: dict) -> list[dict]:
+    def _get_composition_items(self, composition: dict) -> list[dict]:
         """Haalt de compositie-items op uit de opgegeven compositie.
 
         Deze functie zoekt en retourneert alle relevante compositie-items uit de compositie,
@@ -89,7 +89,7 @@ class SourceCompositionTransformer(BaseTransformer):
             lst_composition_items = [lst_composition_items]
         return lst_composition_items
 
-    def _transform_composition_items(
+    def _handle_composition_items(
         self,
         composition_items: list[dict],
         dict_objects: dict,
@@ -108,7 +108,7 @@ class SourceCompositionTransformer(BaseTransformer):
             list[dict]: Een lijst van getransformeerde en gefilterde compositie-items.
         """
         for i, composition_item in enumerate(composition_items):
-            composition_item = self._enrich_composition_item(
+            composition_item = self._handle_composition_item(
                 composition_item,
                 dict_objects=dict_objects,
                 dict_attributes=dict_attributes,
@@ -125,7 +125,7 @@ class SourceCompositionTransformer(BaseTransformer):
         self.mapping["SourceComposition"] = composition_items
         return composition_items
 
-    def _compositions_remove_mdde_examples(self, compositions: list[dict]) -> dict:
+    def _remove_mdde_examples(self, compositions: list[dict]) -> dict:
         """Verwijderd de MDDE voorbeeld compositie veronderstelt dat er 1 compositie overblijft
 
         Args:
@@ -151,7 +151,7 @@ class SourceCompositionTransformer(BaseTransformer):
         composition = compositions_new[0] if compositions_new else None
         return composition
 
-    def _enrich_composition_item(
+    def _handle_composition_item(
         self, composition: dict, dict_objects: dict, dict_attributes: dict
     ) -> dict:
         """Verrijkt en schoont de compositie
@@ -166,7 +166,7 @@ class SourceCompositionTransformer(BaseTransformer):
         """
         composition = self.clean_keys(composition)
         self._set_join_alias_and_type(composition)
-        composition = self._composition_entity(
+        composition = self._handle_composition_entity(
             composition=composition, dict_objects=dict_objects
         )
         join_type = composition.get("JoinType", "")
@@ -252,7 +252,7 @@ class SourceCompositionTransformer(BaseTransformer):
                 f"Geen Join type gevonden in de 'ExtendedAttributesText' voor de mapping '{self.mapping["Name"]}' in '{composition['Name']}' uit {self.file_pd_ldm}"
             )
 
-    def _composition_entity(self, composition: dict, dict_objects: dict) -> dict:
+    def _handle_composition_entity(self, composition: dict, dict_objects: dict) -> dict:
         """Vormt om en verrijkt de compositie met entiteit data
 
         Args:
@@ -286,7 +286,7 @@ class SourceCompositionTransformer(BaseTransformer):
         composition.pop(root_data)
         return composition
 
-    def _mapping_enrich_datasource(self, dict_datasources: dict) -> None:
+    def _handle_datasource(self, dict_datasources: dict) -> None:
         """Verrijkt de mapping met de datasource die als bron is aangewezen voor de mapping
         ten behoeve van het genereren van de DDL en ETL
 
