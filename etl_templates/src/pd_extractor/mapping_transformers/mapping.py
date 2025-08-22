@@ -14,6 +14,16 @@ class MappingTransformer(BaseTransformer):
         super().__init__(file_pd_ldm)
 
     def transform(self, mapping: list[dict]) -> dict:
+        """Schoont en normaliseert de mapping data.
+
+        Deze functie verwerkt de mapping, verwijdert onnodige tekens en normaliseert de namen.
+
+        Args:
+            mapping (list[dict]): De mapping die getransformeerd moet worden.
+
+        Returns:
+            dict: De opgeschoonde en genormaliseerde mapping.
+        """
         mapping = self.clean_keys(mapping)
         mapping = self._normalize_names(mapping)
         return mapping
