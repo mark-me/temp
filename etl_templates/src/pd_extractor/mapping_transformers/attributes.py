@@ -159,10 +159,8 @@ class MappingAttributesTransformer(BaseTransformer):
     def _handle_scalar_mapping(
         self, attr_map: dict, attribute: dict, id_entity_alias: str
     ) -> None:
-        if (
-            attribute.get("StereotypeEntity") == "mdde_ScalarBusinessRule"
-            and id_entity_alias
-        ):
+        is_scalar = attribute.get("StereotypeEntity") == "mdde_ScalarBusinessRule"
+        if is_scalar and id_entity_alias:
             if scalar := self.scalar_lookup.get(id_entity_alias):
                 attr_map["Expression"] = scalar.get("Expression")
             else:
@@ -194,4 +192,3 @@ class MappingAttributesTransformer(BaseTransformer):
             logger.info(f"Object bevat volgende data: '{id_entity_alias}'")
             attr_map.pop("c:ExtendedCollections")
         return id_entity_alias
-
