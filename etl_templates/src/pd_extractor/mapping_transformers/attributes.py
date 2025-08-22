@@ -33,17 +33,20 @@ class MappingAttributesTransformer(BaseTransformer):
             dict: Mapping met geschoonde en verrijkte attribuut mapping
         """
         key_path = ["c:StructuralFeatureMaps", "o:DefaultStructuralFeatureMapping"]
-        if attr_maps := self._get_nested(data=self.mapping, keys=key_path):
-            attr_maps = [attr_maps] if isinstance(attr_maps, dict) else attr_maps
-            attr_maps = self.clean_keys(attr_maps)
-            for j in range(len(attr_maps)):
-                attr_map = attr_maps[j].copy()
+        attr_mappings = self._get_nested(data=self.mapping, keys=key_path)
+        if attr_mappings:
+            attr_mappings = (
+                [attr_mappings] if isinstance(attr_mappings, dict) else attr_mappings
+            )
+            attr_mappings = self.clean_keys(attr_mappings)
+            for j in range(len(attr_mappings)):
+                attr_map = attr_mappings[j].copy()
                 attr_map["Order"] = j
                 self._handle_attribute_mapping(
                     attr_map=attr_map, dict_attributes=dict_attributes
                 )
-                attr_maps[j] = attr_map.copy()
-            self.mapping["AttributeMapping"] = attr_maps
+                attr_mappings[j] = attr_map.copy()
+            self.mapping["AttributeMapping"] = attr_mappings
             self.mapping.pop("c:StructuralFeatureMaps", None)
         else:
             logger.error(
@@ -89,7 +92,7 @@ class MappingAttributesTransformer(BaseTransformer):
             attr_map (dict): De attribuut mapping.
             dict_attributes (dict): Alle attributen van het Power Designer LDM.
         """
-        id_entity_alias = self._extract_entity_alias(attr_map=attr_map)
+        id_entity_alias = self._get_composition_alias(attr_map=attr_map)
         if "c:SourceFeatures" not in attr_map:
             logger.warning(
                 f"Geen source attributen gevonden in mapping '{self.mapping['Name']}' uit '{self.file_pd_ldm}'"
@@ -106,6 +109,34 @@ class MappingAttributesTransformer(BaseTransformer):
             self._handle_aggregate_expression(attr_map)
             self._handle_scalar_mapping(attr_map, attribute, id_entity_alias)
         attr_map.pop("c:SourceFeatures", None)
+
+    def _get_composition_alias(self, attr_map: dict) -> str | None:
+        """Zoekt en retourneert de composition alias uit de attribuut mapping indien aanwezig.
+
+        Deze functie zoekt naar een composition alias in de attribuut mapping en verwijdert de bijbehorende collectie als deze gevonden is.
+
+        Args:
+            attr_map (dict): De attribuut mapping waarin gezocht wordt naar de composition alias.
+
+        Returns:
+            str | None: De waarde van de composition alias indien gevonden, anders None.
+        """
+        path_keys = [
+            "c:ExtendedCollections",
+            "o:ExtendedCollection",
+            "c:Content",
+            "o:ExtendedSubObject",
+            "@Ref",
+        ]
+        id_alias = self._get_nested(data=attr_map, keys=path_keys)
+        if id_alias:
+            # FIXME logger info informatief maken
+            logger.info(
+                "Ongebruikte object; file:pd_transform_attribute_mapping; object:id_entity_alias"
+            )
+            logger.info(f"Object bevat volgende data: '{id_alias}'")
+            attr_map.pop("c:ExtendedCollections")
+        return id_alias
 
     def _get_source_feature_reference(self, attr_map: dict) -> str:
         """Bepaalt het type entity en retourneert de referentie naar het bronattribuut.
@@ -167,28 +198,3 @@ class MappingAttributesTransformer(BaseTransformer):
                 logger.error(
                     f"Kan geen scalar vinden voor attibute mapping '{attr_map['AttributeTarget']['Code']}' in mapping '{self.mapping['Name']}'"
                 )
-
-    def _extract_entity_alias(self, attr_map: dict) -> tuple[bool, str | None]:
-        """Extraheert de entity alias uit de attribuut mapping indien aanwezig.
-
-        Args:
-            attr_map (dict): De attribuut mapping.
-
-        Returns:
-            tuple: (has_entity_alias (bool), id_entity_alias (str of None))
-        """
-        path_keys = [
-            "c:ExtendedCollections",
-            "o:ExtendedCollection",
-            "c:Content",
-            "o:ExtendedSubObject",
-            "@Ref",
-        ]
-        id_entity_alias = self._get_nested(data=attr_map, keys=path_keys)
-        if id_entity_alias:
-            logger.info(
-                "Ongebruikt object; file:pd_transform_attribute_mapping; object:id_entity_alias"
-            )
-            logger.info(f"Object bevat volgende data: '{id_entity_alias}'")
-            attr_map.pop("c:ExtendedCollections")
-        return id_entity_alias
