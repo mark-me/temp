@@ -165,7 +165,7 @@ class SourceCompositionTransformer(BaseTransformer):
             dict: Geschoonde en verrijkte versie van de compositie
         """
         composition = self.clean_keys(composition)
-        self._set_join_alias_and_type(composition)
+        self._handle_join_type_and_alias(composition)
         composition = self._handle_composition_entity(
             composition=composition, dict_objects=dict_objects
         )
@@ -231,7 +231,7 @@ class SourceCompositionTransformer(BaseTransformer):
         )
         return trf_join_conditions.transform(dict_attributes=dict_attributes)
 
-    def _set_join_alias_and_type(self, composition: dict):
+    def _handle_join_type_and_alias(self, composition: dict):
         """Stelt de JoinAlias, JoinAliasName en JoinType in voor de compositie.
 
         Args:
