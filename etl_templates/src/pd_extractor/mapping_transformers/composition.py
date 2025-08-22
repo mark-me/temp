@@ -2,8 +2,8 @@ from logtools import get_logger
 
 from ..base_transformer import BaseTransformer
 from .composition_join_conditions import JoinConditionsTransformer
-from .composition_source_condition import SourceConditionTransform
-from .composition_scalar import ScalarTransform
+from .composition_source_condition import SourceConditionsTransform
+from .composition_scalars import ScalarsTransform
 
 logger = get_logger(__name__)
 
@@ -190,7 +190,7 @@ class SourceCompositionTransformer(BaseTransformer):
         """
         apply_type = composition["Entity"]["Stereotype"]
         if apply_type == "mdde_FilterBusinessRule":
-            trf_source_condition = SourceConditionTransform(
+            trf_source_condition = SourceConditionsTransform(
                 file_pd_ldm=self.file_pd_ldm,
                 mapping=self.mapping,
                 composition=composition,
@@ -200,7 +200,7 @@ class SourceCompositionTransformer(BaseTransformer):
             )
             return composition
         elif apply_type == "mdde_ScalarBusinessRule":
-            trf_business_rule = ScalarTransform(
+            trf_business_rule = ScalarsTransform(
                 file_pd_ldm=self.file_pd_ldm,
                 mapping=self.mapping,
                 composition=composition,

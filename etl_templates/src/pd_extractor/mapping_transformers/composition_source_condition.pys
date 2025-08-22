@@ -5,7 +5,7 @@ from ..base_transformer import BaseTransformer
 logger = get_logger(__name__)
 
 
-class SourceConditionTransform(BaseTransformer):
+class SourceConditionsTransform(BaseTransformer):
     """Vormt mapping data om en verrijkt dit met entiteit en attribuut data"""
 
     def __init__(self, file_pd_ldm: str, mapping: dict, composition: dict):
@@ -25,15 +25,15 @@ class SourceConditionTransform(BaseTransformer):
         Returns:
             dict: De bijgewerkte compositie dictionary met getransformeerde source condities.
         """
-        conditions = self._extract_source_conditions()
+        conditions = self._get_source_conditions()
         for i, condition in enumerate(conditions):
-            self._process_source_condition(
+            self._handle_source_condition(
                 condition=condition, index=i, dict_attributes=dict_attributes
             )
         self.composition["SourceConditions"] = conditions
         return self.composition
 
-    def _extract_source_conditions(self) -> list[dict]:
+    def _get_source_conditions(self) -> list[dict]:
         """Haalt de lijst van source condities uit de compositie.
 
         Returns:
@@ -50,7 +50,7 @@ class SourceConditionTransform(BaseTransformer):
         conditions = self.clean_keys(conditions)
         return conditions
 
-    def _process_source_condition(
+    def _handle_source_condition(
         self, index: int, dict_attributes: dict, condition: dict
     ) -> None:
         """Verwerkt een enkele source conditie binnen een compositie.
@@ -61,19 +61,19 @@ class SourceConditionTransform(BaseTransformer):
             composition (dict): De compositie waartoe de conditie behoort.
         """
         condition["Order"] = index
-        parent_literal = self._extract_parent_literal(condition)
-        components = self._extract_components(condition)
-        source_condition_variable = self._transform_components(
+        parent_literal = self._get_parent_literal(condition)
+        components = self._get_components(condition)
+        source_condition_variable = self._handle_components(
             components=components,
             dict_attributes=dict_attributes,
             parent_literal=parent_literal,
         )
-        self._set_source_condition_variable(
+        self._handle_source_condition_variable(
             condition, source_condition_variable, parent_literal
         )
         condition.pop("c:ExtendedCollections")
 
-    def _extract_parent_literal(self, condition: dict) -> str:
+    def _get_parent_literal(self, condition: dict) -> str:
         """Haalt de parent literal waarde op uit een source conditie.
 
         Deze functie zoekt naar de parent literal waarde in de ExtendedAttributesText van de conditie en retourneert deze als string.
@@ -91,7 +91,7 @@ class SourceConditionTransform(BaseTransformer):
             )
         return ""
 
-    def _extract_components(self, condition: dict) -> list[dict]:
+    def _get_components(self, condition: dict) -> list[dict]:
         """Haalt de componenten op uit een source conditie.
 
         Deze functie retourneert een lijst van componenten, ongeacht of de input een enkele dict of een lijst is.
@@ -113,7 +113,7 @@ class SourceConditionTransform(BaseTransformer):
             )
             return []
 
-    def _set_source_condition_variable(
+    def _handle_source_condition_variable(
         self, condition: dict, source_condition_variable: dict, parent_literal: str
     ):
         """Stelt de SourceConditionVariable in voor een conditie op basis van de gevonden waarden.
@@ -135,7 +135,7 @@ class SourceConditionTransform(BaseTransformer):
                 f"Geen SourceConditionVariable gevonden voor condition {condition.get('Code', '')} in mapping {self.mapping['a:Name']} voor {self.file_pd_ldm}"
             )
 
-    def _transform_components(
+    def _handle_components(
         self, components: list[dict], dict_attributes: dict, parent_literal: str
     ) -> dict:
         """Transformeert componenten van een source conditie naar een dictionary met attributen.

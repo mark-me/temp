@@ -7,7 +7,7 @@ from ..base_transformer import BaseTransformer
 logger = get_logger(__name__)
 
 
-class ScalarTransform(BaseTransformer):
+class ScalarsTransform(BaseTransformer):
     """Vormt mapping data om en verrijkt dit met entiteit en attribuut data"""
 
     def __init__(self, file_pd_ldm: str, mapping: dict, composition: dict):
@@ -37,11 +37,11 @@ class ScalarTransform(BaseTransformer):
         Returns:
             dict: De bijgewerkte compositie dictionary met getransformeerde expressie.
         """
-        self._process_all_business_rules(dict_attributes)
+        self._process_all_scalars(dict_attributes)
         self._process_sql_expression()
         return self.composition
 
-    def _process_all_business_rules(self, dict_attributes: dict) -> None:
+    def _process_all_scalars(self, dict_attributes: dict) -> None:
         """Verwerkt alle business rules in de compositie en verrijkt deze met component data.
 
         Deze functie haalt alle business rules op, verrijkt ze met attributen en voegt ze toe aan de compositie.
@@ -49,11 +49,11 @@ class ScalarTransform(BaseTransformer):
         Args:
             dict_attributes (dict): Alle attributen (intern en extern) die gebruikt worden voor verrijking.
         """
-        business_rules = self._extract_business_rules()
+        business_rules = self._extract_scalars()
         business_rules = self.clean_keys(business_rules)
         for i, business_rule in enumerate(business_rules):
             business_rule["Order"] = i
-            self._process_business_rule(
+            self._process_scalar(
                 business_rule=business_rule, dict_attributes=dict_attributes
             )
             business_rules[i] = business_rule
@@ -73,7 +73,7 @@ class ScalarTransform(BaseTransformer):
         lst_sql_expression_variables = self.composition["Entity"][
             "SqlExpressionVariables"
         ]
-        dict_scalar_conditions = self._create_business_rules_lookup(
+        dict_scalar_conditions = self._create_scalar_lookup(
             business_rules=self.composition["ScalarConditions"]
         )
         sql_expression = self._replace_sql_expression_variables(
@@ -85,7 +85,7 @@ class ScalarTransform(BaseTransformer):
             self.composition["Expression"] = sql_expression
         self.composition.pop("ScalarConditions")
 
-    def _extract_business_rules(self) -> list[dict]:
+    def _extract_scalars(self) -> list[dict]:
         """Haalt alle business rules (scalar condities) uit de compositie.
 
         Deze functie zoekt in de compositie naar de business rules en retourneert deze als een lijst van dictionaries.
@@ -105,7 +105,7 @@ class ScalarTransform(BaseTransformer):
         )
         return business_rules
 
-    def _process_business_rule(
+    def _process_scalar(
         self, business_rule: dict, dict_attributes: dict
     ) -> None:
         """Verwerkt één business rule en verrijkt deze met component data.
@@ -121,7 +121,7 @@ class ScalarTransform(BaseTransformer):
             data=business_rule, keys=["c:ExtendedCollections", "o:ExtendedCollection"]
         )
         components = [components] if isinstance(components, dict) else components
-        business_rule["ScalarConditionVariable"] = self._business_rule_components(
+        business_rule["ScalarConditionVariable"] = self._scalar_components(
             components=components, dict_attributes=dict_attributes
         )
         business_rule.pop("c:ExtendedCollections")
@@ -167,7 +167,7 @@ class ScalarTransform(BaseTransformer):
                 )
         return sql_expression
 
-    def _create_business_rules_lookup(self, business_rules: list[dict]) -> dict:
+    def _create_scalar_lookup(self, business_rules: list[dict]) -> dict:
         """Maakt een lookup dictionary aan voor business rules op basis van scalar condities.
 
         Deze functie genereert een dictionary waarin elke business rule wordt gekoppeld aan zijn Id, target en source variabelen.
@@ -192,7 +192,7 @@ class ScalarTransform(BaseTransformer):
         }
         return dict_business_rules
 
-    def _business_rule_components(
+    def _scalar_components(
         self, components: list[dict], dict_attributes: dict
     ) -> dict:
         """Bepaalt de componenten van een business rule en koppelt deze aan de juiste attributen.
