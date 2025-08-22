@@ -39,7 +39,7 @@ class MappingAttributesTransformer(BaseTransformer):
             for j in range(len(attr_maps)):
                 attr_map = attr_maps[j].copy()
                 attr_map["Order"] = j
-                self._attribute_mapping(
+                self._handle_attribute_mapping(
                     attr_map=attr_map, dict_attributes=dict_attributes
                 )
                 attr_maps[j] = attr_map.copy()
@@ -51,7 +51,7 @@ class MappingAttributesTransformer(BaseTransformer):
             )
         return self.mapping
 
-    def _attribute_mapping(self, attr_map: dict, dict_attributes: dict) -> None:
+    def _handle_attribute_mapping(self, attr_map: dict, dict_attributes: dict) -> None:
         """Verwerkt een enkele attribuut mapping en verrijkt deze met target en source attributen.
 
         Deze functie zoekt het target attribuut op, koppelt het aan de mapping en verwerkt de bronattributen.
@@ -74,7 +74,7 @@ class MappingAttributesTransformer(BaseTransformer):
             attr_map["AttributeTarget"] = dict_attributes[id_attr].copy()
             attr_map.pop("c:BaseStructuralFeatureMapping.Feature")
             # Set source for an attribute (called features because they can contain scalar business rules as well)
-            self._process_source_features(
+            self._handle_source_feature(
                 attr_map=attr_map, dict_attributes=dict_attributes
             )
         else:
@@ -82,8 +82,8 @@ class MappingAttributesTransformer(BaseTransformer):
                 f"{id_attr} van {self.file_pd_ldm} is niet gevonden binnen target attributen"
             )
 
-    def _process_source_features(self, attr_map: dict, dict_attributes: dict):
-        """Verwerkt de source features van een attribuut mapping.
+    def _handle_source_feature(self, attr_map: dict, dict_attributes: dict):
+        """Verwerkt de source feature van een attribuut mapping.
 
         Args:
             attr_map (dict): De attribuut mapping.
@@ -122,7 +122,9 @@ class MappingAttributesTransformer(BaseTransformer):
         id_attr = attr_map["c:SourceFeatures"][type_entity]["@Ref"]
         return id_attr
 
-    def _handle_regular_mapping(self, attr_map: dict, attribute: dict, id_entity_alias: str) -> None:
+    def _handle_regular_mapping(
+        self, attr_map: dict, attribute: dict, id_entity_alias: str
+    ) -> None:
         """Voegt het bronattribuut toe aan de mapping als het een reguliere mapping betreft.
 
         Deze functie controleert of het attribuut een reguliere mapping is en voegt in dat geval het bronattribuut en eventueel de entity alias toe aan de mapping.
@@ -154,7 +156,9 @@ class MappingAttributesTransformer(BaseTransformer):
                 preceded_by="mdde_Aggregate,",
             )
 
-    def _handle_scalar_mapping(self, attr_map: dict, attribute: dict, id_entity_alias: str) -> None:
+    def _handle_scalar_mapping(
+        self, attr_map: dict, attribute: dict, id_entity_alias: str
+    ) -> None:
         if (
             attribute.get("StereotypeEntity") == "mdde_ScalarBusinessRule"
             and id_entity_alias
@@ -191,21 +195,3 @@ class MappingAttributesTransformer(BaseTransformer):
             attr_map.pop("c:ExtendedCollections")
         return id_entity_alias
 
-    def _attribute_scalars(self) -> None:
-        """Creëert een expressie string die gebruikt wordt in de attribute mapping
-        wanneer een bron attribuut verwijst naar een scalar
-
-        Returns:
-            dict: mapping met de zojuist toegevoegde expressie
-        """
-        if attr_mappings := self.mapping.get("AttributeMapping"):
-            for attr_mapping in attr_mappings:
-                if alias_id := attr_mapping.get("EntityAlias"):
-                    # Lookup the alias_id in composition. For the attributemapping we'll replace the entityalias with the expression we've created in the sourcecomposition
-                    if scalar := self.scalar_lookup.get(alias_id):
-                        attr_mapping["Expression"] = scalar.get("Expression")
-                        attr_mapping.pop("EntityAlias", None)
-        else:
-            logger.warning(
-                f"Attributemapping van {self.mapping['Name']} in '{self.file_pd_ldm}' ontbreekt voor update"
-            )
