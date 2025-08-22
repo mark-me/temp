@@ -117,9 +117,13 @@ class MappingAttributesTransformer(BaseTransformer):
             )
         else:
             attribute = dict_attributes[id_attr]
-            self._handle_regular_mapping(attr_map=attr_map, attribute=attribute, id_composition=id_composition)
+            self._handle_regular_mapping(
+                attr_map=attr_map, attribute=attribute, id_composition=id_composition
+            )
             self._handle_aggregate_expression(attr_map)
-            self._handle_scalar_mapping(attr_map, attribute, id_composition)
+            self._handle_scalar_mapping(
+                attr_map=attr_map, attribute=attribute, id_composition=id_composition
+            )
         attr_map.pop("c:SourceFeatures", None)
 
     def _get_composition_alias(self, attr_map: dict) -> str | None:
