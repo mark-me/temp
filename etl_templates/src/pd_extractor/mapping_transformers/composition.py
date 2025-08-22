@@ -3,7 +3,7 @@ from logtools import get_logger
 from ..base_transformer import BaseTransformer
 from .composition_join_conditions import JoinConditionsTransformer
 from .composition_source_condition import SourceConditionTransform
-from .composition_business_rule import BusinessRuleTransform
+from .composition_scalar import ScalarTransform
 
 logger = get_logger(__name__)
 
@@ -200,7 +200,7 @@ class SourceCompositionTransformer(BaseTransformer):
             )
             return composition
         elif apply_type == "mdde_ScalarBusinessRule":
-            trf_business_rule = BusinessRuleTransform(
+            trf_business_rule = ScalarTransform(
                 file_pd_ldm=self.file_pd_ldm,
                 mapping=self.mapping,
                 composition=composition,
