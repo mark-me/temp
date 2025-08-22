@@ -45,5 +45,16 @@ class BaseExtractor:
         return self._get_nested(data, keys, default=object()) is not object()
 
     def determine_reference_type(self, data: dict):
+        """Bepaalt het type referentie in de opgegeven dictionary.
+
+        Deze functie zoekt naar bekende referentie types in de dictionary en retourneert
+        de eerste die wordt gevonden.
+
+        Args:
+            data (dict): De dictionary waarin gezocht wordt naar een referentie type.
+
+        Returns:
+            str or None: Het gevonden referentie type of None als geen type wordt gevonden.
+        """
         possible_values = ["o:Entity", "o:Shortcut", "o:EntityAttribute"]
         return next((v for v in possible_values if v in data), None)
