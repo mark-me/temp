@@ -32,13 +32,7 @@ class MappingAttributesTransformer(BaseTransformer):
         Returns:
             dict: Mapping met geschoonde en verrijkte attribuut mapping
         """
-        key_path = ["c:StructuralFeatureMaps", "o:DefaultStructuralFeatureMapping"]
-        attr_mappings = self._get_nested(data=self.mapping, keys=key_path)
-        if attr_mappings:
-            attr_mappings = (
-                [attr_mappings] if isinstance(attr_mappings, dict) else attr_mappings
-            )
-            attr_mappings = self.clean_keys(attr_mappings)
+        if attr_mappings := self._get_attribute_mappings():
             for j in range(len(attr_mappings)):
                 attr_map = attr_mappings[j].copy()
                 attr_map["Order"] = j
@@ -48,11 +42,29 @@ class MappingAttributesTransformer(BaseTransformer):
                 attr_mappings[j] = attr_map.copy()
             self.mapping["AttributeMapping"] = attr_mappings
             self.mapping.pop("c:StructuralFeatureMaps", None)
+        return self.mapping
+
+    def _get_attribute_mappings(self) -> list[dict] | None:
+        """Haalt de lijst van attribuut mappings op uit de mapping.
+
+        Deze functie zoekt naar de attribuut mappings in de mapping en retourneert deze als een lijst,
+        of None als ze niet gevonden zijn.
+
+        Returns:
+            list[dict] | None: De lijst van attribuut mappings of None als deze niet gevonden zijn.
+        """
+        key_path = ["c:StructuralFeatureMaps", "o:DefaultStructuralFeatureMapping"]
+        if attr_mappings := self._get_nested(data=self.mapping, keys=key_path):
+            attr_mappings = (
+                [attr_mappings] if isinstance(attr_mappings, dict) else attr_mappings
+            )
+            attr_mappings = self.clean_keys(attr_mappings)
+            return attr_mappings
         else:
             logger.error(
                 f"Geen Attribute-mapping voor {self.mapping['Name']} van {self.file_pd_ldm} gevonden"
             )
-        return self.mapping
+            return None
 
     def _handle_attribute_mapping(self, attr_map: dict, dict_attributes: dict) -> None:
         """Verwerkt een enkele attribuut mapping en verrijkt deze met target en source attributen.
