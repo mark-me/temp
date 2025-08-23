@@ -170,7 +170,7 @@ class JoinConditionsTransformer(BaseTransformer):
                 )
         return dict_child, dict_parent, alias_parent
 
-    def _get_condition_components(self, condition: dict) -> list[dict]:
+    def _get_condition_components(self, condition: dict) -> list[dict] | None:
         """Haalt de componenten van een join conditie op uit de opgegeven conditie.
 
         Deze functie zoekt naar de componenten van een join conditie in de opgegeven conditie en retourneert deze als een lijst van dictionaries.
