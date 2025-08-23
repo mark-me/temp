@@ -61,9 +61,7 @@ class JoinConditionsTransformer(BaseTransformer):
                 f"Kan geen join condities vinden in mapping '{self.mapping['Name']}' in '{self.file_pd_ldm}'"
             )
             return []
-        conditions = (
-            [conditions] if isinstance(conditions, dict) else conditions
-        )
+        conditions = [conditions] if isinstance(conditions, dict) else conditions
         return conditions
 
     def _process_condition(self, condition: dict, index: int, dict_attributes: dict):
@@ -104,85 +102,66 @@ class JoinConditionsTransformer(BaseTransformer):
         condition["Operator"] = "=" if condition_operator == "" else condition_operator
         condition["ParentLiteral"] = parent_literal
 
-    def _handle_condition_components(self, condition: dict, dict_attributes: dict):
-        """Stelt de componenten van een join conditie in voor een gegeven conditie.
+    def _handle_condition_components(
+        self, condition: dict, dict_attributes: dict
+    ) -> None:
+        """Verwerkt de componenten van een join conditie en voegt deze toe aan de conditie.
 
-        Deze functie haalt de componenten op uit de conditie, verwerkt deze en voegt ze toe aan de conditie.
-
-        Args:
-            condition (dict): De conditie waarvoor de componenten worden ingesteld.
-            dict_attributes (dict): Alle attributen (in- en external).
-        """
-        components = self._get_nested(
-            data=condition, keys=["c:ExtendedCollections", "o:ExtendedCollection"]
-        )
-        if not components:
-            logger.error(
-                f"Kan geen componenten vinden voor mapping '{self.mapping['a:Name']}' in '{self.file_pd_ldm}'"
-            )
-            return
-        components = (
-            [components] if isinstance(components, dict) else components
-        )
-        condition["JoinConditionComponents"] = (
-            self._transform_join_condition_components(
-                components=components, dict_attributes=dict_attributes
-            )
-        )
-        condition.pop("c:ExtendedCollections", None)
-
-    def _transform_join_condition_components(
-        self, components: list, dict_attributes: dict
-    ) -> dict:
-        """Vormt om, schoont en verrijkt component data van 1 join conditie
+        Deze functie haalt de child en parent componenten op, verrijkt deze met de juiste entity alias en voegt ze toe aan de join conditie.
 
         Args:
-            components (list): Join conditie componenten
-            dict_attributes (dict): Alle attributes (in- en external)
-            alias_child (str): De door Power Designer gegenereerde id voor het component (JOIN) van de compositie
-
-        Returns:
-            dict: Geschoonde, omgevormde en verrijkte data van het join conditie component
+            condition (dict): De join conditie waarvan de componenten worden verwerkt.
+            dict_attributes (dict): Dictionary met alle beschikbare attributen.
         """
         dict_components = {}
-        dict_child, dict_parent, alias_parent = self._get_join_components(
-            components=components, dict_attributes=dict_attributes
+
+        dict_child, dict_parent, alias_parent = self._split_join_components(
+            condition=condition, dict_attributes=dict_attributes
         )
+
         if dict_parent:
             if alias_parent is not None:
                 dict_parent.update({"EntityAlias": alias_parent})
             dict_components["AttributeParent"] = copy.deepcopy(dict_parent)
             # Deepcopy makes sure entityalias for child and parent are not the same
+
         if dict_child:
             dict_child.update({"EntityAlias": self.composition["Id"]})
             dict_components["AttributeChild"] = copy.deepcopy(dict_child)
-        return dict_components
 
-    def _get_join_components(self, components: list, dict_attributes: dict):
-        """Extraheert het child attribute, parent attribute en parent alias uit join conditie componenten.
+        condition["JoinConditionComponents"] = dict_components
+        condition.pop("c:ExtendedCollections", None)
 
-        Deze methode verwerkt een lijst van join conditie componenten en retourneert de relevante child en
-        parent attribute dictionaries, evenals de parent alias indien aanwezig.
+    def _split_join_components(
+        self, condition: dict, dict_attributes: dict
+    ) -> tuple[dict, dict | None, str | None]:
+        """Splitst de componenten van een join conditie in child, parent en parent alias.
+
+        Deze functie haalt de child attribute, parent attribute en parent alias op uit de componenten van een join conditie.
 
         Args:
-            components (list): De lijst van join conditie componenten.
+            condition (dict): De join conditie waarvan de componenten worden gesplitst.
             dict_attributes (dict): Dictionary met alle beschikbare attributen.
 
         Returns:
-            tuple: Een tuple met het child attribute dict, parent attribute dict en parent alias.
+            tuple[dict, dict | None, str | None]: Een tuple met het child attribute dict, parent attribute dict en parent alias string.
         """
         dict_child = {}
         dict_parent = {}
         alias_parent = None
-        components = self.clean_keys(components)
+
+        components = self._get_condition_components(condition=condition)
+
         for component in components:
             type_component = component.get("Name")
             if type_component == "mdde_ChildAttribute":
-                dict_child = self._get_join_child_attribute(component, dict_attributes)
+                dict_child = self._handle_component_child_attribute(
+                    component, dict_attributes
+                )
             elif type_component == "mdde_ParentSourceObject":
-                alias_parent = self._get_join_parent_alias(component=component)
+                alias_parent = self._get_component_parent_alias(component=component)
             elif type_component == "mdde_ParentAttribute":
-                dict_parent = self._get_join_parent_attribute(
+                dict_parent = self._handle_component_parent_attribute(
                     component=component, dict_attributes=dict_attributes
                 )
             else:
@@ -191,7 +170,30 @@ class JoinConditionsTransformer(BaseTransformer):
                 )
         return dict_child, dict_parent, alias_parent
 
-    def _get_join_child_attribute(
+    def _get_condition_components(self, condition: dict) -> list[dict]:
+        """Haalt de componenten van een join conditie op uit de opgegeven conditie.
+
+        Deze functie zoekt naar de componenten van een join conditie in de opgegeven conditie en retourneert deze als een lijst van dictionaries.
+
+        Args:
+            condition (dict): De conditie waaruit de componenten worden gehaald.
+
+        Returns:
+            list[dict]: Een lijst met componenten van de join conditie.
+        """
+        components = self._get_nested(
+            data=condition, keys=["c:ExtendedCollections", "o:ExtendedCollection"]
+        )
+        if not components:
+            logger.error(
+                f"Kan geen join conditie componenten vinden voor mapping '{self.mapping['a:Name']}' in '{self.file_pd_ldm}'"
+            )
+            return
+        components = [components] if isinstance(components, dict) else components
+        components = self.clean_keys(components)
+        return components
+
+    def _handle_component_child_attribute(
         self, component: dict, dict_attributes: dict
     ) -> dict | None:
         """Haalt het child attribute dictionary op voor een join conditie component.
@@ -218,16 +220,16 @@ class JoinConditionsTransformer(BaseTransformer):
         )
         return None
 
-    def _get_join_parent_alias(self, component: dict) -> str:
-        """Haalt de parent alias op uit een join conditie component.
+    def _get_component_parent_alias(self, component: dict) -> str | None:
+        """Haalt de parent entity alias op uit een join conditie component.
 
-        Deze functie zoekt de parent alias op in het component en retourneert deze als string.
+        Deze functie zoekt de parent entity alias op in het component en retourneert deze als string.
 
         Args:
-            component (dict): Het component dat de parent alias referentie bevat.
+            component (dict): Het component dat de parent entity alias referentie bevat.
 
         Returns:
-            str: De parent alias als string, of None als niet gevonden.
+            str | None: De parent entity alias als string, of None als deze niet gevonden is.
         """
         path_keys = ["c:Content", "o:ExtendedSubObject", "@Ref"]
         logger.debug(f"Parent entity alias toegevoegd voor {self.file_pd_ldm}")
@@ -238,7 +240,7 @@ class JoinConditionsTransformer(BaseTransformer):
             )
         return parent_alias
 
-    def _get_join_parent_attribute(
+    def _handle_component_parent_attribute(
         self, component: dict, dict_attributes: dict
     ) -> dict:
         """Haalt het parent attribute dictionary op uit een join conditie component.
