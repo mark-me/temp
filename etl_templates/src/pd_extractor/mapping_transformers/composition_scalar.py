@@ -42,7 +42,7 @@ class ScalarTransform(BaseTransformer):
             dict: De bijgewerkte compositie dictionary met getransformeerde expressie.
         """
         self._process_all_scalars(dict_attributes)
-        self._handle_sql_expression()
+        self._process_sql_expression()
         return self.composition
 
     def _process_all_scalars(self, dict_attributes: dict) -> None:
@@ -61,7 +61,25 @@ class ScalarTransform(BaseTransformer):
             scalars[i] = scalar
         self.composition["ScalarConditions"] = scalars
 
-    def _handle_sql_expression(self) -> None:
+    def _get_scalars(self) -> list[dict]:
+        """Haalt alle scalars uit de compositie.
+
+        Deze functie zoekt in de compositie naar de scalars en retourneert deze als een lijst van dictionaries.
+
+        Returns:
+            list[dict]: Lijst van scalars uit de compositie.
+        """
+        path_keys = [
+            "c:ExtendedCompositions",
+            "o:ExtendedComposition",
+            "c:ExtendedComposition.Content",
+            "o:ExtendedSubObject",
+        ]
+        scalars = self._get_nested(data=self.composition, keys=path_keys)
+        scalars = [scalars] if isinstance(scalars, dict) else scalars
+        return scalars
+
+    def _process_sql_expression(self) -> None:
         """Vervangt variabelen in de SQL-expressie en werkt de compositie bij met de aangepaste expressie.
 
         Deze functie haalt de SQL-expressie en variabelen op, vervangt de variabelen met de juiste waarden
@@ -87,24 +105,6 @@ class ScalarTransform(BaseTransformer):
             self.composition["Expression"] = sql_expression
         self.composition.pop("ScalarConditions")
 
-    def _get_scalars(self) -> list[dict]:
-        """Haalt alle scalars uit de compositie.
-
-        Deze functie zoekt in de compositie naar de scalars en retourneert deze als een lijst van dictionaries.
-
-        Returns:
-            list[dict]: Lijst van scalars uit de compositie.
-        """
-        path_keys = [
-            "c:ExtendedCompositions",
-            "o:ExtendedComposition",
-            "c:ExtendedComposition.Content",
-            "o:ExtendedSubObject",
-        ]
-        scalars = self._get_nested(data=self.composition, keys=path_keys)
-        scalars = [scalars] if isinstance(scalars, dict) else scalars
-        return scalars
-
     def _process_scalar(self, scalar: dict, dict_attributes: dict) -> None:
         """Verwerkt één scalar en verrijkt deze met component data.
 
@@ -123,6 +123,37 @@ class ScalarTransform(BaseTransformer):
             components=components, dict_attributes=dict_attributes
         )
         scalar.pop("c:ExtendedCollections")
+
+    def _scalar_components(self, components: list[dict], dict_attributes: dict) -> dict:
+        """Bepaalt de componenten van een scalar en koppelt deze aan de juiste attributen.
+
+        Deze functie haalt het child en parent attribute op uit de componenten en bouwt een
+        dictionary met de relevante attributen.
+
+        Args:
+            components (list[dict]): Lijst van componenten van de scalar.
+            dict_attributes (dict): Dictionary met alle beschikbare attributen.
+
+        Returns:
+            dict: Dictionary met de gekoppelde source en child attributen.
+        """
+
+        dict_scalar_attribute = {}
+        dict_child = self._get_child_attribute(
+            components=components, dict_attributes=dict_attributes
+        )
+        dict_parent, alias_parent = self._get_parent_attribute_and_alias(
+            components=components, dict_attributes=dict_attributes
+        )
+        if len(dict_parent) > 0:
+            if alias_parent is not None:
+                dict_parent.update({"EntityAlias": alias_parent})
+            dict_scalar_attribute["SourceAttribute"] = (
+                dict_parent["EntityAlias"] + "." + dict_parent["Code"]
+            )
+        if len(dict_child) > 0:
+            dict_scalar_attribute["AttributeChild"] = dict_child["Code"]
+        return dict_scalar_attribute
 
     def _replace_sql_expression_variables(
         self,
@@ -196,38 +227,8 @@ class ScalarTransform(BaseTransformer):
         }
         return dict_scalars
 
-    def _scalar_components(self, components: list[dict], dict_attributes: dict) -> dict:
-        """Bepaalt de componenten van een scalar en koppelt deze aan de juiste attributen.
-
-        Deze functie haalt het child en parent attribute op uit de componenten en bouwt een
-        dictionary met de relevante attributen.
-
-        Args:
-            components (list[dict]): Lijst van componenten van de scalar.
-            dict_attributes (dict): Dictionary met alle beschikbare attributen.
-
-        Returns:
-            dict: Dictionary met de gekoppelde source en child attributen.
-        """
-
-        dict_scalar_attribute = {}
-        dict_child = self._get_child_attribute(
-            components=components, dict_attributes=dict_attributes
-        )
-        dict_parent, alias_parent = self._get_parent_attribute_and_alias(
-            components=components, dict_attributes=dict_attributes
-        )
-        if len(dict_parent) > 0:
-            if alias_parent is not None:
-                dict_parent.update({"EntityAlias": alias_parent})
-            dict_scalar_attribute["SourceAttribute"] = (
-                dict_parent["EntityAlias"] + "." + dict_parent["Code"]
-            )
-        if len(dict_child) > 0:
-            dict_scalar_attribute["AttributeChild"] = dict_child["Code"]
-        return dict_scalar_attribute
-
-    def _extract_child_attribute(self, component: dict, dict_attributes: dict) -> dict:
+    def _get_child_attribute(self, component: dict, dict_attributes: dict) -> dict:
+        # sourcery skip: class-extract-method
         """Haalt het child attribute dictionary op uit het opgegeven component.
 
         Deze functie zoekt het child attribute op dat wordt gerefereerd in het component en
@@ -261,7 +262,7 @@ class ScalarTransform(BaseTransformer):
         components = self.clean_keys(content=components)
         return next(
             (
-                self._extract_child_attribute(
+                self._get_child_attribute(
                     component=component, dict_attributes=dict_attributes
                 )
                 for component in components
@@ -289,12 +290,12 @@ class ScalarTransform(BaseTransformer):
             if component["Name"] == "mdde_ParentSourceObject":
                 alias_parent = component["c:Content"]["o:ExtendedSubObject"]["@Ref"]
             elif component["Name"] == "mdde_ParentAttribute":
-                dict_parent = self._extract_parent_attribute(
+                dict_parent = self._get_parent_attribute(
                     component=component, dict_attributes=dict_attributes
                 )
         return dict_parent, alias_parent
 
-    def _extract_parent_attribute(self, component: dict, dict_attributes: dict) -> dict:
+    def _get_parent_attribute(self, component: dict, dict_attributes: dict) -> dict:
         """Haalt het parent attribute dictionary op uit het opgegeven component.
 
         Deze functie zoekt het parent attribute op dat wordt gerefereerd in het component en retourneert
