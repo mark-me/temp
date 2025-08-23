@@ -57,9 +57,7 @@ class ScalarTransform(BaseTransformer):
         scalars = self.clean_keys(scalars)
         for i, scalar in enumerate(scalars):
             scalar["Order"] = i
-            self._process_scalar(
-                scalar=scalar, dict_attributes=dict_attributes
-            )
+            self._process_scalar(scalar=scalar, dict_attributes=dict_attributes)
             scalars[i] = scalar
         self.composition["ScalarConditions"] = scalars
 
@@ -104,14 +102,10 @@ class ScalarTransform(BaseTransformer):
             "o:ExtendedSubObject",
         ]
         scalars = self._get_nested(data=self.composition, keys=path_keys)
-        scalars = (
-            [scalars] if isinstance(scalars, dict) else scalars
-        )
+        scalars = [scalars] if isinstance(scalars, dict) else scalars
         return scalars
 
-    def _process_scalar(
-        self, scalar: dict, dict_attributes: dict
-    ) -> None:
+    def _process_scalar(self, scalar: dict, dict_attributes: dict) -> None:
         """Verwerkt één scalar en verrijkt deze met component data.
 
         Deze functie haalt de componenten van de scalar op,
@@ -157,7 +151,9 @@ class ScalarTransform(BaseTransformer):
         def _get_source_variable(condition: str) -> str:
             return dict_scalar_conditions[condition]["SourceVariable"]
 
-        def _find_matching_variable(target_variable: str, sql_expression_variables: tuple) -> str:
+        def _find_matching_variable(
+            target_variable: str, sql_expression_variables: tuple
+        ) -> str | None:
             for variable in sql_expression_variables:
                 variable_compare = variable[1:]
                 if target_variable == variable_compare:
@@ -166,7 +162,9 @@ class ScalarTransform(BaseTransformer):
 
         for condition in dict_scalar_conditions:
             target_variable = _get_target_variable(condition)
-            variable = _find_matching_variable(target_variable, sql_expression_variables)
+            variable = _find_matching_variable(
+                target_variable, sql_expression_variables
+            )
             if variable is not None:
                 source_variable = _get_source_variable(condition)
                 pattern = f"{variable}" + r"\b"
@@ -191,23 +189,18 @@ class ScalarTransform(BaseTransformer):
         dict_scalars = {
             scalar["Id"]: {
                 "Id": scalar["Id"],
-                "TargetVariable": scalar["ScalarConditionVariable"][
-                    "AttributeChild"
-                ],
-                "SourceVariable": scalar["ScalarConditionVariable"][
-                    "SourceAttribute"
-                ],
+                "TargetVariable": scalar["ScalarConditionVariable"]["AttributeChild"],
+                "SourceVariable": scalar["ScalarConditionVariable"]["SourceAttribute"],
             }
             for scalar in scalars
         }
         return dict_scalars
 
-    def _scalar_components(
-        self, components: list[dict], dict_attributes: dict
-    ) -> dict:
+    def _scalar_components(self, components: list[dict], dict_attributes: dict) -> dict:
         """Bepaalt de componenten van een scalar en koppelt deze aan de juiste attributen.
 
-        Deze functie haalt het child en parent attribute op uit de componenten en bouwt een dictionary met de relevante attributen.
+        Deze functie haalt het child en parent attribute op uit de componenten en bouwt een
+        dictionary met de relevante attributen.
 
         Args:
             components (list[dict]): Lijst van componenten van de scalar.
