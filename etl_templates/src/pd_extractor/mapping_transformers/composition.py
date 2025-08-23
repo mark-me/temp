@@ -201,7 +201,7 @@ class SourceCompositionTransformer(BaseTransformer):
                 mapping=self.mapping,
                 composition=composition,
             )
-            self.composition = trf_source_conditions.transform(
+            composition = trf_source_conditions.transform(
                 dict_attributes=dict_attributes
             )
             return composition
