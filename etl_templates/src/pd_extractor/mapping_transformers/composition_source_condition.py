@@ -72,7 +72,9 @@ class SourceConditionTransform(BaseTransformer):
             parent_literal=parent_literal,
         )
         self._handle_source_condition_variable(
-            condition, source_condition_variable, parent_literal
+            condition=condition,
+            source_condition_variable=source_condition_variable,
+            parent_literal=parent_literal,
         )
         condition.pop("c:ExtendedCollections")
 
