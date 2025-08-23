@@ -139,7 +139,7 @@ class ScalarTransform(BaseTransformer):
         """
 
         dict_scalar_attribute = {}
-        dict_child = self._get_child_attribute(
+        dict_child = self._handle_child_attribute(
             components=components, dict_attributes=dict_attributes
         )
         dict_parent, alias_parent = self._get_parent_attribute_and_alias(
@@ -245,7 +245,7 @@ class ScalarTransform(BaseTransformer):
         id_attr = component["c:Content"][type_entity]["@Ref"]
         return dict_attributes[id_attr].copy()
 
-    def _get_child_attribute(
+    def _handle_child_attribute(
         self, components: list[dict], dict_attributes: dict
     ) -> dict:
         """Zoekt en retourneert het child attribute uit de componentenlijst.
