@@ -79,7 +79,9 @@ class ModelInternalTransformer(BaseTransformer):
         entities = self.clean_keys(entities)
         for entity in entities:
             # Reroute attributes
-            entity = self._entity_attributes(entity=entity, dict_domains=dict_domains)
+            entity = self._handle_entity_attributes(
+                entity=entity, dict_domains=dict_domains
+            )
             # Create subset of attributes to enrich identifier attributes
             dict_attrs = {
                 d["Id"]: {"Name": d["Name"], "Code": d["Code"]}
@@ -87,7 +89,9 @@ class ModelInternalTransformer(BaseTransformer):
             }
 
             # Identifiers and primary identifier
-            entity = self._entity_identifiers(entity=entity, dict_attrs=dict_attrs)
+            entity = self._handle_entity_identifiers(
+                entity=entity, dict_attrs=dict_attrs
+            )
 
             # Reroute default mapping
             if "c:DefaultMapping" in entity:
@@ -96,7 +100,7 @@ class ModelInternalTransformer(BaseTransformer):
                 entity.pop("c:AttachedKeywords")
         return entities
 
-    def _entity_attributes(self, entity: dict, dict_domains: dict) -> dict:
+    def _handle_entity_attributes(self, entity: dict, dict_domains: dict) -> dict:
         """Omvormen van attribuut data voor de interne entiteiten en verrijkt deze met domain data
 
         Args:
@@ -106,7 +110,7 @@ class ModelInternalTransformer(BaseTransformer):
         Returns:
             dict: Entiteit met geschoonde attribuut data
         """
-        lst_attrs = self._extract_entity_attributes(entity)
+        lst_attrs = self._get_entity_attributes(entity)
         lst_attrs = self.clean_keys(lst_attrs)
         for i, attr in enumerate(lst_attrs):
             attr["Order"] = i
@@ -118,7 +122,7 @@ class ModelInternalTransformer(BaseTransformer):
             entity.pop("Variables")
         return entity
 
-    def _extract_entity_attributes(self, entity: dict):
+    def _get_entity_attributes(self, entity: dict):
         """Extraheert de lijst van attributen uit een entiteit.
 
         Args:
@@ -166,7 +170,7 @@ class ModelInternalTransformer(BaseTransformer):
             attr.pop("c:Domain")
         return attr
 
-    def _entity_identifiers(self, entity: dict, dict_attrs: dict) -> dict:
+    def _handle_entity_identifiers(self, entity: dict, dict_attrs: dict) -> dict:
         """Omvormen en schoonmaken van de index en primary key van een interne entiteit.
 
         Deze functie verwerkt de identifiers van een entiteit, verrijkt deze met attribuutdata en splitst ze in primaire en vreemde sleutels.
@@ -182,7 +186,7 @@ class ModelInternalTransformer(BaseTransformer):
         primary_key = None
         lst_foreign_keys = []
 
-        has_primary, primary_id = self._extract_primary_identifier(entity)
+        has_primary, primary_id = self._get_primary_identifier(entity)
         if not has_primary:
             logger.error(
                 f"Entiteit '{entity['Name']}' uit '{self.file_pd_ldm}' heeft geen primaire sleutel"
@@ -191,7 +195,7 @@ class ModelInternalTransformer(BaseTransformer):
         if "c:Identifiers" not in entity:
             return entity
 
-        identifiers = self._prepare_identifiers(entity)
+        identifiers = self._handle_identifiers(entity)
 
         for identifier in identifiers:
             if not self._has_identifier_attributes(
@@ -214,7 +218,7 @@ class ModelInternalTransformer(BaseTransformer):
 
         return entity
 
-    def _extract_primary_identifier(self, entity: dict) -> tuple[bool, str]:
+    def _get_primary_identifier(self, entity: dict) -> tuple[bool, str]:
         """Haalt de primaire identifier (primary key) van een entiteit op.
 
         Deze functie controleert of een entiteit een primaire sleutel heeft, haalt het ID op en verwijdert de sleutel uit de entiteit.
@@ -237,7 +241,7 @@ class ModelInternalTransformer(BaseTransformer):
             logger.error(msg_missing)
         return has_primary, primary_id
 
-    def _prepare_identifiers(self, entity: dict) -> list[dict]:
+    def _handle_identifiers(self, entity: dict) -> list[dict]:
         """Bereidt de lijst van identifiers voor en maakt deze schoon.
 
         Deze functie normaliseert de structuur van identifiers en past key-cleaning toe voor verdere verwerking.
@@ -248,7 +252,6 @@ class ModelInternalTransformer(BaseTransformer):
         Returns:
             list[dict]: Een geschoonde lijst van identifier dictionaries.
         """
-
         identifiers = self._get_nested(
             data=entity, keys=["c:Identifiers", "o:Identifier"]
         )
