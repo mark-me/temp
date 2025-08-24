@@ -85,11 +85,11 @@ class ModelsExternalTransformer(BaseTransformer):
         for entity in entities:
             if "c:FullShortcutReplica" in entity:
                 entity.pop("c:FullShortcutReplica")
-            self._entity_attribute(entity)
+            self._handle_entity_attributes(entity)
             entity.pop("c:SubShortcuts")
         return entities
 
-    def _entity_attribute(self, entity: dict) -> dict:
+    def _handle_entity_attributes(self, entity: dict) -> dict:
         """Vormt om en schoont attributen van een entiteit
 
         Args:
