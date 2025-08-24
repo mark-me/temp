@@ -29,7 +29,16 @@ class MappingTransformer(BaseTransformer):
         return mapping
 
     def _normalize_names(self, mapping: dict) -> dict:
-        """Vervangt spaties in de mappingnaam door underscores en logt een waarschuwing indien nodig."""
+        """Normaliseert de namen in de mapping door spaties te vervangen.
+
+        Deze functie controleert of er spaties in de naam staan en vervangt deze door underscores.
+
+        Args:
+            mapping (dict): De mapping waarvan de naam genormaliseerd moet worden.
+
+        Returns:
+            dict: De mapping met genormaliseerde naam.
+        """
         if " " in mapping["Name"]:
             logger.warning(
                 f"Er staan spatie(s) in de mapping naam staan voor '{mapping['Name']}' uit {self.file_pd_ldm}."
