@@ -90,16 +90,10 @@ class ScalarTransform(BaseTransformer):
         """
         # Retrieves the SQL expression and its variables from the composition.
         sql_expression = self.composition["Entity"]["SqlExpression"]
-        lst_sql_expression_variables = self.composition["Entity"][
-            "SqlExpressionVariables"
-        ]
-        dict_scalar_conditions = self._create_scalar_lookup(
-            scalars=self.composition["ScalarConditions"]
-        )
-        sql_expression = self._replace_sql_expression_variables(
+        sql_expression_variables = self.composition["Entity"]["SqlExpressionVariables"]
+        sql_expression = self._replace_variables_with_attributes(
             sql_expression=sql_expression,
-            sql_expression_variables=lst_sql_expression_variables,
-            dict_scalar_conditions=dict_scalar_conditions,
+            sql_expression_variables=sql_expression_variables,
         )
         if sql_expression is not None:
             self.composition["Expression"] = sql_expression
@@ -119,12 +113,14 @@ class ScalarTransform(BaseTransformer):
             data=scalar, keys=["c:ExtendedCollections", "o:ExtendedCollection"]
         )
         components = [components] if isinstance(components, dict) else components
-        scalar["ScalarConditionVariable"] = self._scalar_components(
+        scalar["ScalarConditionVariable"] = self._handle_scalar_components(
             components=components, dict_attributes=dict_attributes
         )
         scalar.pop("c:ExtendedCollections")
 
-    def _scalar_components(self, components: list[dict], dict_attributes: dict) -> dict:
+    def _handle_scalar_components(
+        self, components: list[dict], dict_attributes: dict
+    ) -> dict:
         """Bepaalt de componenten van een scalar en koppelt deze aan de juiste attributen.
 
         Deze functie haalt het child en parent attribute op uit de componenten en bouwt een
@@ -155,11 +151,8 @@ class ScalarTransform(BaseTransformer):
             dict_scalar_attribute["AttributeChild"] = dict_child["Code"]
         return dict_scalar_attribute
 
-    def _replace_sql_expression_variables(
-        self,
-        sql_expression: str,
-        sql_expression_variables: tuple,
-        dict_scalar_conditions: dict,
+    def _replace_variables_with_attributes(
+        self, sql_expression: str, sql_expression_variables: tuple
     ) -> str:
         """
         Vervangt variabelen in een SQL-expressie door de bijbehorende source variabelen uit de scalar condities.
@@ -190,6 +183,10 @@ class ScalarTransform(BaseTransformer):
                 if target_variable == variable_compare:
                     return variable
             return None
+
+        dict_scalar_conditions = self._create_scalar_lookup(
+            scalars=self.composition["ScalarConditions"]
+        )
 
         for condition in dict_scalar_conditions:
             target_variable = _get_target_variable(condition)
