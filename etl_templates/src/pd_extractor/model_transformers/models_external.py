@@ -25,23 +25,45 @@ class ModelsExternalTransformer(BaseTransformer):
         models = self.clean_keys(models)
 
         for model in models:
-            path_keys = ["c:SessionShortcuts", "o:Shortcut"]
-            if shortcuts := self._get_nested(data=model, keys=path_keys):
-                if isinstance(shortcuts, dict):
-                    shortcuts = [shortcuts]
-                shortcuts = [i["@Ref"] for i in shortcuts]
-                model["Entities"] = [
-                    dict_entities[id] for id in shortcuts if id in dict_entities
-                ]
+            self._enrich_model_with_entities(model, dict_entities)
             if "Entities" in model and len(model["Entities"]) > 0:
                 model["IsDocumentModel"] = False
                 lst_result.append(model)
-                model.pop("c:SessionShortcuts")
-                if "c:SessionReplications" in model:
-                    model.pop("c:SessionReplications")
-                if "c:FullShortcutModel" in model:
-                    model.pop("c:FullShortcutModel")
+                self._cleanup_model(model)
         return lst_result
+
+    def _enrich_model_with_entities(self, model: dict, dict_entities: dict) -> None:
+        """
+        Verrijkt het model met entiteiten op basis van shortcuts.
+
+        Deze functie zoekt naar shortcuts in het model en koppelt de bijbehorende entiteiten uit dict_entities aan het model.
+
+        Args:
+            model (dict): Het model dat verrijkt moet worden.
+            dict_entities (dict): Dictionary met externe entiteiten.
+        """
+        path_keys = ["c:SessionShortcuts", "o:Shortcut"]
+        if shortcuts := self._get_nested(data=model, keys=path_keys):
+            if isinstance(shortcuts, dict):
+                shortcuts = [shortcuts]
+            shortcuts = [i["@Ref"] for i in shortcuts]
+            model["Entities"] = [
+                dict_entities[id] for id in shortcuts if id in dict_entities
+            ]
+
+    def _cleanup_model(self, model: dict) -> None:
+        """Verwijdert overbodige keys uit het model.
+
+        Deze functie verwijdert specifieke keys die niet langer nodig zijn na het verrijken van het model met entiteiten.
+
+        Args:
+            model (dict): Het model waarvan overbodige keys verwijderd worden.
+        """
+        model.pop("c:SessionShortcuts")
+        if "c:SessionReplications" in model:
+            model.pop("c:SessionReplications")
+        if "c:FullShortcutModel" in model:
+            model.pop("c:FullShortcutModel")
 
     def transform_entities(self, entities: list[dict] | dict) -> list[dict]:
         """
