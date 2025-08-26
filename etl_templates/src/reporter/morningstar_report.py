@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from datetime import date
 
@@ -6,6 +5,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 from logtools import get_logger
 
 logger = get_logger(__name__)
+
 
 class MorningstarReport:
     def __init__(self, path_output: Path):
@@ -21,7 +21,9 @@ class MorningstarReport:
         self.path_output = path_output
         self.files_generated = []
 
-    def create_report(self, failed_mappings: list, file_png: Path, impacted_mappings: list):
+    def create_report(
+        self, failed_mappings: list, file_png: Path, impacted_mappings: list
+    ):
         """
         Genereert een Morningstar rapport op basis van mislukte en beïnvloede mappings.
 
@@ -48,13 +50,12 @@ class MorningstarReport:
         Returns:
             Template: De geladen Jinja2-template voor het rapport.
         """
-        environment = Environment (
-            loader = FileSystemLoader(self.dir_templates),
+        environment = Environment(
+            loader=FileSystemLoader(self.dir_templates),
             trim_blocks=True,
             lstrip_blocks=True,
         )
         return environment.get_template("report.jinja")
-
 
     def _generate_html_report(self) -> None:
         """
@@ -62,12 +63,24 @@ class MorningstarReport:
 
         Deze methode rendert de rapportagegegevens en schrijft het resultaat naar een HTML-bestand.
         """
-        content = self._render_source_view(self.reporting_date,self.nr_failed_mappings, self.file_png, self.impacted_mappings)
+        content = self._render_source_view(
+            self.reporting_date,
+            self.nr_failed_mappings,
+            self.file_png,
+            self.impacted_mappings,
+        )
         self.save_generated_object(
-            content=content, path_file_output=self.path_output / "Morningstar_report.html"
+            content=content,
+            path_file_output=self.path_output / "Morningstar_report.html",
         )
 
-    def _render_source_view(self, reporting_date: str, nr_failed_mappings: str, file_png: Path, impacted_mappings: list[dict]) -> str:
+    def _render_source_view(
+        self,
+        reporting_date: str,
+        nr_failed_mappings: str,
+        file_png: Path,
+        impacted_mappings: list[dict],
+    ) -> str:
         """
         Rendert de rapportagegegevens naar HTML met behulp van de Jinja2-template.
 
@@ -82,7 +95,12 @@ class MorningstarReport:
         Returns:
             str: De gerenderde HTML-inhoud van het rapport.
         """
-        content = self.template.render(reporting_date=reporting_date, nr_failed_mappings=nr_failed_mappings, file_png=file_png, impacted_mappings=impacted_mappings)
+        content = self.template.render(
+            reporting_date=reporting_date,
+            nr_failed_mappings=nr_failed_mappings,
+            file_png=file_png,
+            impacted_mappings=impacted_mappings,
+        )
         return content
 
     def save_generated_object(self, content: str, path_file_output: Path) -> None:
