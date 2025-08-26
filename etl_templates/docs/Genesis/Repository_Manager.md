@@ -8,8 +8,11 @@ Deze documentatie beschrijft het gebruik van het Python-package dat verantwoorde
 
 ### `RepositoryManager` Klasse
 
-De centrale klasse waarin alle logica voor repositorybeheer is ondergebracht. Wordt geïnitialiseerd met een configuratieobject dat repositorydetails bevat (zoals URL, branchnamen, paden, enz.).
+De generieke klasse voor standaard git-acties en foutafhandeling. Wordt geïnitialiseerd met een configuratieobject dat repositorydetails bevat (zoals URL, branchnamen, paden, enz.).
 
+### `SqlRepositoryManager` Klasse
+
+Is een specialisatie van `RepositoryManager` voor SQL-projecten, met extra functionaliteit voor het beheren van SQL projectbestanden.
 
 ### Integratie met `SqlProjEditor`
 
@@ -38,6 +41,10 @@ editor.save()
 ## API referentie
 
 ### ::: src.repository_manager.repository_manager.RepositoryManager
+
+---
+
+### ::: src.repository_manager.sql_repository_manager.SqlRepositoryManager
 
 ---
 

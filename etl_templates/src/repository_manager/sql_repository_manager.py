@@ -4,6 +4,7 @@ from pathlib import Path
 from shutil import copytree, rmtree
 
 from logtools import get_logger
+from config import DevOpsConfig
 
 from .file_sql_project import SqlProjEditor
 from .repository_manager import RepositoryManager
@@ -14,7 +15,7 @@ logger = get_logger(__name__)
 class SqlRepositoryManager(RepositoryManager):
     """Specialisatie van RepositoryManager voor SQL-projecten."""
 
-    def __init__(self, config, path_file_sql_project: Path):
+    def __init__(self, config: DevOpsConfig):
         """
         Initialiseert een SqlRepositoryManager voor SQL-projecten.
 
@@ -22,10 +23,9 @@ class SqlRepositoryManager(RepositoryManager):
 
         Args:
             config: Configuratieobject voor de repository.
-            path_file_sql_project (Path): Pad naar het SQL projectbestand.
         """
         super().__init__(config)
-        self._path_file_sql_project = path_file_sql_project
+        self._path_file_sql_project = config.path_file_sql_project
 
     def clean_target_dir_in_repo(self, target: str = "CentralLayer") -> None:
         """
@@ -48,7 +48,8 @@ class SqlRepositoryManager(RepositoryManager):
             except Exception as e:
                 logger.error(f"Failed to remove {path}: {e}")
 
-        rmtree(dir_to_clean, onexc=onerror)
+        if dir_to_clean.exists():
+            rmtree(dir_to_clean, onexc=onerror)
 
     def add_directory_to_repo(self, path_source: Path, target: str = "CentralLayer") -> None:
         """
@@ -64,6 +65,10 @@ class SqlRepositoryManager(RepositoryManager):
             None
         """
         path_sqlproj = self._path_local / self._path_file_sql_project
+
+        if not path_source.exists() or not path_source.is_dir():
+            raise ValueError(f"path_source '{path_source}' does not exist or is not a directory.")
+
         copytree(src=path_source, dst=self._path_local / target, dirs_exist_ok=True)
 
         project_editor = SqlProjEditor(path_sqlproj=path_sqlproj)
