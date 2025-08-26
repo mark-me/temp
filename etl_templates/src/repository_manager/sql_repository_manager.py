@@ -1,10 +1,12 @@
+import os
+import stat
 from pathlib import Path
 from shutil import copytree, rmtree
-import os, stat
+
 from logtools import get_logger
 
-from .repository_manager import RepositoryManager
 from .file_sql_project import SqlProjEditor
+from .repository_manager import RepositoryManager
 
 logger = get_logger(__name__)
 
