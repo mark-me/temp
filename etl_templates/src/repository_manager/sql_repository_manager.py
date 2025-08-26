@@ -31,7 +31,8 @@ class SqlRepositoryManager(RepositoryManager):
         """
         Verwijdert de opgegeven doeldirectory uit de repository.
 
-        Deze methode probeert de opgegeven directory en alle inhoud te verwijderen. Indien nodig worden de rechten aangepast en fouten worden gelogd.
+        Deze methode probeert de opgegeven directory en alle inhoud te verwijderen.
+        Indien nodig worden de rechten aangepast en fouten worden gelogd.
 
         Args:
             target (str, optional): Naam van de directory die verwijderd moet worden. Standaard "CentralLayer".
@@ -55,7 +56,8 @@ class SqlRepositoryManager(RepositoryManager):
         """
         Voegt een directory met nieuwe bestanden toe aan de repository en werkt het SQL projectbestand bij.
 
-        Deze methode kopieert alle bestanden uit de bronmap naar de doeldirectory in de repository, werkt het SQL projectbestand bij en logt de actie.
+        Deze methode kopieert alle bestanden uit de bronmap naar de doeldirectory in de repository,
+        werkt het SQL projectbestand bij en logt de actie.
 
         Args:
             path_source (Path): De bronmap met toe te voegen bestanden.
