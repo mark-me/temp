@@ -61,22 +61,9 @@ class StereotypeTransformer(BaseTransformer):
         Returns:
             list[str] or None: De gesplitste SQL expressie of None als niet gesplitst kan worden.
         """
-        # pattern_incorrect = r"@\w+\s*=\s*@\w+"
-        # matches_incorrect = re.findall(
-        #     string=sql_expression, pattern=pattern_incorrect
-        # )
-        # if matches_incorrect:
-        #     logger.error(
-        #         f"Invalide expressie gevonden {', '.join(matches_incorrect)} in {objects["Name"]} in bestand {self.file_pd_ldm}"
-        #     )
         if stereo_type["Stereotype"] == "mdde_FilterBusinessRule":
-            # if '=' in sql_expression:
-            #     lst_expression = sql_expression.split("=", 1)
-            #     lst_expression.insert(1, "=")
-            #     return lst_expression
-            # else:
-            lst_expression = sql_expression.split(" ", 1)
-            return lst_expression
+            expression = sql_expression.split(" ", 1)
+            return expression
         elif stereo_type["Stereotype"] == "mdde_ScalarBusinessRule":
             return sql_expression.split("=", 1)
         else:
@@ -96,11 +83,11 @@ class StereotypeTransformer(BaseTransformer):
         stereo_type["SqlExpression"] = sql_expression_split[1].strip()
         if stereo_type["Stereotype"] == "mdde_ScalarBusinessRule":
             sql_expression = sql_expression_split[1].strip()
-            lst_expression_variables = self._extract_expression_variables(
+            expression_variables = self._extract_expression_variables(
                 sql_expression=sql_expression
             )
-            if lst_expression_variables is not None:
-                stereo_type["SqlExpressionVariables"] = lst_expression_variables
+            if expression_variables is not None:
+                stereo_type["SqlExpressionVariables"] = expression_variables
 
     def _object_variables(self, stereo_type: dict, dict_domains: dict) -> dict:
         """Schoont de variabelen van een object en verrijkt deze met domain data
@@ -113,12 +100,12 @@ class StereotypeTransformer(BaseTransformer):
             dict: Geschoond en verrijkt stereotype object
         """
         logger.debug(f"Start met het verzamelen van variabelen voor object in {self.file_pd_ldm}:  {stereo_type['Name']}")
-        lst_variables = self._extract_and_clean_variables(stereo_type)
-        lst_variables = self._enrich_variables_with_domains(
-            variables=lst_variables, dict_domains=dict_domains
+        variables = self._extract_and_clean_variables(stereo_type)
+        variables = self._enrich_variables_with_domains(
+            variables=variables, dict_domains=dict_domains
         )
         logger.debug(f"Klaar met het verzamelen van variabelen voor object in {self.file_pd_ldm}: {stereo_type['Name']}")
-        stereo_type["Variables"] = lst_variables
+        stereo_type["Variables"] = variables
         stereo_type.pop("c:Attributes")
         return stereo_type
 
@@ -131,11 +118,10 @@ class StereotypeTransformer(BaseTransformer):
         Returns:
             list[dict]: Geschoonde variabelen
         """
-        lst_variables = stereo_type["c:Attributes"]["o:EntityAttribute"]
-        if isinstance(lst_variables, dict):
-            lst_variables = [lst_variables]
-        lst_variables = self.clean_keys(lst_variables)
-        return lst_variables
+        variables = stereo_type["c:Attributes"]["o:EntityAttribute"]
+        variables = [variables] if isinstance(variables, dict) else variables
+        variables = self.clean_keys(variables)
+        return variables
 
     def _enrich_variables_with_domains(
         self, variables: list[dict], dict_domains: dict
@@ -244,11 +230,10 @@ class StereotypeTransformer(BaseTransformer):
             identifier["EntityName"] = stereo_type["Name"]
             identifier["EntityCode"] = stereo_type["Code"]
             path_keys = ["c:Identifier.Attributes", "o:EntityAttribute"]
-            if lst_var_id := self._get_nested(data=identifier, keys=path_keys):
-                if isinstance(lst_var_id, dict):
-                    lst_var_id = [lst_var_id]
-                lst_var_id = [dict_vars[d["@Ref"]] for d in lst_var_id]
-                identifier["Variables"] = lst_var_id
+            if var_id := self._get_nested(data=identifier, keys=path_keys):
+                var_id = [var_id] if isinstance(var_id, dict) else var_id
+                var_id = [dict_vars[d["@Ref"]] for d in var_id]
+                identifier["Variables"] = var_id
             else:
                 logger.error(
                     f"Geen attributen toegevoegd in identifier {identifier['Name']} voor {self.file_pd_ldm}'"

@@ -1,4 +1,5 @@
 from datetime import datetime
+from copy import deepcopy
 import json
 from pathlib import Path
 
@@ -28,43 +29,41 @@ class PDDocument(BaseExtractor):
         """
         super().__init__(file_pd_ldm=file_pd_ldm)
 
-    def extract_to_json(self, file_output: str):
+    def extract_to_json(self, path_file_output: Path):
         """Schrijft het geëxtraheerde en getransformeerde model, filters, scalars, aggregaten en mappings naar een outputbestand.
 
         Deze functie verzamelt alle relevante data uit het logisch datamodel en schrijft deze als JSON naar het opgegeven bestandspad.
 
         Args:
-            file_output (str): Het pad waar het resultaatbestand wordt opgeslagen.
+            path_file_output (Path): Het pad waar het resultaatbestand wordt opgeslagen.
         """
         pd_content = self._read_file_model()
-        dict_document = {"Info": self._get_document_info(pd_content=pd_content)}
+        if not pd_content:
+            return None
+        dict_extract = {"Info": self._get_document_info(pd_content=pd_content)}
         domains = self._get_domains(pd_content=pd_content)
-        if filters := self._get_filters(pd_content=pd_content, domains=domains):
-            dict_document["Filters"] = filters
-        else:
-            logger.debug(f"Geen filters gevonden in '{self.file_pd_ldm}'")
-        if scalars := self._get_scalars(pd_content=pd_content, domains=domains):
-            dict_document["Scalars"] = scalars
-        else:
-            logger.debug(f"Geen scalars gevonden in '{self.file_pd_ldm}'")
-        aggregates = self._get_aggregates(pd_content=pd_content, domains=domains)
-        if models := self._get_models(pd_content=pd_content, domains=domains):
-            dict_document["Models"] = models
-        else:
-            logger.error(f"Geen modellen gevonden in '{self.file_pd_ldm}'")
-        if mappings := self._get_mappings(
+
+        filters = self._get_filters(pd_content=pd_content, domains=domains)
+        dict_extract["Filters"] = filters
+
+        scalars = self._get_scalars(pd_content=pd_content, domains=domains)
+        dict_extract["Scalars"] = scalars
+
+        models = self._get_models(pd_content=pd_content, domains=domains)
+        dict_extract["Models"] = models
+
+        mappings = self._get_mappings(
             pd_content=pd_content,
             models=models,
             filters=filters,
             scalars=scalars,
-            aggregates=aggregates,
-        ):
-            dict_document["Mappings"] = mappings
-        else:
-            logger.warning(f"Geen mappings gevonden in '{self.file_pd_ldm}'")
-        self._write_json(file_output=file_output, dict_document=dict_document)
+            domains=domains,
+        )
+        dict_extract["Mappings"] = mappings
 
-    def _read_file_model(self) -> dict:
+        self._write_json(path_output=path_file_output, dict_extract=dict_extract)
+
+    def _read_file_model(self) -> dict | None:
         """Leest de XML van het Power Designer LDM in een dictionary
 
         Args:
@@ -91,7 +90,7 @@ class PDDocument(BaseExtractor):
         Returns:
             dict: Metadata van het Power Designer LDM-bestand.
         """
-        return {
+        document_info = {
             "Filename": str(self.file_pd_ldm),
             "FilenameRepo": pd_content.get("a:RepositoryFilename"),
             "Creator": pd_content.get("a:Creator"),
@@ -105,12 +104,14 @@ class PDDocument(BaseExtractor):
             "ModelOptions": pd_content.get("a:ModelOptionsText", "").split("\n"),
             "PackageOptions": pd_content.get("a:PackageOptionsText", "").split("\n"),
         }
+        return document_info
 
-    def _get_domains(self, pd_content: dict) -> list[dict]:
+    def _get_domains(self, pd_content: dict) -> list[dict] | None:
         extractor = DomainsExtractor(
             pd_content=pd_content, file_pd_ldm=self.file_pd_ldm
         )
-        return extractor.get_domains()
+        domains = extractor.get_domains()
+        return domains
 
     def _get_filters(self, pd_content: dict, domains: dict) -> list[dict]:
         """Haalt alle filter objecten op uit het logisch data model.
@@ -128,9 +129,9 @@ class PDDocument(BaseExtractor):
             pd_content=pd_content,
             file_pd_ldm=self.file_pd_ldm,
         )
-        logger.debug("Start filter extraction")
         filters = extractor.get_filters(dict_domains=domains)
-        logger.debug("Finished filter extraction")
+        if not filters:
+            logger.debug(f"Geen filters gevonden in '{self.file_pd_ldm}'")
         return filters
 
     def _get_scalars(self, pd_content: dict, domains: dict) -> list[dict]:
@@ -149,9 +150,9 @@ class PDDocument(BaseExtractor):
             pd_content=pd_content,
             file_pd_ldm=self.file_pd_ldm,
         )
-        logger.debug("Start scalar extraction")
         scalars = extractor.get_scalars(dict_domains=domains)
-        logger.debug("Finished scalar extraction")
+        if not scalars:
+            logger.debug(f"Geen scalars gevonden in '{self.file_pd_ldm}'")
         return scalars
 
     def _get_aggregates(self, pd_content: dict, domains: dict) -> list[dict]:
@@ -170,9 +171,7 @@ class PDDocument(BaseExtractor):
             pd_content=pd_content,
             file_pd_ldm=self.file_pd_ldm,
         )
-        logger.debug("Start aggregate extraction")
         aggregates = extractor.get_aggregates(dict_domains=domains)
-        logger.debug("Finished aggregate extraction")
         return aggregates
 
     def _get_models(self, pd_content: dict, domains: dict) -> list[dict]:
@@ -186,10 +185,12 @@ class PDDocument(BaseExtractor):
         Returns:
             list[dict]: Een lijst van dictionaries die de modellen representeren.
         """
-        extractor = ModelExtractor(pd_content=pd_content, file_pd_ldm=self.file_pd_ldm)
-        logger.debug("Start model extraction")
+        extractor = ModelExtractor(
+            pd_content=deepcopy(pd_content), file_pd_ldm=self.file_pd_ldm
+        )
         models = extractor.get_models(dict_domains=domains)
-        logger.debug("Finished model extraction")
+        if not models:
+            logger.error(f"Geen modellen gevonden in '{self.file_pd_ldm}'")
         return models
 
     def _get_mappings(
@@ -198,7 +199,7 @@ class PDDocument(BaseExtractor):
         models: list[dict],
         filters: list[dict],
         scalars: list[dict],
-        aggregates: list[dict],
+        domains: list[dict],
     ) -> list[dict]:
         """Haalt alle mapping objecten op uit het logisch data model.
 
@@ -217,28 +218,30 @@ class PDDocument(BaseExtractor):
         extractor = MappingExtractor(
             pd_content=pd_content, file_pd_ldm=self.file_pd_ldm
         )
-        logger.debug("Start mapping extraction")
+        aggregates = self._get_aggregates(pd_content=pd_content, domains=domains)
         mappings = extractor.get_mappings(
             models=models, filters=filters, scalars=scalars, aggregates=aggregates
         )
+        if not mappings:
+            logger.warning(f"Geen mappings gevonden in '{self.file_pd_ldm}'")
         return mappings
 
-    def _write_json(self, file_output: str, dict_document: dict) -> None:
+    def _write_json(self, path_output: Path, dict_extract: dict) -> None:
         """Schrijft het opgegeven document als JSON naar het opgegeven bestandspad.
 
         Deze functie zorgt ervoor dat de outputdirectory bestaat en schrijft het dictionary-object als JSON naar het bestand.
 
         Args:
-            file_output (str): Het pad waar het resultaatbestand wordt opgeslagen.
+            file_output (Path): Het pad waar het resultaatbestand wordt opgeslagen.
             dict_document (dict): Het te schrijven document.
         """
-        path = Path(file_output)
+        path = Path(path_output)
         Path(path.parent).mkdir(parents=True, exist_ok=True)
-        with open(file_output, "w", encoding="utf-8") as outfile:
+        with open(path_output, "w", encoding="utf-8") as outfile:
             json.dump(
-                dict_document, outfile, indent=4, default=self._serialize_datetime
+                dict_extract, outfile, indent=4, default=self._serialize_datetime
             )
-        logger.info(f"Document output is written to '{file_output}'")
+        logger.info(f"Document output is written to '{path_output}'")
 
     def _serialize_datetime(self, obj: datetime) -> str:
         """Converteert een datetime-object naar een ISO 8601 string.

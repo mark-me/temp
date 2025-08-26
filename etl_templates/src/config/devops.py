@@ -16,9 +16,9 @@ class DevOpsConfigData:
     project: str
     repo: str
     branch: str
-    work_item: str
-    work_item_description: str
-    file_sql_project: str
+    work_item: str = ""
+    work_item_description: str = ""
+    file_sql_project: str = ""
     folder: str = "GIT_repo"
 
 

@@ -1,11 +1,11 @@
-import functools
 import sys
+
 from pathlib import Path
 
 from integrator import EtlSimulator
 from logtools import get_logger
 from config import MorningstarConfig
-
+from reporter import MorningstarReport
 
 logger = get_logger(__name__)
 
@@ -23,6 +23,7 @@ class Orchestrator:
         self.file_config = file_config
         self.config = MorningstarConfig(file_config=self.file_config)
         self.dag = EtlSimulator()
+        self.create_report = MorningstarReport(path_output=self.config.path_output)
         logger.info(f"Morningstar geïnitialiseerd met configure uit '{file_config}'")
         
     def build_dag(self) -> EtlSimulator:
@@ -65,5 +66,8 @@ class Orchestrator:
         print(f"{BOLD_BLUE}Start ETL Simulatie{RESET}")
         self.dag.start_etl(failure_strategy=failure_strategy)
         print(f"{BOLD_BLUE}Plot de uitkomst van de ETL Simulatie:{RESET}")
-        print(f"{BOLD_BLUE}\tLocatie outputbestand: {self.config.path_output}/{file_png}{RESET}")
-        self.dag.plot_etl_fallout(file_png=file_png)
+        file_png = self.config.path_output / file_png
+        impacted_mappings = self.dag.plot_etl_fallout(file_png=file_png)
+        print(f"{BOLD_BLUE}\tLocatie outputbestand: {self.config.path_output / file_png}{RESET}")
+        self.create_report.create_report(failed_mappings=mapping_refs, file_png=file_png, impacted_mappings = impacted_mappings)
+

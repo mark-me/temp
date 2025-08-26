@@ -27,12 +27,7 @@ class ModelExtractor(BaseExtractor):
             list[dict]: lijst van modellen die gebruikt worden in het Power Designer LDM document
         """
         internal_model = self._model_internal(dict_domains=dict_domains)
-        # TODO: need to add the condition for c:Packages if we encounter models that use packages
-        if "o:Shortcut" in self.content.get("c:Entities", None):
-            external_models = self._models_external()
-        else:
-            external_models = []
-            logger.warning(f"o:Shortcut mist in self.content in {self.file_pd_ldm}")
+        external_models = self._models_external()
         # Combine models
         models = (
             external_models + [internal_model] if external_models else [internal_model]
@@ -43,13 +38,12 @@ class ModelExtractor(BaseExtractor):
         """Haalt alle vastgelegde data van het model op vanuit het geladen Power Designer document
 
         Args:
-            lst_aggregates (list[dict]): Aggregaten die onderdeel zijn van het doelmodel en gebruikt worden in de ETL
+            dict_domains (dict): Domeinen
 
         Returns:
             dict: In het Power Designer LDM ontworpen model (niet geïmporteerd voor ETL)
         """
         model = self.transform_model_internal.transform(content=self.content)
-        # Model add entity data
         entities = self._entities_internal(dict_domains=dict_domains)
         model["Entities"] = entities
         model["Relationships"] = self._relationships(entities=entities)
@@ -79,6 +73,54 @@ class ModelExtractor(BaseExtractor):
             entities=internal_entities, dict_domains=dict_domains
         )
         return internal_entities
+
+    def _relationships(self, entities: list[dict]) -> list[dict] | None:
+        """Haalt alle relaties tussen entiteiten op uit het Power Designer model.
+
+        Deze functie zoekt naar relaties tussen entiteiten en retourneert een lijst van deze relaties,
+        of None als er geen relaties zijn gevonden.
+
+        Args:
+            entities (list[dict]): Lijst van entiteiten waarvoor relaties gezocht worden.
+
+        Returns:
+            list[dict] | None: Lijst van relaties of None als er geen relaties zijn gevonden.
+        """
+        transform_relationships = RelationshipsTransformer(
+            file_pd_ldm=self.file_pd_ldm, entities=entities
+        )
+        path_keys = ["c:Relationships", "o:Relationship"]
+        if relationships := self._get_nested(data=self.content, keys=path_keys):
+            relationships = transform_relationships.transform(
+                relationships=relationships
+            )
+            return relationships
+        else:
+            logger.info(
+                f"Het extraheren van de relaties tussen entiteiten is gefaald, er zijn geen relaties gevonden. Betreft: {self.file_pd_ldm}."
+            )
+            return None
+
+    def _datasources(self) -> dict | None:
+        """Haalt alle datasources op die in het Power Designer model zijn gedefinieerd.
+
+        Deze functie zoekt naar datasources in het model en retourneert een dictionary met datasource-informatie,
+        of None als er geen datasources zijn gevonden.
+
+        Returns:
+            dict | None: Een dictionary met datasources of None als er geen datasources zijn gevonden.
+        """
+        path_keys = ["c:DataSources", "o:DefaultDataSource"]
+        if datasources := self._get_nested(data=self.content, keys=path_keys):
+            dict_datasources = self.transform_model_internal.transform_datasources(
+                datasources=datasources
+            )
+            return dict_datasources
+        else:
+            logger.error(
+                f"Er is geen default data source gevonden tijdens het extraheren van {self.file_pd_ldm}"
+            )
+            return None
 
     def _models_external(self) -> list[dict] | None:
         """Haalt externe modellen op die zijn gekoppeld aan entity shortcuts in het Power Designer model.
@@ -126,50 +168,4 @@ class ModelExtractor(BaseExtractor):
             dict_result[entity["Id"]] = entity
         return dict_result
 
-    def _datasources(self) -> dict | None:
-        """Haalt alle datasources op die in het Power Designer model zijn gedefinieerd.
 
-        Deze functie zoekt naar datasources in het model en retourneert een dictionary met datasource-informatie,
-        of None als er geen datasources zijn gevonden.
-
-        Returns:
-            dict | None: Een dictionary met datasources of None als er geen datasources zijn gevonden.
-        """
-        path_keys = ["c:DataSources", "o:DefaultDataSource"]
-        if datasources := self._get_nested(data=self.content, keys=path_keys):
-            dict_datasources = self.transform_model_internal.transform_datasources(
-                datasources=datasources
-            )
-            return dict_datasources
-        else:
-            logger.error(
-                f"Er is geen default data source gevonden tijdens het extraheren van {self.file_pd_ldm}"
-            )
-            return None
-
-    def _relationships(self, entities: list[dict]) -> list[dict] | None:
-        """Haalt alle relaties tussen entiteiten op uit het Power Designer model.
-
-        Deze functie zoekt naar relaties tussen entiteiten en retourneert een lijst van deze relaties,
-        of None als er geen relaties zijn gevonden.
-
-        Args:
-            entities (list[dict]): Lijst van entiteiten waarvoor relaties gezocht worden.
-
-        Returns:
-            list[dict] | None: Lijst van relaties of None als er geen relaties zijn gevonden.
-        """
-        transform_relationships = RelationshipsTransformer(
-            file_pd_ldm=self.file_pd_ldm, entities=entities
-        )
-        path_keys = ["c:Relationships", "o:Relationship"]
-        if lst_pd_relationships := self._get_nested(data=self.content, keys=path_keys):
-            lst_relationships = transform_relationships.transform(
-                relationships=lst_pd_relationships
-            )
-            return lst_relationships
-        else:
-            logger.info(
-                f"Het extraheren van de relaties tussen entiteiten is gefaald, er zijn geen relaties gevonden. Betreft: {self.file_pd_ldm}."
-            )
-            return None

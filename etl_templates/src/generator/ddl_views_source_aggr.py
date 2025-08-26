@@ -30,6 +30,7 @@ class DDLSourceViewsAggr(DDLViewBase):
         ):
             if mapping["EntityTarget"]["Stereotype"] != "mdde_AggregateBusinessRule":
                 continue
+            #FIXME: remove  self._set_datasource_code(mapping)
             content = self._render_source_view_aggr(mapping)
             path_file_output = self.get_output_file_path(mapping)
             self.save_generated_object(
@@ -61,13 +62,13 @@ class DDLSourceViewsAggr(DDLViewBase):
         """
         Genereert de SQL-inhoud voor een source view aggregatie op basis van de mapping.
 
-        Deze methode zet de Jinja2-template met de mapping data om naar een SQL statement voor specifieke platforms en formatteert de SQL.
+        Deze methode rendert de Jinja2-template met de mapping en formatteert de SQL indien nodig voor specifieke platforms.
 
         Args:
             mapping (dict): Mappinginformatie van de entiteit.
 
         Returns:
-            str: Het SQL statement
+            str: De gerenderde en eventueel geformatteerde SQL-inhoud.
         """
         content = self.template.render(mapping=mapping)
         if self.platform in ["dedicated-pool"]:

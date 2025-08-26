@@ -45,23 +45,23 @@ class StereotypeExtractor(BaseExtractor):
         Returns:
             list[dict]: Lijst van geschoonde objecten van het opgegeven stereotype
         """
-        lst_objects_input = self.content["c:Entities"]["o:Entity"]
-        if isinstance(lst_objects_input, dict):
-            lst_objects_input = [lst_objects_input]
+        objects_input = self.content["c:Entities"]["o:Entity"]
+        if isinstance(objects_input, dict):
+            objects_input = [objects_input]
         model = self.content["a:Code"]
 
-        lst_objects = []
-        for stereotype_object in lst_objects_input:
+        objects = []
+        for stereotype_object in objects_input:
             if self._is_matching_stereotype(
                 stereotype_expected=stereotype, stereotype_object=stereotype_object
             ):
                 self._clean_stereotype_object(
                     stereotype_object=stereotype_object, model=model
                 )
-                lst_objects.append(stereotype_object)
+                objects.append(stereotype_object)
         logger.debug(f"Start met transformaties voor stereotype uit {self.file_pd_ldm}")
-        self.transform_stereotype.transform(lst_objects, dict_domains=dict_domains)
-        return lst_objects
+        self.transform_stereotype.transform(objects, dict_domains=dict_domains)
+        return objects
 
     def _is_matching_stereotype(
         self, stereotype_expected: str, stereotype_object: dict
@@ -99,4 +99,3 @@ class StereotypeExtractor(BaseExtractor):
         for key in keys_to_remove:
             if key in stereotype_object:
                 stereotype_object.pop(key)
-                logger.debug(f"Verwijderd {key} voor lst_objects in {self.file_pd_ldm}")

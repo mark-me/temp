@@ -2209,10 +2209,10 @@ LABL 0 Arial,8,N</a:FontList>
 <c:SubSymbols>
 <o:EntitySymbol Id="o131">
 <a:CreationDate>1733828101</a:CreationDate>
-<a:ModificationDate>1756203089</a:ModificationDate>
+<a:ModificationDate>1756134158</a:ModificationDate>
 <a:IconMode>-1</a:IconMode>
 <a:EmptyAreaSize>(5873, 1135)</a:EmptyAreaSize>
-<a:Rect>((-24811,-41875), (-9281,-39605))</a:Rect>
+<a:Rect>((-24335,-41877), (-8805,-39607))</a:Rect>
 <a:LineColor>16512</a:LineColor>
 <a:FillColor>12615680</a:FillColor>
 <a:ShadowColor>12632256</a:ShadowColor>

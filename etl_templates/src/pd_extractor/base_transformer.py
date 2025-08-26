@@ -27,15 +27,15 @@ class BaseTransformer(BaseExtractor):
         Returns:
             dict or list: The cleaned dictionary or list of dictionaries with standardized keys.
         """
-        lst_object = [content] if isinstance(content, dict) else content
-        for obj in lst_object:
+        objects = [content] if isinstance(content, dict) else content
+        for obj in objects:
             attrs = [key for key in list(obj.keys()) if key[:1] == "@"]
             for attr in attrs:
                 obj[attr[1:]] = obj.pop(attr)
             attrs = [key for key in list(obj.keys()) if key[:2] == "a:"]
             for attr in attrs:
                 obj[attr[2:]] = obj.pop(attr)
-        result = lst_object[0] if isinstance(content, dict) else lst_object
+        result = objects[0] if isinstance(content, dict) else objects
         return result
 
     def _convert_values_datetime(self, d: dict, convert_key: str) -> dict:

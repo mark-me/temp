@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Morningstar Failure Report </title>
+</head>
+<body>
+<h1 style="font-family:verdana;"> Morningstar Failure Report </h1>
+<section>
+    <p style="font-family:verdana;"> Tijdens het verladen van data op {{reporting_date}} zijn {{nr_failed_mappings}} mappings in error gelopen. In onderstaande rapportage zie je de impact van deze
+        foutief gelopen mappings.
+    </p>
+</section>
+
+<section>
+    <h2 style="font-family:verdana;">Impact van de gefaalde mappings </h2>
+    <p style="font-family:verdana;"> 
+
+    <table style="font-family:verdana;'" width="80%" border = "1" cellpadding="5" cellspacing = "0" align="center" style="border-collapse: collapse;">
+        <tbody>
+            <tr>
+                <th>Id </th>
+                <th>Mapping </th> 
+                <th>Doelentiteit</th>
+                <th>DoelEntiteitModel</th>
+                <th>Status</th>
+                <th>Statuscode</th>
+            </tr>
+            {% for item, components_data in impacted_mappings.items() %}
+            <tr>
+                {% for component in components_data.items() %}
+                    {% if component[0] != "Status" %}
+                        <td align = "center"> {{component[1]}} </td>
+                    {% else %}
+                        {% if component[1] == "Success" %} 
+                            <td align="center" style="background-color: #E6FFE6; color: #228B22;""> {{component[1]}} </td>
+                        {% elif component[1] == "Failed" %}
+                            <td align="center" style="background-color: #FFE6E6; color: #C70039;""> {{component[1]}} </td>
+                        {% else %}
+                            <td align="center" style="background-color: #9db7fdff; color: #03059eff; ""> {{component[1]}} </td>  
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </tr>  
+            {% endfor %} 
+        </tbody>
+    </table>
+    </p>
+    
+    <h3 style="font-family:verdana;"> Toelichting op de statussen </h3>
+    <p style="font-family: verdana;"> 
+        <b>Success:</b> mapping heeft geen problemen ondervonden tijdens het verladen van de data <br>
+        <b>Failed:</b> mapping is gefaald tijdens het verladen van de data <br>
+        <b>Did not run:</b> mapping heeft niet gedraaid vanwege een gefaalde voorliggende mapping <br>
+    </p>
+</section>
+
+<section>
+    <h2 style="font-family:verdana"> Visuele representatie van de geraakte mappings </h2>
+    <p style="font-family: verdana;">
+    In onderstaande visual kan je zien hoe de mappings uit de bovenstaande tabel met elkaar en hun doelentiteiten in verbinding staan. Alle entiteiten
+    hebben een lichtgele kleur. De mappings hebben een kleur op basis van hun status. Groen betekent dat de mapping succesvol heeft gerund, rood is
+    gefaald en blauw betekent dat een mapping niet heeft gedraaid vanwege een gefaalde voorliggende mapping. 
+    
+    <img src ="{{file_png}}" alt="Impact op mappings">
+    <p>
+</section>
+</body>
+</html>
+

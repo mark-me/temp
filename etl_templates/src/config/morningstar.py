@@ -186,7 +186,7 @@ class MorningstarConfig(BaseConfigApplication[MorningstarConfigData]):
         Returns:
             Path: Het pad naar de tussenliggende outputfolder.
         """
-        folder = Path(self.folder_intermediate_root) / self.folder_output
+        folder = Path(self.folder_intermediate_root) / self.title / self._version / self.folder_output
         folder.mkdir(parents=True, exist_ok=True)
         return folder
     

@@ -44,7 +44,7 @@ class BaseExtractor:
         """
         return self._get_nested(data, keys, default=object()) is not object()
 
-    def determine_reference_type(self, data: dict):
+    def determine_reference_type(self, data: dict) -> str | None:
         """Bepaalt het type referentie in de opgegeven dictionary.
 
         Deze functie zoekt naar bekende referentie types in de dictionary en retourneert

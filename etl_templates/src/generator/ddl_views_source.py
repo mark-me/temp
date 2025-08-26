@@ -25,6 +25,7 @@ class DDLSourceViews(DDLViewBase):
         for mapping in tqdm(mappings, desc="Genereren Source Views", colour="#93c47d"):
             if mapping["EntityTarget"]["Stereotype"] == "mdde_AggregateBusinessRule":
                 continue
+            #FIXME: remove self._set_datasource_code(mapping)
             content = self._render_source_view(mapping)
             path_file_output = self.get_output_file_path(mapping)
             self.save_generated_object(

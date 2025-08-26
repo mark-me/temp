@@ -184,14 +184,14 @@ class Orchestrator:
         ):
             try:
                 document = PDDocument(file_pd_ldm=file_pd_ldm)
-                file_RETW = (
+                path_file_RETW = (
                     self.config.extractor.path_output / f"{file_pd_ldm.stem}.json"
                 )
-                document.extract_to_json(file_output=file_RETW)
+                document.extract_to_json(path_file_output=path_file_RETW)
                 logger.info(
-                    f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{file_RETW}'"
+                    f"Het logisch data model en mappings van '{file_pd_ldm}' geëxtraheerd en geschreven naar '{path_file_RETW}'"
                 )
-                lst_files_RETW.append(file_RETW)
+                lst_files_RETW.append(path_file_RETW)
             except (IOError, OSError, ValueError) as e:
                 logger.error(
                     f"Fout bij extractie van Power Designer bestand '{file_pd_ldm}': {e}",
@@ -306,6 +306,7 @@ class Orchestrator:
         """
         devops_handler = RepositoryManager(config=self.config.devops)
         devops_handler.clone()
+        devops_handler.create_branch()
         devops_handler.clean_directory_in_repo()
         devops_handler.add_directory_to_repo(
             path_source=self.config.generator.path_output

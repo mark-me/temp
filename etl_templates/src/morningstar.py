@@ -32,8 +32,6 @@ def main():
     parser.add_argument("config_file", help="Locatie van een configuratiebestand")
     args = parser.parse_args()
 
-    path_output = Path("etl_templates/intermediate")
-    path_output.mkdir(parents=True, exist_ok=True)
     etl_simulator = Orchestrator(file_config=Path(args.config_file))
     etl_simulator.build_dag()
 
@@ -42,8 +40,9 @@ def main():
         MappingRef("DA_Central", "SlDmsCustomsvalue"),
     ]
     failure_strategy = FailureStrategy.DIRECT_PREDECESSORS
-    file_png = path_output / "only_successors.png"
+    file_png =  "only_successors.png"
     etl_simulator.start_etl_simulator(mapping_refs=failed_mappings, failure_strategy=failure_strategy, file_png=file_png)
+
 
     print(f"{BOLD_GREEN}Afgerond zonder fouten.{RESET}", file=sys.stdout)
 

@@ -21,16 +21,16 @@ class ModelsExternalTransformer(BaseTransformer):
         Returns:
             list[dict]: Doelmodellen met entiteit data
         """
-        lst_result = []
+        results = []
         models = self.clean_keys(models)
 
         for model in models:
             self._enrich_model_with_entities(model, dict_entities)
             if "Entities" in model and len(model["Entities"]) > 0:
                 model["IsDocumentModel"] = False
-                lst_result.append(model)
+                results.append(model)
                 self._cleanup_model(model)
-        return lst_result
+        return results
 
     def _enrich_model_with_entities(self, model: dict, dict_entities: dict) -> None:
         """

@@ -25,6 +25,34 @@ class RepositoryManager:
         self._config = config
         self._path_local = config.path_local.resolve()
 
+    def pull(self) -> None:
+        """Haalt laatste versie van een repository branch op
+
+        Returns:
+            None
+        """
+        if self._is_repo_folder():
+            lst_command = [
+                "git",
+                "-C",
+                str(self._path_local),
+                "pull",
+                "origin",
+                self._config.branch,
+            ]
+            self._execute_command(lst_command=lst_command)
+        else:
+            self.clone()
+
+    def _execute_command(self, lst_command: list[str]) -> None:
+        """Voert CLI commando uit en schrijft log van CLI commando
+
+        Args:
+            lst_command (list[str]): Lijst met alle tokens die een CLI commando voorstellen.
+        """
+        logger.info(f"Executing: {' '.join(lst_command)}")
+        subprocess.run(lst_command, check=True)
+
     def clone(self) -> None:
         """
         Kloont de repository, maakt een feature-branch aan en schakelt hiernaar over.
@@ -37,8 +65,8 @@ class RepositoryManager:
             None
         """
         logger.info(f"Kloon van repository '{self._config.url}'.")
-        dir_current = Path("./").resolve()
-        self._remove_old_repo()  # deletes a directory and all its contents.
+        if self._is_repo_folder():
+            self._remove_old_repo()  # deletes a directory and all its contents.
         lst_command = [
             "git",
             "clone",
@@ -47,19 +75,13 @@ class RepositoryManager:
             self._config.branch,
             str(self._path_local),
         ]
-        logger.info(f"Executed: {' '.join(lst_command)}")
         try:
-            subprocess.run(lst_command, check=True)
+            self._execute_command(lst_command=lst_command)
         except subprocess.CalledProcessError:
             logger.error(f"Failed to clone repository: {self._config.url}")
             raise
-        logger.info(f"chdir to: {self._path_local}")
-        os.chdir(self._path_local)
-        self._create_branch()
-        # Relocate to org root folder
-        os.chdir(dir_current)
 
-    def _create_branch(self):
+    def create_branch(self):
         """
         Maakt een feature-branch aan en schakelt hiernaar over.
 
@@ -68,6 +90,8 @@ class RepositoryManager:
         Returns:
             None
         """
+        dir_current = Path("./").resolve()
+        os.chdir(self._path_local)
         self._remove_remote_branch()
         lst_command = [
             "git",
@@ -75,24 +99,16 @@ class RepositoryManager:
             self._config.feature_branch,
             self._config.branch,
         ]
-        logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command, check=True)
+        self._execute_command(lst_command=lst_command)
         lst_command = ["git", "switch", self._config.feature_branch]
-        logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command, check=True)
+        self._execute_command(lst_command=lst_command)
+        os.chdir(dir_current)
 
     def _remove_remote_branch(self):
-        """Verwijdert een oude versie van de feature branch die men probeert aan te maken
-        """
-        lst_command = [
-            "git",
-            "push",
-            "origin",
-            "--delete",
-            self._config.feature_branch
-        ]
+        """Verwijdert een oude versie van de feature branch die men probeert aan te maken"""
+        lst_command = ["git", "push", "origin", "--delete", self._config.feature_branch]
         try:
-            subprocess.run(lst_command, check=True)
+            self._execute_command(lst_command=lst_command)
         except subprocess.CalledProcessError:
             logger.info("Remote branch bestaat nog niet")
 
@@ -165,7 +181,9 @@ class RepositoryManager:
         """
         path_sqlproj = self._path_local / self._config.path_file_sql_project
         # Copy all files to repository
-        copytree(src=path_source, dst=self._path_local / "CentralLayer", dirs_exist_ok=True)
+        copytree(
+            src=path_source, dst=self._path_local / "CentralLayer", dirs_exist_ok=True
+        )
 
         project_editor = SqlProjEditor(path_sqlproj=path_sqlproj)
         project_editor.add_new_files(folder=path_source)
@@ -218,8 +236,7 @@ class RepositoryManager:
             "add",
             "-A",
         ]
-        logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command, check=True)
+        self._execute_command(lst_command=lst_command)
 
     def _git_commit(self):
         """
@@ -236,8 +253,7 @@ class RepositoryManager:
             "-m"
             f"Commit: {self._config.work_item_description} #{int(self._config.work_item)}",
         ]
-        logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command, check=True)
+        self._execute_command(lst_command=lst_command)
 
     def _git_push(self):
         """
@@ -249,8 +265,7 @@ class RepositoryManager:
             None
         """
         lst_command = ["git", "push", "origin", self._config.feature_branch]
-        logger.info(f"Executed: {' '.join(lst_command)}")
-        subprocess.run(lst_command, check=True)
+        self._execute_command(lst_command=lst_command)
 
     def _open_branch_in_browser(self):
         """
@@ -263,3 +278,22 @@ class RepositoryManager:
             None
         """
         webbrowser.open(self._config.url_branch, new=0, autoraise=True)
+
+    def _is_repo_folder(self) -> bool:
+        """Verifieert of er al een repository directory bestaat
+
+        Returns:
+            bool: _description_
+        """
+        if not self._path_local.is_dir():
+            return False
+        lst_command = ["git", "-C", str(self._path_local), "rev-parse"]
+        try:
+            self._execute_command(lst_command=lst_command)
+        except subprocess.CalledProcessError:
+            return False
+        origin = subprocess.check_output(["git", "-C", str(self._path_local), "config", "--get", "remote.origin.url"]).strip().decode()
+        is_origin = self._config.url == origin
+        if not is_origin:
+            return False
+        return True

@@ -67,15 +67,6 @@ class MappingExtractor(BaseExtractor):
             )
             for mapping in mappings
         ]
-        # for mapping in mappings:
-        #     intermediate_mapping = self._process_single_mapping(
-        #         mapping=mapping,
-        #         dict_objects=dict_objects,
-        #         dict_attributes=dict_attributes,
-        #         dict_variables=dict_variables,
-        #         dict_datasources=dict_datasources
-        #     )
-        #     mappings_transformed.append(copy.deepcopy(intermediate_mapping))
         return mappings_transformed
 
     def _process_single_mapping(

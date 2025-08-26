@@ -29,7 +29,7 @@ De volgende klassen spelen een belangrijke rol in het extractieproces:
     * [`SourceCompositionTransformer`](#src.pd_extractor.mapping_transformers.composition.SourceCompositionTransformer) is verantwoordelijk voor het transformeren, opschonen en verrijken van "source composition"-datastructuren die de objecten en entiteiten samenbrengen die de bron vormen van een mapping. Helper-klassen hierbij zijn:
         * [`JoinConditionsTransformer`](#src.pd_extractor.mapping_transformers.composition_join_conditions.JoinConditionsTransformer) is verantwoordelijk voor het transformeren van de join condities in de compositie en verrijkt deze met entiteit en attribuut data.
         * [`SourceConditionTransform`](#src.pd_extractor.mapping_transformers.composition_source_condition.SourceConditionTransform) is verantwoordelijk voor het transformeren van source condities (filters voor bron objecten) voor de huidige mapping en werkt de compositie bij met de getransformeerde condities.
-        * [`BusinessRuleTransform`](#src.pd_extractor.mapping_transformers.composition_business_rule.BusinessRuleTransform) is verantwoordelijk voor het transformeren van de business rule, vervangt variabelen in de SQL-expressie en werkt de compositie bij met de getransformeerde expressie.
+        * [`ScalarTransform`](#src.pd_extractor.mapping_transformers.composition_scalar.ScalarTransform) is verantwoordelijk voor het transformeren van de scalar, vervangt variabelen in de SQL-expressie en werkt de compositie bij met de getransformeerde expressie.
 
 ### Sequentie van componenten
 
@@ -402,7 +402,7 @@ Mogelijkheid om veranderingen tussen modelversies te vergelijken.
 
 ---
 
-### ::: src.pd_extractor.mapping_transformers.composition_business_rule.BusinessRuleTransform
+### ::: src.pd_extractor.mapping_transformers.composition_scalar.ScalarTransform
 
 ---
 

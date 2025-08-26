@@ -353,6 +353,18 @@ class EtlSimulator(DagReporting):
             margin=150,
             **visual_style,
         )
+        impacted_mappings_base= [vx.attributes() for vx in dag_report.vs if vx["type"] == VertexType.MAPPING.name]
+        impacted_mappings = {}
+        for impacted_mapping in impacted_mappings_base:
+            impacted_mappings[impacted_mapping["Id"]] = {
+                "Id": impacted_mapping["Id"],
+                "Mapping": impacted_mapping["Name"],
+                "DoelEntiteit": impacted_mapping["EntityTarget"]["Name"],
+                "DoelEntiteitModel": impacted_mapping["EntityTarget"]["CodeModel"],
+                "Status": impacted_mapping["run_status"].value,
+                "Statuscode": impacted_mapping["run_status"].name,
+            }
+        return impacted_mappings
 
     def _get_affected_components(self) -> ig.Graph:
         """Bepaalt en retourneert het subgraaf van de ETL-DAG met alleen de getroffen componenten.

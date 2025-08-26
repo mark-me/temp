@@ -24,7 +24,7 @@ class ModelInternalTransformer(BaseTransformer):
         path_keys = ["c:GenerationOrigins", "o:Shortcut"]
         model = self._get_nested(data=content, keys=path_keys)
         if not model:
-            lst_include = [
+            included_attributes = [
                 "@Id",
                 "@a:ObjectID",
                 "a:Name",
@@ -40,7 +40,7 @@ class ModelInternalTransformer(BaseTransformer):
                 "a:RepositoryFilename",
                 "a:ExtendedAttributesText",
             ]
-            model = {item: content[item] for item in content if item in lst_include}
+            model = {item: content[item] for item in content if item in included_attributes}
         model = self.clean_keys(model)
         model["IsDocumentModel"] = True
         return model
@@ -110,12 +110,12 @@ class ModelInternalTransformer(BaseTransformer):
         Returns:
             dict: Entiteit met geschoonde attribuut data
         """
-        lst_attrs = self._get_entity_attributes(entity)
-        lst_attrs = self.clean_keys(lst_attrs)
-        for i, attr in enumerate(lst_attrs):
+        attrs = self._get_entity_attributes(entity)
+        attrs = self.clean_keys(attrs)
+        for i, attr in enumerate(attrs):
             attr["Order"] = i
             attr = self._enrich_attribute_with_domain(attr, dict_domains)
-        entity["Attributes"] = lst_attrs
+        entity["Attributes"] = attrs
         if "c:Attributes" in entity:
             entity.pop("c:Attributes")
         elif "Variables" in entity:
@@ -132,14 +132,14 @@ class ModelInternalTransformer(BaseTransformer):
             list: Lijst van attributen.
         """
         if "c:Attributes" in entity:
-            lst_attrs = entity["c:Attributes"]["o:EntityAttribute"]
+            attrs = entity["c:Attributes"]["o:EntityAttribute"]
         elif "Variables" in entity:
-            lst_attrs = entity["Variables"]
+            attrs = entity["Variables"]
         else:
-            lst_attrs = []
-        if isinstance(lst_attrs, dict):
-            lst_attrs = [lst_attrs]
-        return lst_attrs
+            attrs = []
+        if isinstance(attrs, dict):
+            attrs = [attrs]
+        return attrs
 
     def _enrich_attribute_with_domain(self, attr: dict, dict_domains: dict) -> dict:
         """Verrijkt een attribuut met domein data indien aanwezig.
@@ -184,7 +184,7 @@ class ModelInternalTransformer(BaseTransformer):
         """
 
         primary_key = None
-        lst_foreign_keys = []
+        foreign_keys = []
 
         has_primary, primary_id = self._get_primary_identifier(entity)
         if not has_primary:
@@ -195,7 +195,7 @@ class ModelInternalTransformer(BaseTransformer):
         if "c:Identifiers" not in entity:
             return entity
 
-        identifiers = self._handle_identifiers(entity)
+        identifiers = self._get_identifiers(entity)
 
         for identifier in identifiers:
             if not self._has_identifier_attributes(
@@ -210,10 +210,10 @@ class ModelInternalTransformer(BaseTransformer):
             if has_primary and primary_id == identifier["Id"]:
                 primary_key = identifier
             else:
-                lst_foreign_keys.append(identifier)
+                foreign_keys.append(identifier)
 
         entity["KeyPrimary"] = primary_key
-        entity["KeysForeign"] = lst_foreign_keys
+        entity["KeysForeign"] = foreign_keys
         entity.pop("c:Identifiers")
 
         return entity
@@ -241,7 +241,7 @@ class ModelInternalTransformer(BaseTransformer):
             logger.error(msg_missing)
         return has_primary, primary_id
 
-    def _handle_identifiers(self, entity: dict) -> list[dict]:
+    def _get_identifiers(self, entity: dict) -> list[dict]:
         """Bereidt de lijst van identifiers voor en maakt deze schoon.
 
         Deze functie normaliseert de structuur van identifiers en past key-cleaning toe voor verdere verwerking.
@@ -288,10 +288,10 @@ class ModelInternalTransformer(BaseTransformer):
             dict_attrs (dict): Dictionary met referenties naar attribuut-data.
         """
 
-        lst_attr_id = self._get_nested(
+        attr_ids = self._get_nested(
             data=identifier, keys=["c:Identifier.Attributes", "o:EntityAttribute"]
         )
-        lst_attr_id = [lst_attr_id] if isinstance(lst_attr_id, dict) else lst_attr_id
-        lst_attr_id = [dict_attrs[d["@Ref"]] for d in lst_attr_id if "@Ref" in d]
-        identifier["Attributes"] = lst_attr_id
+        attr_ids = [attr_ids] if isinstance(attr_ids, dict) else attr_ids
+        attr_ids = [dict_attrs[d["@Ref"]] for d in attr_ids if "@Ref" in d]
+        identifier["Attributes"] = attr_ids
         identifier.pop("c:Identifier.Attributes")

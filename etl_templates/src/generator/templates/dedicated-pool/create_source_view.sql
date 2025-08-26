@@ -2,10 +2,9 @@ CREATE VIEW [{{mapping.EntityTarget.CodeModel}}].[vw_src_{{mapping.Name}}] AS
 SELECT
     {% for attributemapping in mapping.AttributeMapping %}
         {% if 'Expression' in attributemapping %}
-            [{{ attributemapping.AttributeTarget.Code }}] = {{ attributemapping.Expression }},
-
-            {% elif Expression not in attributemapping %}
-            [{{attributemapping.AttributeTarget.Code}}] = {{ attributemapping.AttributesSource.EntityAlias }}.[{{attributemapping.AttributesSource.Code}}],
+        [{{ attributemapping.AttributeTarget.Code }}] = {{ attributemapping.Expression }},
+        {% else %}
+        [{{attributemapping.AttributeTarget.Code}}] = {{ attributemapping.AttributesSource.EntityAlias }}.[{{attributemapping.AttributesSource.Code}}],
         {% endif %}
     {% endfor %}
     [X_StartDate] = CAST(GETDATE() AT TIME ZONE 'UTC' AT TIME ZONE 'W. Europe Standard Time' AS DATE),
@@ -23,15 +22,10 @@ SELECT
         {% endif %}
         {% if 'JoinConditions' in sourceObject %}
             ON {% for joinCondition in sourceObject.JoinConditions %}
-                {% if CodeModel|upper  == 'DA_CENTRAL' and joinCondition.ParentLiteral != '' %}
+                {% if joinCondition.ParentLiteral != '' %}
                     {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Code }}] = {{ joinCondition.ParentLiteral }}
-                {% elif CodeModel|upper   != 'DA_CENTRAL' and joinCondition.ParentLiteral != '' %}
-                    {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Name }}] = {{ joinCondition.ParentLiteral }}
-                {% endif %}
-                {% if joinCondition.ParentLiteral == '' and joinCondition.JoinConditionComponents.AttributeChild.CodeModel|upper   == 'DA_CENTRAL' %}
-                    {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Code }}] = {{ joinCondition.JoinConditionComponents.AttributeParent.EntityAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeParent.Name }}]
-                {% elif joinCondition.ParentLiteral == '' and joinCondition.JoinConditionComponents.AttributeChild.CodeModel|upper   != 'DA_CENTRAL' %}
-                    {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Name }}] = {{ joinCondition.JoinConditionComponents.AttributeParent.EntityAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeParent.Code }}]
+                {% else %}
+                    {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Code }}] = {{ joinCondition.JoinConditionComponents.AttributeParent.EntityAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeParent.Code }}]
                 {% endif %}
                 {%- if not loop.last -%}
                     AND

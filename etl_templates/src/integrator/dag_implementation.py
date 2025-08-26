@@ -61,6 +61,7 @@ class DagImplementation(DagBuilder):
             # Add data to mappings
             if vx["type"] == VertexType.MAPPING.name:
                 self._mapping_add_model(vx_mapping=vx)
+                self._mapping_workaround_source_layer_name_instead_of_code(vx_mapping=vx)
                 self._translate_aggregate_functions(vx_mapping=vx)
                 self._mapping_add_hashkey(vx_mapping=vx)
 
@@ -204,10 +205,58 @@ class DagImplementation(DagBuilder):
                 hash_attrib = f"{hash_attrib}{attr_mapping['Expression']}"
             else:
                 entity_alias = attr_mapping["AttributesSource"]["EntityAlias"]
-                attr_source = attr_mapping["AttributesSource"]["Code"]
+                # FIXME: Workaround for source layer implementation on name instead of code
+                if attr_mapping["AttributesSource"]["is_on_name"]:
+                    attr_source = attr_mapping["AttributesSource"]["Name"]
+                else:
+                    attr_source = attr_mapping["AttributesSource"]["Code"]
                 hash_attrib = f"{hash_attrib}{entity_alias}.[{attr_source}]"
             x_hashkey = x_hashkey + hash_attrib
         vx_mapping["X_Hashkey"] = f"{x_hashkey},'{vx_mapping['DataSource']}'))"
+
+
+    def _mapping_workaround_source_layer_name_instead_of_code(self, vx_mapping: ig.Vertex) -> None:
+        """ FIXME: Dit is een tijdelijke workaround.
+            Maakt een indicators voor Source Layer objecten aan t.b.v. de Jinja template, zodat deze kan bepalen:
+            1) of er een join gedaan moet worden op de Name i.p.v. de Code van de ON attributen en
+            2) of een attribuut mapping voor de bron attribuut op Name i.p.v. Code moet worden gedaan.
+
+            Achtergrond:
+            Op dit moment staan in de PowerDesigner modellen de werkelijke tabelnamen in de Name in plaats van de Code.
+            Omdat we binnen het team er vanuit gaan dat het code veld de werkelijke (lees Engelse) namen bevat levert dit een issue op voor de joins.
+            Deze fix blijft nodig totdat de Power Designer modellen van de source lagen in lijn worden gebracht met de afspraken binnen MDDE.
+
+        Args:
+            mapping (dict): De mapping waarvoor per source entity en attribute mapping bepaald gaat worden of het om een source laag entity gaat of een andere.
+        """
+        # Source composition entiteiten
+        if "SourceComposition" in vx_mapping.attributes():
+            for composition_object in vx_mapping["SourceComposition"]:
+                if 'JoinConditions' in composition_object:
+                    for join_condition in composition_object['JoinConditions']:
+                        if 'AttributeParent' in join_condition['JoinConditionComponents']:
+                            parent = join_condition['JoinConditionComponents']['AttributeParent']
+                            is_source_layer = parent["CodeModel"][:3] == "SL_"
+                            parent["is_on_name"] = is_source_layer
+                            if is_source_layer:
+                                parent["Code"] = parent["Name"]
+                        if 'AttributeChild' in join_condition['JoinConditionComponents']:
+                            child = join_condition['JoinConditionComponents']['AttributeChild']
+                            is_source_layer = child["CodeModel"][:3] == "SL_"
+                            child["is_on_name"] = is_source_layer
+                            if is_source_layer:
+                                child["Code"] = child["Name"]
+        # AttributeMapping, Attribute Source
+        if "AttributeMapping" in vx_mapping.attributes():
+            for attr_map in vx_mapping["AttributeMapping"]:
+                if "AttributesSource" in attr_map:
+                    source = attr_map["AttributesSource"]
+                    is_source_layer = source["CodeModel"][:3] == "SL_"
+                    source["is_on_name"] = is_source_layer
+                    if is_source_layer:
+                        source["Code"] = source["Name"]
+
+
 
     def get_run_config(self, deadlock_prevention: DeadlockPrevention) -> list[dict]:
         """Bepaalt de uitvoeringsvolgorde en run-levels van mappings in de ETL-DAG.

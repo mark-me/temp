@@ -4,11 +4,10 @@ SELECT
         {% if 'Expression' in attr_mapping %}
             [{{attr_mapping.AttributeTarget.Code}}] = {{ attr_mapping.Expression }}(
                 {{ attr_mapping.AttributesSource.EntityAlias }}.[{{attr_mapping.AttributesSource.Name}}]
-            ) {% elif CodeModel | upper == 'DA_CENTRAL' and Expression not in attr_mapping %}
-            [{{attr_mapping.AttributeTarget.Code}}] = [{{ attr_mapping.AttributesSource.EntityAlias }}].[{{attr_mapping.AttributesSource.Code}}] {% elif CodeModel | upper != 'DA_CENTRAL' and Expression not in attr_mapping %}
-            [{{attr_mapping.AttributeTarget.Code}}] = [{{ attr_mapping.AttributesSource.EntityAlias }}].[{{attr_mapping.AttributesSource.Name}}]
+            )
+        {% else %}
+            [{{attr_mapping.AttributeTarget.Code}}] = [{{ attr_mapping.AttributesSource.EntityAlias }}].[{{attr_mapping.AttributesSource.Code}}]
         {% endif %}
-
         {%- if not loop.last -%},
         {% endif %}
     {% endfor %}
@@ -20,10 +19,10 @@ SELECT
 
             {% if 'JoinConditions' in sourceObject %}
                 ON {% for joinCondition in sourceObject.JoinConditions %}
-                    {% if joinCondition.ParentLiteral == '' %}
-                        {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Code }}] = {{ joinCondition.JoinConditionComponents.AttributeParent.EntityAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeParent.Code }}]
-                    {% else %}
+                    {% if joinCondition.ParentLiteral != '' %}
                         {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Code }}] = {{ joinCondition.ParentLiteral }}
+                    {% else %}
+                        {{ sourceObject.JoinAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeChild.Code }}] = {{ joinCondition.JoinConditionComponents.AttributeParent.EntityAlias }}.[{{ joinCondition.JoinConditionComponents.AttributeParent.Code }}]
                     {% endif %}
                     {%- if not loop.last -%}
                         AND

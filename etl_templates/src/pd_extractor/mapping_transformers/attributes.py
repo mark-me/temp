@@ -110,6 +110,11 @@ class MappingAttributesTransformer(BaseTransformer):
                 f"Geen source attributen gevonden in mapping '{self.mapping['Name']}' uit '{self.file_pd_ldm}'"
             )
             return
+        if "Expression" in attr_map and attr_map['AttributeTarget']['Code'] != 'X_Source':
+            logger.warning(
+                f"Expressie gevonden in '{self.mapping['Name']}' uit '{self.file_pd_ldm}'.. Waarschijnlijk in de mapping geen entiteit bij de attribuut vermeld "
+            )
+            return     
         id_attr = self._get_source_feature_reference(attr_map)
         if id_attr not in dict_attributes:
             logger.warning(

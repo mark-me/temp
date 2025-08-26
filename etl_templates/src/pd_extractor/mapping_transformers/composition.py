@@ -80,20 +80,20 @@ class SourceCompositionTransformer(BaseTransformer):
         Returns:
             list[dict]: Een lijst van compositie-items.
         """
-        lst_composition_items = []
+        composition_items = []
         content = composition.get("c:ExtendedComposition.Content")
         if (
             "c:ExtendedCollections" in content["o:ExtendedSubObject"]
             or "o:ExtendedSubObject" in content
         ):
-            lst_composition_items = content["o:ExtendedSubObject"]
+            composition_items = content["o:ExtendedSubObject"]
         elif "c:ExtendedCollections" in content:
-            lst_composition_items = content["c:ExtendedCollections"]
+            composition_items = content["c:ExtendedCollections"]
         else:
             logger.warning(f"Mapping zonder inhoud voor {self.file_pd_ldm}")
-        if isinstance(lst_composition_items, dict):
-            lst_composition_items = [lst_composition_items]
-        return lst_composition_items
+        if isinstance(composition_items, dict):
+            composition_items = [composition_items]
+        return composition_items
 
     def _handle_composition_items(
         self,
