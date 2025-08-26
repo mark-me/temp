@@ -35,11 +35,13 @@ class MorningstarConfigData:
 
 
 class MorningstarConfig(BaseConfigApplication[MorningstarConfigData]):
-    CONFIG_DATACLASS = MorningstarConfigData
     """
     Beheert de volledige applicatieconfiguratie voor Morningstar en laadt deze uit een YAML-bestand.
-    Biedt toegang tot alle deelconfiguraties, paden en hulpfuncties voor het werken met configuratiebestanden.
+
+    Deze klasse biedt toegang tot alle deelconfiguraties, paden en hulpfuncties voor het werken met configuratiebestanden.
+    MorningstarConfig automatiseert het inlezen van configuratiegegevens voor de Morningstar-applicatie.
     """
+    CONFIG_DATACLASS = MorningstarConfigData
 
     def __init__(self, file_config: str):
         """
@@ -189,7 +191,7 @@ class MorningstarConfig(BaseConfigApplication[MorningstarConfigData]):
         folder = Path(self.folder_intermediate_root) / self.title / self._version / self.folder_output
         folder.mkdir(parents=True, exist_ok=True)
         return folder
-    
+
     @property
     def path_input(self) -> Path:
         """
