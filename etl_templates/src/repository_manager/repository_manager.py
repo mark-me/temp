@@ -12,7 +12,11 @@ logger = get_logger(__name__)
 
 
 class RepositoryError(Exception):
-    """Exception die wordt opgegooid bij repository fouten."""
+    """
+    Exception die wordt opgegooid bij repository fouten.
+
+    Deze exceptie wordt gebruikt om fouten te signaleren die optreden bij repository-operaties, zoals het ontbreken van een geldige repository of een mismatch in remote origin.
+    """
 
     def __init__(self, message: str, path_repo: Path | None = None):
         super().__init__(message)
@@ -21,7 +25,7 @@ class RepositoryError(Exception):
 
     def __str__(self):
         if self.path_repo:
-            return f"{self.message} voor {self.path_repo}"
+            return f"{self.message} voor {self._path_local}"
         else:
             return self.message
 
@@ -54,14 +58,20 @@ class RepositoryManager:
 
     def clone(self) -> None:
         """
-        Kloont de repository naar het lokale pad en verwijdert indien nodig een bestaande repository.
+        Kloont de repository naar het lokale pad of voert een pull uit als de repository nog niet aanwezig is.
+
+        Deze methode controleert of er al een geldige repository aanwezig is en kloont deze indien nodig.
+        Als er geen geldige repository is, wordt een pull uitgevoerd om de repository op te halen.
 
         Returns:
             None
         """
-        self._execute(
-            ["git", "clone", self._url, "-b", self._branch, str(self._path_local)]
-        )
+        if self._has_local_repo():
+            self._execute(
+                ["git", "clone", self._url, "-b", self._branch, str(self._path_local)]
+            )
+        else:
+            self.pull()
 
     def create_feature_branch(self) -> None:
         """
@@ -91,12 +101,18 @@ class RepositoryManager:
 
     def switch_branch(self, branch: str) -> None:
         """
-        Schakelt over naar de ingestelde feature branch als deze niet leeg is.
+        Schakelt over naar de opgegeven branch in de repository.
 
-        Deze methode voert een 'git switch' uit naar de feature branch indien deze is opgegeven.
+        Deze methode voert een 'git switch' uit naar de base branch of feature branch, afhankelijk van de parameter. Als de branch niet bestaat of niet is opgegeven, wordt een RepositoryError opgegooid.
+
+        Args:
+            branch (str): De naam van de branch om naar over te schakelen ("base" of "feature").
 
         Returns:
             None
+
+        Raises:
+            RepositoryError: Als de branch niet bestaat of niet is opgegeven.
         """
         if branch == "base":
             self._execute(
