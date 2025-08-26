@@ -2,7 +2,7 @@
 from pathlib import Path
 from datetime import date
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, Template
 from logtools import get_logger
 
 logger = get_logger(__name__)
@@ -10,13 +10,12 @@ logger = get_logger(__name__)
 class MorningstarReport:
     def __init__(self, path_output: Path):
         """
-        Initialiseert een DDLViews instantie voor het genereren van DDL-bestanden voor views.
+        Initialiseert een nieuw MorningstarReport object met het opgegeven outputpad.
 
-        Deze constructor stelt de outputdirectory en de te gebruiken Jinja2-template in voor het genereren van DDL's.
+        Deze constructor stelt de template directory, het outputpad en de lijst van gegenereerde bestanden in.
 
         Args:
-            path_output (Path): De directory waarin de DDL-bestanden worden opgeslagen.
-            ddl_type (DdlType): De Jinja2-template die gebruikt wordt voor het renderen van de DDL.
+            path_output (Path): Het pad waar de rapportbestanden worden opgeslagen.
         """
         self.dir_templates = Path(__file__).parent / "templates"
         self.path_output = path_output
@@ -40,11 +39,14 @@ class MorningstarReport:
         self.template = self._get_template()
         self.report = self._generate_html_report()
 
-    def _get_template(self):
+    def _get_template(self) -> Template:
         """
         Laadt en retourneert de Jinja2-template voor het Morningstar rapport.
 
         Deze methode initialiseert de Jinja2-omgeving en haalt de juiste template op.
+
+        Returns:
+            Template: De geladen Jinja2-template voor het rapport.
         """
         environment = Environment (
             loader = FileSystemLoader(self.dir_templates),
@@ -54,7 +56,7 @@ class MorningstarReport:
         return environment.get_template("report.jinja")
 
 
-    def _generate_html_report(self):
+    def _generate_html_report(self) -> None:
         """
         Genereert het Morningstar rapport en slaat het op als HTML-bestand.
 
@@ -65,17 +67,17 @@ class MorningstarReport:
             content=content, path_file_output=self.path_output / "Morningstar_report.html"
         )
 
-    def _render_source_view(self, reporting_date: str, nr_failed_mappings: str, file_png, impacted_mappings):
+    def _render_source_view(self, reporting_date: str, nr_failed_mappings: str, file_png: Path, impacted_mappings: list[dict]) -> str:
         """
-        Rendert de Morningstar rapportagegegevens naar HTML met behulp van de Jinja2-template.
+        Rendert de rapportagegegevens naar HTML met behulp van de Jinja2-template.
 
         Deze methode vult de template met de opgegeven rapportagegegevens en retourneert de HTML-inhoud als string.
 
         Args:
             reporting_date (str): De datum van de rapportage.
             nr_failed_mappings (str): Het aantal mislukte mappings.
-            file_png: Het PNG-bestand dat in het rapport wordt opgenomen.
-            impacted_mappings: Lijst van mappings die door fouten zijn beïnvloed.
+            file_png (Path): Het PNG-bestand dat in het rapport wordt opgenomen.
+            impacted_mappings (list[dict]): Lijst van mappings die door fouten zijn beïnvloed.
 
         Returns:
             str: De gerenderde HTML-inhoud van het rapport.
@@ -83,16 +85,15 @@ class MorningstarReport:
         content = self.template.render(reporting_date=reporting_date, nr_failed_mappings=nr_failed_mappings, file_png=file_png, impacted_mappings=impacted_mappings)
         return content
 
-    def save_generated_object(self, content: str, path_file_output: str) -> None:
+    def save_generated_object(self, content: str, path_file_output: Path) -> None:
         """
-        Slaat de gegenereerde source view DDL op in het opgegeven pad en registreert het bestand in de DDL-lijst.
+        Slaat de gegenereerde rapportinhoud op naar een bestand.
 
-        Deze methode schrijft de geformatteerde SQL naar een bestand en voegt het bestand toe aan de lijst van aangemaakte DDL's.
+        Deze methode schrijft de opgegeven inhoud naar het opgegeven pad als een UTF-8 gecodeerd bestand.
 
         Args:
-            content (str): De te schrijven SQL-inhoud.
-            path_file_output (str): Het volledige pad waar de source view wordt opgeslagen.
+            content (str): De inhoud die moet worden opgeslagen.
+            path_file_output (Path): Het pad waar het bestand wordt opgeslagen.
         """
-
         with open(path_file_output, mode="w", encoding="utf-8") as file_ddl:
             file_ddl.write(content)
