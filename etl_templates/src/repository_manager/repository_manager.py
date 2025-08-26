@@ -14,13 +14,16 @@ logger = get_logger(__name__)
 class RepositoryError(Exception):
     """Exception die wordt opgegooid bij repository fouten."""
 
-    def __init__(self, message: str, path_repo: Path):
+    def __init__(self, message: str, path_repo: Path | None = None):
         super().__init__(message)
         self.message = message
         self.path_repo = path_repo
 
     def __str__(self):
-        return f"{self.message} voor {self.path_repo}"
+        if self.path_repo:
+            return f"{self.message} voor {self.path_repo}"
+        else:
+            return self.message
 
 
 class RepositoryManager:
@@ -60,7 +63,7 @@ class RepositoryManager:
             ["git", "clone", self._url, "-b", self._branch, str(self._path_local)]
         )
 
-    def create_branch(self) -> None:
+    def create_feature_branch(self) -> None:
         """
         Maakt een nieuwe feature branch aan en schakelt hiernaar over.
 
@@ -72,7 +75,7 @@ class RepositoryManager:
             RepositoryError: Als er geen feature branch is ingesteld.
         """
         if not self._feature_branch:
-            raise RepositoryError("Geen feature branch ingesteld", self._path_local)
+            raise RepositoryError("Geen feature branch ingesteld")
         self._remove_remote_branch()
         self._execute(
             [
@@ -84,9 +87,9 @@ class RepositoryManager:
                 self._branch,
             ]
         )
-        self.switch_branch()
+        self.switch_branch(branch="feature")
 
-    def switch_branch(self) -> None:
+    def switch_branch(self, branch: str) -> None:
         """
         Schakelt over naar de ingestelde feature branch als deze niet leeg is.
 
@@ -95,9 +98,23 @@ class RepositoryManager:
         Returns:
             None
         """
-        if self._feature_branch:
+        if branch == "base":
             self._execute(
-                ["git", "-C", str(self._path_local), "switch", self._feature_branch]
+                ["git", "-C", str(self._path_local), "switch", self._branch]
+            )
+        elif branch == "feature":
+            if self._feature_branch:
+                self._execute(
+                    ["git", "-C", str(self._path_local), "switch", self._feature_branch]
+                )
+            else:
+                raise RepositoryError(
+                    message=f"Branch '{self._feature_branch}' is niet gevonden",
+                    path_repo=self._path_local,
+                )
+        else:
+            raise RepositoryError(
+                message="Geen branch gekozen (feature of base)."
             )
 
     def publish(self, commit_message: str, open_url: str | None = None) -> None:
@@ -151,6 +168,7 @@ class RepositoryManager:
                 func(path)
             except Exception as e:
                 logger.error(f"Failed to remove {path}: {e}")
+
         rmtree(self._path_local, onexc=onerror)
         logger.info(f"Deleted folder: {self._path_local}")
 

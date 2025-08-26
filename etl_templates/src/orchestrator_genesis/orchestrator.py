@@ -306,7 +306,7 @@ class Orchestrator:
         """
         devops_handler = SqlRepositoryManager(config=self.config.devops)
         devops_handler.clone()
-        devops_handler.create_branch()
+        devops_handler.create_feature_branch()
         devops_handler.clean_target_dir_in_repo()
         devops_handler.add_directory_to_repo(
             path_source=self.config.generator.path_output
