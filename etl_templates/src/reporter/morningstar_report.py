@@ -8,6 +8,12 @@ logger = get_logger(__name__)
 
 
 class MorningstarReport:
+    """
+    Genereert en beheert Morningstar rapportages op basis van mappings en templates.
+
+    Deze klasse biedt functionaliteit om rapporten te maken, templates te laden, HTML te genereren en rapportbestanden op te slaan.
+    MorningstarReport automatiseert het proces van rapportagegeneratie voor mislukte en beïnvloede mappings.
+    """
     def __init__(self, path_output: Path):
         """
         Initialiseert een nieuw MorningstarReport object met het opgegeven outputpad.
