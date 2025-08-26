@@ -1,299 +1,237 @@
 import os
-from shutil import copytree, rmtree
+import stat
 import subprocess
 import webbrowser
 from pathlib import Path
-
+from shutil import rmtree
 from logtools import get_logger
-
-from .file_sql_project import SqlProjEditor
 
 logger = get_logger(__name__)
 
 
+class RepositoryError(Exception):
+    """Exception die wordt opgegooid bij repository fouten."""
+
+    def __init__(self, message: str, path_repo: Path):
+        super().__init__(message)
+        self.message = message
+        self.path_repo = path_repo
+
+    def __str__(self):
+        return f"{self.message} voor {self.path_repo}"
+
+
 class RepositoryManager:
-    """Handelt repository acties af zoals klonen, feature branches aanmaken, comitten en pushen naar de remote"""
+    """Generieke repository manager met git-acties."""
 
-    def __init__(self, config: dict):
-        """Initialiseert de RepositoryManager met de opgegeven configuratie.
-
-        Stelt de lokale repository-pad en configuratie in op basis van de meegegeven parameters.
-
-        Args:
-            config (dict): Configuratieobject met repository-instellingen.
-        """
-        self._config = config
-        self._path_local = config.path_local.resolve()
+    def __init__(
+        self, path_local: Path, url: str, branch: str, feature_branch: str = None
+    ):
+        self._path_local = Path(path_local).resolve()
+        self._url = url
+        self._branch = branch
+        self._feature_branch = feature_branch
 
     def pull(self) -> None:
-        """Haalt laatste versie van een repository branch op
+        """
+        Haalt de laatste wijzigingen van de remote repository op of kloont de repository indien nodig.
+
+        Deze methode voert een 'git pull' uit als de lokale repository geldig is, of kloont de repository als deze nog niet aanwezig is of ongeldig is.
 
         Returns:
             None
         """
-        if self._is_repo_folder():
-            lst_command = [
-                "git",
-                "-C",
-                str(self._path_local),
-                "pull",
-                "origin",
-                self._config.branch,
-            ]
-            self._execute_command(lst_command=lst_command)
+        if self._status_repo_folder() == "ok":
+            self._execute(
+                ["git", "-C", str(self._path_local), "pull", "origin", self._branch]
+            )
         else:
             self.clone()
 
-    def _execute_command(self, lst_command: list[str]) -> None:
-        """Voert CLI commando uit en schrijft log van CLI commando
-
-        Args:
-            lst_command (list[str]): Lijst met alle tokens die een CLI commando voorstellen.
-        """
-        logger.info(f"Executing: {' '.join(lst_command)}")
-        subprocess.run(lst_command, check=True)
-
     def clone(self) -> None:
         """
-        Kloont de repository, maakt een feature-branch aan en schakelt hiernaar over.
+        Kloont de repository naar het lokale pad en verwijdert indien nodig een bestaande repository.
 
-        Deze functie verwijdert eerst een bestaande repository, kloont vervolgens de opgegeven repository,
-        maakt een nieuwe feature-branch aan en schakelt hiernaar over. Indien nodig wordt de gebruiker gevraagd
-        om in te loggen op DevOps.
-
-        Returns:
-            None
-        """
-        logger.info(f"Kloon van repository '{self._config.url}'.")
-        if self._is_repo_folder():
-            self._remove_old_repo()  # deletes a directory and all its contents.
-        lst_command = [
-            "git",
-            "clone",
-            self._config.url,
-            "-b",
-            self._config.branch,
-            str(self._path_local),
-        ]
-        try:
-            self._execute_command(lst_command=lst_command)
-        except subprocess.CalledProcessError:
-            logger.error(f"Failed to clone repository: {self._config.url}")
-            raise
-
-    def create_branch(self):
-        """
-        Maakt een feature-branch aan en schakelt hiernaar over.
-
-        Deze functie maakt een nieuwe feature-branch aan en schakelt hiernaar over. Probeert eerst de feature branch te verwijderen
+        Deze methode controleert of er al een geldige repository aanwezig is en verwijdert deze indien nodig.
+        Vervolgens wordt de opgegeven repository gekloond naar het lokale pad.
 
         Returns:
             None
         """
-        dir_current = Path("./").resolve()
-        os.chdir(self._path_local)
+        if self._status_repo_folder():
+            self._remove_old_repo()
+        self._execute(
+            ["git", "clone", self._url, "-b", self._branch, str(self._path_local)]
+        )
+
+    def create_branch(self) -> None:
+        """
+        Maakt een nieuwe feature branch aan en schakelt hiernaar over.
+
+        Deze methode verwijdert eerst een bestaande remote branch met dezelfde naam,
+        maakt vervolgens een nieuwe branch aan vanaf de huidige branch en schakelt naar deze feature branch.
+        Als er geen feature branch is ingesteld, wordt een RepositoryError opgegooid.
+
+        Raises:
+            RepositoryError: Als er geen feature branch is ingesteld.
+        """
+        if not self._feature_branch:
+            raise RepositoryError("Geen feature branch ingesteld", self._path_local)
         self._remove_remote_branch()
-        lst_command = [
-            "git",
-            "branch",
-            self._config.feature_branch,
-            self._config.branch,
-        ]
-        self._execute_command(lst_command=lst_command)
-        lst_command = ["git", "switch", self._config.feature_branch]
-        self._execute_command(lst_command=lst_command)
-        os.chdir(dir_current)
+        self._execute(
+            [
+                "git",
+                "-C",
+                str(self._path_local),
+                "branch",
+                self._feature_branch,
+                self._branch,
+            ]
+        )
+        self.switch_branch()
 
-    def _remove_remote_branch(self):
-        """Verwijdert een oude versie van de feature branch die men probeert aan te maken"""
-        lst_command = ["git", "push", "origin", "--delete", self._config.feature_branch]
-        try:
-            self._execute_command(lst_command=lst_command)
-        except subprocess.CalledProcessError:
-            logger.info("Remote branch bestaat nog niet")
+    def switch_branch(self) -> None:
+        """
+        Schakelt over naar de ingestelde feature branch als deze niet leeg is.
+
+        Deze methode voert een 'git switch' uit naar de feature branch indien deze is opgegeven.
+
+        Returns:
+            None
+        """
+        if self._feature_branch != "":
+            self._execute(
+                ["git", "-C", str(self._path_local), "switch", self._feature_branch]
+            )
+
+    def publish(self, commit_message: str, open_url: str | None = None) -> None:
+        """
+        Voert een commit en push uit naar de repository en opent optioneel een URL in de browser.
+
+        Deze methode voegt alle wijzigingen toe, maakt een commit met het opgegeven bericht, pusht naar
+        de (feature-)branch en opent optioneel een URL in de webbrowser.
+
+        Args:
+            commit_message (str): Het commitbericht voor de commit.
+            open_url (str | None, optional): Een URL die na het pushen in de browser wordt geopend. Standaard None.
+
+        Returns:
+            None
+        """
+        self._execute(["git", "-C", str(self._path_local), "add", "-A"])
+        self._execute(
+            ["git", "-C", str(self._path_local), "commit", "-m", commit_message]
+        )
+        self._execute(
+            [
+                "git",
+                "-C",
+                str(self._path_local),
+                "push",
+                "origin",
+                self._feature_branch or self._branch,
+            ]
+        )
+        if open_url:
+            webbrowser.open(open_url, new=0, autoraise=True)
 
     def _remove_old_repo(self) -> None:
         """
-        Verwijdert de opgegeven repository map en al zijn inhoud als deze bestaat voor een verse start.
+        Verwijdert de bestaande lokale repository map en al zijn inhoud.
 
-        Deze functie zorgt ervoor dat alle bestanden en submappen in de repository map verwijderbaar zijn
-        door de rechten aan te passen, en verwijdert vervolgens de volledige map.
+        Deze methode controleert of de lokale repository directory bestaat. Indien aanwezig, worden alle bestanden en mappen verwijderd, waarbij de rechten indien nodig worden aangepast. Fouten bij het verwijderen worden gelogd.
 
         Returns:
             None
         """
         if not self._path_local.is_dir():
             return
-        # change owner of file .idx, else we get an error
-        for root, dirs, files in os.walk(self._path_local, topdown=False):
-            root = Path(root)
-            for d in dirs:
-                d = Path(d)
-                os.chmod((root / d), 0o777)
-                (root / d).rmdir()
-            for f in files:
-                f = Path(f)
-                os.chmod((root / f), 0o777)
-                (root / f).unlink()
-        self._path_local.rmdir()
-        logger.info(f"Delete existing folder: {self._path_local}")
 
-    def publish(self) -> None:
+        def onerror(func, path, _):
+            try:
+                os.chmod(path, stat.S_IWRITE)
+                func(path)
+            except Exception as e:
+                logger.error(f"Failed to remove {path}: {e}")
+
+        rmtree(self._path_local, onexc=onerror)
+        logger.info(f"Deleted folder: {self._path_local}")
+
+    def _remove_remote_branch(self) -> None:
         """
-        Voert een commit en push uit naar de DevOps repository en opent de branch in de browser.
+        Verwijdert de remote feature branch uit de repository indien deze bestaat.
 
-        Deze functie voegt alle wijzigingen toe, maakt een commit met een werkitem-omschrijving,
-        pusht naar de feature-branch en opent de branch-URL in de browser.
+        Deze methode probeert de remote feature branch te verwijderen. Als de branch niet bestaat, wordt dit gelogd.
 
         Returns:
             None
         """
-        os.chdir(self._path_local)
-        self._git_add_all()
-        self._git_commit()
-        self._git_push()
-        self._open_branch_in_browser()
+        try:
+            self._execute(
+                [
+                    "git",
+                    "-C",
+                    str(self._path_local),
+                    "push",
+                    "origin",
+                    "--delete",
+                    self._feature_branch,
+                ]
+            )
+        except subprocess.CalledProcessError:
+            logger.info("Remote branch bestaat nog niet")
 
-    def clean_directory_in_repo(self) -> None:
+    def _status_repo_folder(self) -> str:
         """
-        Schoont een directory van "oude" bestanden en post-deployment scripts in de repository.
+        Controleert de status van de lokale repository directory en remote.
 
-        Args:
+        Deze methode controleert of de lokale directory bestaat, of het een geldige git repository is,
+        en of de remote origin overeenkomt met de verwachte URL. Geeft een string terug die de status beschrijft.
 
         Returns:
-            None
-        """
-        dir_to_clean = self._path_local / "CentralLayer"
-        rmtree(dir_to_clean, ignore_errors=True)
-        pass
-
-    def add_directory_to_repo(self, path_source: Path) -> None:
-        """
-        Voegt een directory met nieuwe bestanden en post-deployment scripts toe aan de repository.
-
-        Zoekt naar nieuwe bestanden in de bron-map, werkt het projectbestand bij en kopieert alle bestanden naar de lokale repository.
-
-        Args:
-            path_source (Path): De bron-map met te publiceren bestanden.
-
-        Returns:
-            None
-        """
-        path_sqlproj = self._path_local / self._config.path_file_sql_project
-        # Copy all files to repository
-        copytree(
-            src=path_source, dst=self._path_local / "CentralLayer", dirs_exist_ok=True
-        )
-
-        project_editor = SqlProjEditor(path_sqlproj=path_sqlproj)
-        project_editor.add_new_files(folder=path_source)
-        project_editor._remove_missing_files()
-        project_editor.save()
-        logger.info("Added files to repository")
-
-    def _find_files_new(self, path_source: Path) -> list[Path]:
-        """
-        Zoekt naar bestanden die wel in de bron-map staan, maar nog niet in de repository.
-
-        Deze functie vergelijkt de relatieve paden van bestanden in de bron-map met die in de repository
-        en retourneert een lijst van bestanden die nog niet aanwezig zijn in de repository.
-
-        Args:
-            path_source (Path): De bron-map waarin gezocht wordt naar nieuwe bestanden.
-
-        Returns:
-            list[Path]: Een lijst met relatieve paden van bestanden die nieuw zijn.
-        """
-        # Genereer relatieve paden van bestanden in de bron-map
-        files_in_source = {
-            file.relative_to(path_source)
-            for file in path_source.rglob("*")
-            if file.is_file()
-        }
-
-        # Genereer relatieve paden van bestanden in de repository
-        files_in_repo = {
-            file.relative_to(self._path_local)
-            for file in self._path_local.rglob("*")
-            if file.is_file()
-        }
-
-        # Bepaal welke bestanden nog niet in de repository staan
-        new_files = list(files_in_source - files_in_repo)
-        return new_files
-
-    def _git_add_all(self):
-        """
-        Voegt alle gewijzigde, nieuwe en verwijderde bestanden toe aan de git staging area.
-
-        Deze functie voert een 'git add -A' uit om alle wijzigingen voor commit voor te bereiden.
-
-        Returns:
-            None
-        """
-        lst_command = [
-            "git",
-            "add",
-            "-A",
-        ]
-        self._execute_command(lst_command=lst_command)
-
-    def _git_commit(self):
-        """
-        Voert een git commit uit met een werkitem-omschrijving als commit message.
-
-        Deze functie maakt een commit van alle toegevoegde wijzigingen met een beschrijving van het werkitem.
-
-        Returns:
-            None
-        """
-        lst_command = [
-            "git",
-            "commit",
-            "-m"
-            f"Commit: {self._config.work_item_description} #{int(self._config.work_item)}",
-        ]
-        self._execute_command(lst_command=lst_command)
-
-    def _git_push(self):
-        """
-        Voert een git push uit naar de feature-branch van de remote repository.
-
-        Deze functie pusht de lokale wijzigingen naar de opgegeven feature-branch op de remote repository.
-
-        Returns:
-            None
-        """
-        lst_command = ["git", "push", "origin", self._config.feature_branch]
-        self._execute_command(lst_command=lst_command)
-
-    def _open_branch_in_browser(self):
-        """
-        Opent de branch-URL in de browser om de commit in DevOps te controleren.
-
-        Deze functie opent de URL van de subprocess.run(lst_command, cwd=self._path_local)
-        feature-branch in de standaard webbrowser.
-
-        Returns:
-            None
-        """
-        webbrowser.open(self._config.url_branch, new=0, autoraise=True)
-
-    def _is_repo_folder(self) -> bool:
-        """Verifieert of er al een repository directory bestaat
-
-        Returns:
-            bool: _description_
+            str: "no_directory" als de directory niet bestaat, "no_repository" als het geen geldige repository is,
+                 "no_remote" als de remote origin niet gevonden kan worden, "ok" als alles overeenkomt,
+                 of "not_same_repo" als de remote origin niet overeenkomt met de verwachte URL.
         """
         if not self._path_local.is_dir():
-            return False
-        lst_command = ["git", "-C", str(self._path_local), "rev-parse"]
+            return "no_directory"
         try:
-            self._execute_command(lst_command=lst_command)
+            self._execute(["git", "-C", str(self._path_local), "rev-parse"])
         except subprocess.CalledProcessError:
-            return False
-        origin = subprocess.check_output(["git", "-C", str(self._path_local), "config", "--get", "remote.origin.url"]).strip().decode()
-        is_origin = self._config.url == origin
-        if not is_origin:
-            return False
-        return True
+            return "no_repository"
+        try:
+            origin = (
+                subprocess.check_output(
+                    [
+                        "git",
+                        "-C",
+                        str(self._path_local),
+                        "config",
+                        "--get",
+                        "remote.origin.url",
+                    ]
+                )
+                .strip()
+                .decode()
+            )
+        except subprocess.CalledProcessError:
+            return "no_remote"
+        return "ok" if self._url == origin else "not_same_repo"
+
+    def _execute(self, cmd: list[str]) -> None:
+        """
+        Voert een shell-commando uit en logt het uitgevoerde commando.
+
+        Deze methode logt het commando en voert het uit met subprocess.run. Als het commando faalt, wordt een CalledProcessError opgegooid.
+
+        Args:
+            cmd (list[str]): De lijst met commando-argumenten die uitgevoerd moeten worden.
+
+        Returns:
+            None
+
+        Raises:
+            subprocess.CalledProcessError: Als het commando niet succesvol wordt uitgevoerd.
+        """
+        logger.info(f"Executing: {' '.join(cmd)}")
+        subprocess.run(cmd, check=True)

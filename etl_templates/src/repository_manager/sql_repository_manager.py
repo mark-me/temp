@@ -1,0 +1,71 @@
+from pathlib import Path
+from shutil import copytree, rmtree
+import os, stat
+from logtools import get_logger
+
+from .repository_manager import RepositoryManager
+from .file_sql_project import SqlProjEditor
+
+logger = get_logger(__name__)
+
+
+class SqlRepositoryManager(RepositoryManager):
+    """Specialisatie van RepositoryManager voor SQL-projecten."""
+
+    def __init__(self, config, path_file_sql_project: Path):
+        """
+        Initialiseert een SqlRepositoryManager voor SQL-projecten.
+
+        Deze constructor stelt de configuratie en het pad naar het SQL projectbestand in.
+
+        Args:
+            config: Configuratieobject voor de repository.
+            path_file_sql_project (Path): Pad naar het SQL projectbestand.
+        """
+        super().__init__(config)
+        self._path_file_sql_project = path_file_sql_project
+
+    def clean_target_dir_in_repo(self, target: str = "CentralLayer") -> None:
+        """
+        Verwijdert de opgegeven doeldirectory uit de repository.
+
+        Deze methode probeert de opgegeven directory en alle inhoud te verwijderen. Indien nodig worden de rechten aangepast en fouten worden gelogd.
+
+        Args:
+            target (str, optional): Naam van de directory die verwijderd moet worden. Standaard "CentralLayer".
+
+        Returns:
+            None
+        """
+        dir_to_clean = self._path_local / target
+
+        def onerror(func, path, _):
+            try:
+                os.chmod(path, stat.S_IWRITE)
+                func(path)
+            except Exception as e:
+                logger.error(f"Failed to remove {path}: {e}")
+
+        rmtree(dir_to_clean, onexc=onerror)
+
+    def add_directory_to_repo(self, path_source: Path, target: str = "CentralLayer") -> None:
+        """
+        Voegt een directory met nieuwe bestanden toe aan de repository en werkt het SQL projectbestand bij.
+
+        Deze methode kopieert alle bestanden uit de bronmap naar de doeldirectory in de repository, werkt het SQL projectbestand bij en logt de actie.
+
+        Args:
+            path_source (Path): De bronmap met toe te voegen bestanden.
+            target (str, optional): Naam van de doeldirectory in de repository. Standaard "CentralLayer".
+
+        Returns:
+            None
+        """
+        path_sqlproj = self._path_local / self._path_file_sql_project
+        copytree(src=path_source, dst=self._path_local / target, dirs_exist_ok=True)
+
+        project_editor = SqlProjEditor(path_sqlproj=path_sqlproj)
+        project_editor.add_new_files(folder=path_source)
+        project_editor.remove_missing_files()
+        project_editor.save()
+        logger.info("Added files to repository")

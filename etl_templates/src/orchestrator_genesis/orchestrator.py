@@ -8,7 +8,7 @@ from generator import DDLGenerator
 from integrator import DagImplementation, DagReporting, DeadlockPrevention
 from logtools import get_logger, issue_tracker
 from pd_extractor import PDDocument
-from repository_manager import RepositoryManager
+from repository_manager import SqlRepositoryManager
 from tqdm import tqdm
 
 logger = get_logger(__name__)
@@ -304,10 +304,10 @@ class Orchestrator:
         Returns:
             None
         """
-        devops_handler = RepositoryManager(config=self.config.devops)
+        devops_handler = SqlRepositoryManager(config=self.config.devops)
         devops_handler.clone()
         devops_handler.create_branch()
-        devops_handler.clean_directory_in_repo()
+        devops_handler.clean_target_dir_in_repo()
         devops_handler.add_directory_to_repo(
             path_source=self.config.generator.path_output
         )

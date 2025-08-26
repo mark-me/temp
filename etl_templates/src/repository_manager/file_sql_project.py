@@ -63,7 +63,7 @@ class SqlProjEditor:
             includes.add(path)
         return includes
 
-    def _remove_missing_files(self) -> None:
+    def remove_missing_files(self) -> None:
         """
         Verwijdert verwijzingen naar niet-bestaande bestanden uit het SQL projectbestand.
 
