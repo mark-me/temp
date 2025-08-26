@@ -15,7 +15,8 @@ class RepositoryError(Exception):
     """
     Exception die wordt opgegooid bij repository fouten.
 
-    Deze exceptie wordt gebruikt om fouten te signaleren die optreden bij repository-operaties, zoals het ontbreken van een geldige repository of een mismatch in remote origin.
+    Deze exceptie wordt gebruikt om fouten te signaleren die optreden bij repository-operaties,
+    zoals het ontbreken van een geldige repository of een mismatch in remote origin.
     """
 
     def __init__(self, message: str, path_repo: Path | None = None):
@@ -103,7 +104,8 @@ class RepositoryManager:
         """
         Schakelt over naar de opgegeven branch in de repository.
 
-        Deze methode voert een 'git switch' uit naar de base branch of feature branch, afhankelijk van de parameter. Als de branch niet bestaat of niet is opgegeven, wordt een RepositoryError opgegooid.
+        Deze methode voert een 'git switch' uit naar de base branch of feature branch, afhankelijk van de parameter.
+        Als de branch niet bestaat of niet is opgegeven, wordt een RepositoryError opgegooid.
 
         Args:
             branch (str): De naam van de branch om naar over te schakelen ("base" of "feature").
@@ -225,7 +227,8 @@ class RepositoryManager:
             anders wordt een exceptie opgegooid of False geretourneerd als de directory niet bestaat.
 
         Raises:
-            RepositoryError: Als de directory geen geldige git repository is, de remote niet gevonden kan worden, of de remote origin niet overeenkomt.
+            RepositoryError: Als de directory geen geldige git repository is, de remote niet gevonden kan worden,
+            of de remote origin niet overeenkomt.
         """
         if not self._path_local.is_dir():
             return False
