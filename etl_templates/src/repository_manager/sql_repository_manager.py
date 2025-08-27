@@ -26,6 +26,8 @@ class SqlRepositoryManager(RepositoryManager):
         """
         super().__init__(config)
         self._path_file_sql_project = config.path_file_sql_project
+        self._work_item_description = config.work_item_description
+        self._work_item = config.work_item
 
     def clean_target_dir_in_repo(self, target: str = "CentralLayer") -> None:
         """
@@ -78,3 +80,7 @@ class SqlRepositoryManager(RepositoryManager):
         project_editor.remove_missing_files()
         project_editor.save()
         logger.info("Added files to repository")
+
+    def publish(self):
+        commit_message = f"Commit: {self._work_item_description} #{int(self._work_item)}"
+        return super().publish(commit_message)

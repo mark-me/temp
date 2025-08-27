@@ -38,6 +38,7 @@ class RepositoryManager:
         self._path_local = config.path_local.resolve()
         self._url = config.url
         self._branch = config.branch
+        self._url_branch = config.url_branch
         self._feature_branch = config.feature_branch
 
     def pull(self) -> None:
@@ -67,9 +68,16 @@ class RepositoryManager:
         Returns:
             None
         """
-        if self._has_local_repo():
+        if not self._has_local_repo():
             self._execute(
-                ["git", "clone", self._url, "-b", self._branch, str(self._path_local)]
+                [
+                    "git",
+                    "clone",
+                    self._url,
+                    "-b",
+                    self._branch,
+                    str(self._path_local),
+                ]
             )
         else:
             self.pull()
@@ -88,6 +96,7 @@ class RepositoryManager:
         if not self._feature_branch:
             raise RepositoryError("Geen feature branch ingesteld")
         self._remove_remote_branch()
+        self._remove_local_branch()
         self._execute(
             [
                 "git",
@@ -117,9 +126,7 @@ class RepositoryManager:
             RepositoryError: Als de branch niet bestaat of niet is opgegeven.
         """
         if branch == "base":
-            self._execute(
-                ["git", "-C", str(self._path_local), "switch", self._branch]
-            )
+            self._execute(["git", "-C", str(self._path_local), "switch", self._branch])
         elif branch == "feature":
             if self._feature_branch:
                 self._execute(
@@ -131,11 +138,9 @@ class RepositoryManager:
                     path_repo=self._path_local,
                 )
         else:
-            raise RepositoryError(
-                message="Geen branch gekozen (feature of base)."
-            )
+            raise RepositoryError(message="Geen branch gekozen (feature of base).")
 
-    def publish(self, commit_message: str, open_url: str | None = None) -> None:
+    def publish(self, commit_message: str) -> None:
         """
         Voert een commit en push uit naar de repository en opent optioneel een URL in de browser.
 
@@ -143,8 +148,7 @@ class RepositoryManager:
         de (feature-)branch en opent optioneel een URL in de webbrowser.
 
         Args:
-            commit_message (str): Het commitbericht voor de commit.
-            open_url (str | None, optional): Een URL die na het pushen in de browser wordt geopend. Standaard None.
+            commit_message (str): Het commit-bericht voor de commit.
 
         Returns:
             None
@@ -163,8 +167,7 @@ class RepositoryManager:
                 self._feature_branch or self._branch,
             ]
         )
-        if open_url:
-            webbrowser.open(open_url, new=0, autoraise=True)
+        webbrowser.open(self._url_branch, new=0, autoraise=True)
 
     def remove_old_repo(self) -> None:
         """
@@ -190,6 +193,28 @@ class RepositoryManager:
         rmtree(self._path_local, onexc=onerror)
         logger.info(f"Deleted folder: {self._path_local}")
 
+    def _remove_local_branch(self) -> None:
+        """Verwijdert locale feature branch uit de repository indien deze bestaat.
+        """
+        if not self._has_local_branch():
+            logger.info(f"Locale feature repository branch '{self._feature_branch}' bestaat niet")
+            return
+        self.switch_branch(branch="base")
+        try:
+            self._execute(
+                [
+                    "git",
+                    "-C",
+                    str(self._path_local),
+                    "branch",
+                    "-D",
+                    "--delete",
+                    self._feature_branch,
+                ]
+            )
+        except subprocess.CalledProcessError:
+            logger.info("Lokale feature branch bestaat nog niet")
+
     def _remove_remote_branch(self) -> None:
         """
         Verwijdert de remote feature branch uit de repository indien deze bestaat.
@@ -207,7 +232,7 @@ class RepositoryManager:
                     str(self._path_local),
                     "push",
                     "origin",
-                    "--delete",
+                    "-d",
                     self._feature_branch,
                 ]
             )
@@ -265,6 +290,21 @@ class RepositoryManager:
                 path_repo=self._path_local,
             )
         return True
+
+    def _has_local_branch(self) -> bool:
+        lst_command = [
+            "git",
+            "-C",
+            str(self._path_local),
+            "rev-parse",
+            "--verify",
+            self._feature_branch,
+        ]
+        try:
+            self._execute(lst_command)
+            return True
+        except subprocess.CalledProcessError:
+            return False
 
     def _execute(self, cmd: list[str]) -> None:
         """
